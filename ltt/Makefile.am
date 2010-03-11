@@ -12,9 +12,12 @@ lib_LTLIBRARIES = liblttvtraceread.la
 
 if BUILD_JNI_INTERFACE
 liblttvtraceread_la_SOURCES = jni_interface.c tracefile.c marker.c event.c
+liblttvtraceread_loader_la_SOURCES= lttvtraceread_loader.c
 else
 liblttvtraceread_la_SOURCES = tracefile.c marker.c event.c
 endif
+
+liblttvtraceread_la_LDFLAGS = -release 2.3
 
 noinst_HEADERS = ltt-private.h
 
@@ -28,3 +31,4 @@ lttinclude_HEADERS = \
 	event.h\
 	marker-desc.h\
 	ltt-types.h
+

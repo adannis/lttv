@@ -48,8 +48,7 @@ echo "Running ldconfig (might take a while)"
 ldconfig
 
 %files
-%{libdir}/liblttvtraceread.so.0.0.0
-%{libdir}/liblttvtraceread.so.0
+%{libdir}/liblttvtraceread-2.3.so
 %{libdir}/liblttvtraceread.so
 %{libdir}/liblttvtraceread.la
 %{libdir}/liblttvtraceread.a
