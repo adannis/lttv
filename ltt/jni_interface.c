@@ -1,3 +1,20 @@
+/* This file is part of the Linux Trace Toolkit viewer
+ * Copyright (C) 2010 William Bourque
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License Version 2.1 as published by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ */
 
 /* Important to get consistent size_t type */
 #define _FILE_OFFSET_BITS 64
@@ -71,7 +88,6 @@ struct saveTimeAndTracefile
         LttTracefile *tracefile;
 };
 
-
 /* 
 ### COMMON Methods ###
 #
@@ -91,6 +107,27 @@ JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_Jni_1C_1Common_ltt_
 /* 
 #
 #### */
+
+
+
+JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_factory_JniTraceVersion_ltt_1getTraceVersion(JNIEnv *env, jobject jobj, jstring tracepath) {
+        
+        const gchar *c_pathname = (*env)->GetStringUTFChars(env, tracepath, 0);
+        jint tmpMajorNumber = 0;
+        jint tmpMinorNumber = 0;
+        
+        jclass accessClass = (*env)->GetObjectClass(env, jobj);
+        jmethodID accessFunction = (*env)->GetMethodID(env, accessClass, "setTraceVersionFromC", "(II)V");
+        
+        struct LttTraceVersion version_number;
+        
+        if ( get_version(c_pathname, &version_number) >= 0) {
+                tmpMajorNumber = version_number.ltt_major_version;
+                tmpMinorNumber = version_number.ltt_minor_version;
+        }
+        
+        (*env)->CallVoidMethod(env, jobj, accessFunction, tmpMajorNumber, tmpMinorNumber );
+}
 
 
 /* 
