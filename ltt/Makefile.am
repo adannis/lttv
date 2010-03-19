@@ -8,7 +8,7 @@
 
 AM_CFLAGS = $(PACKAGE_CFLAGS)
 
-lib_LTLIBRARIES = liblttvtraceread.la
+lib_LTLIBRARIES = liblttvtraceread.la lttvtraceread_loader.la
 
 if BUILD_JNI_INTERFACE
 liblttvtraceread_la_SOURCES = jni_interface.c tracefile.c marker.c event.c
