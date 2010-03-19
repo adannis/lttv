@@ -18,6 +18,7 @@ liblttvtraceread_la_SOURCES = tracefile.c marker.c event.c
 endif
 
 liblttvtraceread_la_LDFLAGS = -release 2.3
+liblttvtraceread_loader_la_LDFLAGS = -release 2.3
 
 noinst_HEADERS = ltt-private.h
 
