@@ -223,6 +223,6 @@ struct LttTraceVersion {
 };
 
 /* To get the version number of a trace */
-int get_version(const gchar *pathname, struct LttTraceVersion * version_number);
+int ltt_get_trace_version(const gchar *pathname, struct LttTraceVersion * version_number);
 
 #endif // TRACE_H

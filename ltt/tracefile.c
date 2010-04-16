@@ -1801,58 +1801,50 @@ static __attribute__((constructor)) void init(void)
  *Return value
  *    ltt_subbuffer_header_t         : the header containing the version number
  ****************************************************************************/
-static ltt_subbuffer_header_t * ltt_tracefile_open_header(gchar * fileName, LttTracefile *tf)
+static ltt_subbuffer_header_t * ltt_tracefile_open_header(gchar *fileName, LttTracefile *tf)
 {
-  struct stat    lTDFStat;    /* Trace data file status */
-  ltt_subbuffer_header_t *header;
-  int page_size = getpagesize();
-
-  //open the file
-  tf->long_name = g_quark_from_string(fileName);
-  tf->fd = open(fileName, O_RDONLY);
-  tf->buf_index = NULL;
-  if(tf->fd < 0){
-    g_warning("Unable to open input data file %s\n", fileName);
-    goto end;
-  }
- 
-  // Get the file's status 
-  if(fstat(tf->fd, &lTDFStat) < 0){
-    g_warning("Unable to get the status of the input data file %s\n", fileName);
-    goto close_file;
-  }
-
-  // Is the file large enough to contain a trace 
-  if(lTDFStat.st_size <
-      (off_t)(ltt_subbuffer_header_size())){
-    g_print("The input data file %s does not contain a trace\n", fileName);
-    goto close_file;
-  }
-  
-  /* Temporarily map the buffer start header to get trace information */
-  /* Multiple of pages aligned head */
-  tf->buffer.head = mmap(0,
-      PAGE_ALIGN(ltt_subbuffer_header_size()), PROT_READ, 
-      MAP_PRIVATE, tf->fd, 0);
-  if(tf->buffer.head == MAP_FAILED) {
-    perror("Error in allocating memory for buffer of tracefile");
-    goto close_file;
-  }
-  g_assert( ( (gulong)tf->buffer.head&(8-1) ) == 0); // make sure it's aligned.
-  
-  header = (ltt_subbuffer_header_t *)tf->buffer.head;
-  
-  
-  return header;
-
-  /* Error */
-
-close_file:
-  close(tf->fd);
-end:
-  if (tf->buf_index)
-    g_array_free(tf->buf_index, TRUE);
-  return 0;
+        struct stat    lTDFStat;    /* Trace data file status */
+        ltt_subbuffer_header_t *header;
+        int page_size = getpagesize();
+        
+        /* open the file */
+        tf->long_name = g_quark_from_string(fileName);
+        tf->fd = open(fileName, O_RDONLY);
+        if(tf->fd < 0){
+                g_warning("Unable to open input data file %s\n", fileName);
+                goto end;
+        }
+        
+        /* Get the file's status */ 
+        if(fstat(tf->fd, &lTDFStat) < 0){
+                g_warning("Unable to get the status of the input data file %s\n", fileName);
+                goto close_file;
+        }
+        
+        /* Is the file large enough to contain a trace */
+        if(lTDFStat.st_size < (off_t)(ltt_subbuffer_header_size())) {
+                g_print("The input data file %s does not contain a trace\n", fileName);
+                goto close_file;
+        }
+        
+        /* Temporarily map the buffer start header to get trace information */
+        /* Multiple of pages aligned head */
+        tf->buffer.head = mmap(0,PAGE_ALIGN(ltt_subbuffer_header_size()), PROT_READ, MAP_PRIVATE, tf->fd, 0);
+        
+        if(tf->buffer.head == MAP_FAILED) {
+                perror("Error in allocating memory for buffer of tracefile");
+                goto close_file;
+        }
+        g_assert( ( (gulong)tf->buffer.head&(8-1) ) == 0); // make sure it's aligned.
+        
+        header = (ltt_subbuffer_header_t *)tf->buffer.head;
+        
+        return header;
+        
+        close_file:
+                close(tf->fd);
+        end:
+                return 0;
 }
 
 
@@ -1865,8 +1857,7 @@ end:
  *Return value
  *    int         : 1 if succeed, -1 if error
  ****************************************************************************/
-
-int get_version(const gchar *pathname, struct LttTraceVersion * version_number) 
+int ltt_get_trace_version(const gchar *pathname, struct LttTraceVersion *version_number) 
 {
 	gchar abs_path[PATH_MAX];
 	int ret = 0;
@@ -1882,7 +1873,7 @@ int get_version(const gchar *pathname, struct LttTraceVersion * version_number)
 	t = g_new(LttTrace, 1);
 	  
 	get_absolute_pathname(pathname, abs_path);
-
+        
 	/* Test to see if it looks like a trace */
 	dir = opendir(abs_path);
 	
@@ -1904,9 +1895,8 @@ int get_version(const gchar *pathname, struct LttTraceVersion * version_number)
 	
 	closedir(dir);	
 	dir = opendir(abs_path);
-
+        
 	while((entry = readdir(dir)) != NULL) {
-
 		if(entry->d_name[0] == '.') continue;
 		if(g_strcmp0(entry->d_name, "metadata_0") != 0) continue;
 		
@@ -1922,18 +1912,16 @@ int get_version(const gchar *pathname, struct LttTraceVersion * version_number)
  		
 		if(header == NULL) {
 			g_info("Error getting the header %s", path);
-
 			continue; /* error opening the tracefile : bad magic number ? */
 		}
-       			
+       		
      		version_number->ltt_major_version = header->major_version;
     		version_number->ltt_minor_version = header->minor_version;
- 		
 	}
 	
 	return 0;
 	
 	open_error:
-	g_free(t);
-	return -1;
-}	
+                g_free(t);
+                return -1;
+}
