@@ -121,7 +121,7 @@ JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_factory_JniTraceVer
         
         struct LttTraceVersion version_number;
         
-        if ( get_version(c_pathname, &version_number) >= 0)  {
+        if ( ltt_get_trace_version(c_pathname, &version_number) >= 0)  {
                 tmpMajorNumber = version_number.ltt_major_version;
                 tmpMinorNumber = version_number.ltt_minor_version;
         }
