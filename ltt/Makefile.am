@@ -32,4 +32,3 @@ lttinclude_HEADERS = \
 	event.h\
 	marker-desc.h\
 	ltt-types.h
-
