@@ -2954,8 +2954,12 @@ static gboolean sched_try_wakeup(void *hook_data, void *call_data)
 			(LttvTraceState*)s->parent.t_context,
 			woken_cpu, woken_pid,
 			&s->parent.timestamp);
-	process->state->s = LTTV_STATE_WAIT_CPU;
-	process->state->change = s->parent.timestamp;
+
+	if (process->state->s == LTTV_STATE_WAIT || process->state->s == LTTV_STATE_WAIT_FORK)
+	{
+		process->state->s = LTTV_STATE_WAIT_CPU;
+		process->state->change = s->parent.timestamp;
+	}
 
 	g_debug("Wakeup: process %d on CPU %u\n", woken_pid, woken_cpu);
 
