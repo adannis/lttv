@@ -487,13 +487,15 @@ lttv_attribute_read_xml(LttvAttribute *self, FILE *fp)
 
 	LttvAttribute *subtree;
 
-	fscanf(fp,"<ATTRS>");
+	res = fscanf(fp, "<ATTRS>");
+	g_assert(res > 0);
 	while(1) {
 		res = fscanf(fp, "<ATTR NAME=\"%256[^\"]\" TYPE=%10[^ >]", buffer, type);
 		g_assert(res == 2);
 		name = g_quark_from_string(buffer);
 		if(strcmp(type, "ATTRS") == 0) {
-			fscanf(fp, ">");
+			res = fscanf(fp, ">");
+			g_assert(res > 0);
 			subtree = lttv_attribute_find_subdir(self, name);
 			lttv_attribute_read_xml(subtree, fp);
 		}
@@ -553,11 +555,13 @@ lttv_attribute_read_xml(LttvAttribute *self, FILE *fp)
 		}
 		else if(strcmp(type, "NONE") == 0) {
 			value = lttv_attribute_add(self, name, LTTV_NONE);
-			fscanf(fp, "/>");
+			res = fscanf(fp, "/>");
+			g_assert(res > 0);
 		}
 		else g_error("Unknown type to read");
 	}
-	fscanf(fp,"</ATTRS>");
+	res = fscanf(fp, "</ATTRS>");
+	g_assert(res > 0);
 }
 
 static LttvAttribute *

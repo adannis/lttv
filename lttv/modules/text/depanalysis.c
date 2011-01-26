@@ -753,15 +753,18 @@ static inline void print_pid(int pid)
 static void modify_path_with_private(GArray *path, struct process_state *pstate)
 {
 	char *tmps;
+	int res;
 
 	// FIXME: fix this leak
 	switch(pstate->bstate) {
 		case HLEV_INTERRUPTED_IRQ:
-			asprintf(&tmps, "IRQ %d [%s]", ((struct hlev_state_info_interrupted_irq *)pstate->private)->irq, g_quark_to_string((GQuark)(unsigned long)g_hash_table_lookup(irq_table, &((struct hlev_state_info_interrupted_irq *)pstate->private)->irq)));
+			res = asprintf(&tmps, "IRQ %d [%s]", ((struct hlev_state_info_interrupted_irq *)pstate->private)->irq, g_quark_to_string((GQuark)(unsigned long)g_hash_table_lookup(irq_table, &((struct hlev_state_info_interrupted_irq *)pstate->private)->irq)));
+			g_assert(res > 0);
 			g_array_append_val(path, tmps);
 			break;
 		case HLEV_INTERRUPTED_SOFTIRQ:
-			asprintf(&tmps, "SoftIRQ %d [%s]", ((struct hlev_state_info_interrupted_softirq *)pstate->private)->softirq, g_quark_to_string((GQuark)(unsigned long)g_hash_table_lookup(softirq_table, &((struct hlev_state_info_interrupted_softirq *)pstate->private)->softirq)));
+			res = asprintf(&tmps, "SoftIRQ %d [%s]", ((struct hlev_state_info_interrupted_softirq *)pstate->private)->softirq, g_quark_to_string((GQuark)(unsigned long)g_hash_table_lookup(softirq_table, &((struct hlev_state_info_interrupted_softirq *)pstate->private)->softirq)));
+			g_assert(res > 0);
 			g_array_append_val(path, tmps);
 			break;
 		case HLEV_BLOCKED: {
@@ -777,7 +780,8 @@ static void modify_path_with_private(GArray *path, struct process_state *pstate)
 				g_array_append_val(path, ptr);
 			}
 			else {
-				asprintf(&tmps, "Syscall %d [%s]", hlev_blocked_private->syscall_id, g_quark_to_string((GQuark)(unsigned long)g_hash_table_lookup(syscall_table, &hlev_blocked_private->syscall_id)));
+				res = asprintf(&tmps, "Syscall %d [%s]", hlev_blocked_private->syscall_id, g_quark_to_string((GQuark)(unsigned long)g_hash_table_lookup(syscall_table, &hlev_blocked_private->syscall_id)));
+				g_assert(res > 0);
 				g_array_append_val(path, tmps);
 			}
 
@@ -787,14 +791,16 @@ static void modify_path_with_private(GArray *path, struct process_state *pstate)
 			}
 			else if(((struct hlev_state_info_blocked *)pstate->private)->substate == HLEV_BLOCKED__READ) {
 				char *str;
-				asprintf(&str, "%s", g_quark_to_string(((struct hlev_state_info_blocked__read *)((struct hlev_state_info_blocked *)pstate->private)->private)->filename));
+				res = asprintf(&str, "%s", g_quark_to_string(((struct hlev_state_info_blocked__read *)((struct hlev_state_info_blocked *)pstate->private)->private)->filename));
+				g_assert(res > 0);
 				g_array_append_val(path, str);
 				/* FIXME: this must be freed at some point */
 				//free(str);
 			}
 			else if(((struct hlev_state_info_blocked *)pstate->private)->substate == HLEV_BLOCKED__POLL) {
 				char *str;
-				asprintf(&str, "%s", g_quark_to_string(((struct hlev_state_info_blocked__poll *)((struct hlev_state_info_blocked *)pstate->private)->private)->filename));
+				res = asprintf(&str, "%s", g_quark_to_string(((struct hlev_state_info_blocked__poll *)((struct hlev_state_info_blocked *)pstate->private)->private)->filename));
+				g_assert(res > 0);
 				g_array_append_val(path, str);
 				/* FIXME: this must be freed at some point */
 				//free(str);
@@ -1565,6 +1571,7 @@ static int process_event(void *hook_data, void *call_data)
 	LttvTracefileState *tfs = (LttvTracefileState *)call_data;
 	LttEvent *e;
 	struct marker_info *info;
+	int res;
 
 	/* Extract data from event structures and state */
 	guint cpu = tfs->cpu;
@@ -1804,7 +1811,8 @@ static int process_event(void *hook_data, void *call_data)
 		}
 		else {
 			char *tmp;
-			asprintf(&tmp, "Unknown filename, fd %d", fd);
+			res = asprintf(&tmp, "Unknown filename, fd %d", fd);
+			g_assert(res > 0);
 			llev_syscall_read_private->filename = g_quark_from_string(tmp);
 			free(tmp);
 		}
@@ -1850,7 +1858,8 @@ static int process_event(void *hook_data, void *call_data)
 		}
 		else {
 			char *tmp;
-			asprintf(&tmp, "Unknown filename, fd %d", fd);
+			res = asprintf(&tmp, "Unknown filename, fd %d", fd);
+			g_assert(res > 0);
 			llev_syscall_poll_private->filename = g_quark_from_string(tmp);
 			free(tmp);
 		}

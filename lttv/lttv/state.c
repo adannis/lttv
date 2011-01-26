@@ -578,6 +578,7 @@ static void state_load_saved_states(LttvTraceState *tcs)
 	gint hdr;
 	gchar buf[MAX_STRING_LEN];
 	guint len;
+	size_t res;
 
 	trace_path = g_quark_to_string(ltt_trace_name(tcs->parent.t));
 	strncpy(path, trace_path, PATH_MAX-1);
@@ -600,7 +601,8 @@ static void state_load_saved_states(LttvTraceState *tcs)
 		g_ptr_array_set_size(quarktable, q+1);
 		i=0;
 		while(1) {
-			fread(&buf[i], sizeof(gchar), 1, fp);
+			res = fread(&buf[i], sizeof(gchar), 1, fp);
+			g_assert(res == 1);
 			if(buf[i] == '\0' || feof(fp)) break;
 			i++;
 		}
@@ -1053,20 +1055,21 @@ static void read_process_state_raw(LttvTraceState *self, FILE *fp,
 	LttvProcessState *process, *parent_process;
 	LttvProcessState tmp;
 	GQuark tmpq;
+	size_t res;
 
 	guint64 *address;
 
-	/* TODO : check return value */
-	fread(&tmp.type, sizeof(tmp.type), 1, fp);
-	fread(&tmp.name, sizeof(tmp.name), 1, fp);
-	fread(&tmp.brand, sizeof(tmp.brand), 1, fp);
-	fread(&tmp.pid, sizeof(tmp.pid), 1, fp);
-	fread(&tmp.free_events, sizeof(tmp.free_events), 1, fp);
-	fread(&tmp.tgid, sizeof(tmp.tgid), 1, fp);
-	fread(&tmp.ppid, sizeof(tmp.ppid), 1, fp);
-	fread(&tmp.cpu, sizeof(tmp.cpu), 1, fp);
-	fread(&tmp.creation_time, sizeof(tmp.creation_time), 1, fp);
-	fread(&tmp.insertion_time, sizeof(tmp.insertion_time), 1, fp);
+	res = fread(&tmp.type, sizeof(tmp.type), 1, fp);
+	res += fread(&tmp.name, sizeof(tmp.name), 1, fp);
+	res += fread(&tmp.brand, sizeof(tmp.brand), 1, fp);
+	res += fread(&tmp.pid, sizeof(tmp.pid), 1, fp);
+	res += fread(&tmp.free_events, sizeof(tmp.free_events), 1, fp);
+	res += fread(&tmp.tgid, sizeof(tmp.tgid), 1, fp);
+	res += fread(&tmp.ppid, sizeof(tmp.ppid), 1, fp);
+	res += fread(&tmp.cpu, sizeof(tmp.cpu), 1, fp);
+	res += fread(&tmp.creation_time, sizeof(tmp.creation_time), 1, fp);
+	res += fread(&tmp.insertion_time, sizeof(tmp.insertion_time), 1, fp);
+	g_assert(res == 10);
 
 	if(tmp.pid == 0) {
 		process = lttv_state_find_process(self, tmp.cpu, tmp.pid);
@@ -1109,18 +1112,22 @@ static void read_process_state_raw(LttvTraceState *self, FILE *fp,
 						process->execution_stack->len-1);
 				process->state = es;
 
-				fread(&es->t, sizeof(es->t), 1, fp);
+				res = fread(&es->t, sizeof(es->t), 1, fp);
+				g_assert(res == 1);
 				es->t = g_quark_from_string(
 						(gchar*)g_ptr_array_index(quarktable, es->t));
-				fread(&es->n, sizeof(es->n), 1, fp);
+				res = fread(&es->n, sizeof(es->n), 1, fp);
+				g_assert(res == 1);
 				es->n = g_quark_from_string(
 						(gchar*)g_ptr_array_index(quarktable, es->n));
-				fread(&es->s, sizeof(es->s), 1, fp);
+				res = fread(&es->s, sizeof(es->s), 1, fp);
+				g_assert(res == 1);
 				es->s = g_quark_from_string(
 						(gchar*)g_ptr_array_index(quarktable, es->s));
-				fread(&es->entry, sizeof(es->entry), 1, fp);
-				fread(&es->change, sizeof(es->change), 1, fp);
-				fread(&es->cum_cpu_time, sizeof(es->cum_cpu_time), 1, fp);
+				res = fread(&es->entry, sizeof(es->entry), 1, fp);
+				res += fread(&es->change, sizeof(es->change), 1, fp);
+				res += fread(&es->cum_cpu_time, sizeof(es->cum_cpu_time), 1, fp);
+				g_assert(res == 3);
 				break;
 
 			case HDR_USER_STACK:
@@ -1128,13 +1135,16 @@ static void read_process_state_raw(LttvTraceState *self, FILE *fp,
 						process->user_stack->len + 1);
 				address = &g_array_index(process->user_stack, guint64,
 						process->user_stack->len-1);
-				fread(address, sizeof(address), 1, fp);
+				res = fread(address, sizeof(address), 1, fp);
+				g_assert(res == 1);
 				process->current_function = *address;
 				break;
 
 			case HDR_USERTRACE:
-				fread(&tmpq, sizeof(tmpq), 1, fp);
-				fread(&process->usertrace->cpu, sizeof(process->usertrace->cpu), 1, fp);
+				res = fread(&tmpq, sizeof(tmpq), 1, fp);
+				res += fread(&process->usertrace->cpu,
+						sizeof(process->usertrace->cpu), 1, fp);
+				g_assert(res == 2);
 				break;
 
 			default:
@@ -1160,6 +1170,7 @@ void lttv_state_read_raw(LttvTraceState *self, FILE *fp, GPtrArray *quarktable)
 	guint nb_cpus;
 
 	int hdr;
+	size_t res;
 
 	LttTime t;
 
@@ -1171,7 +1182,8 @@ void lttv_state_read_raw(LttvTraceState *self, FILE *fp, GPtrArray *quarktable)
 
 	restore_init_state(self);
 
-	fread(&t, sizeof(t), 1, fp);
+	res = fread(&t, sizeof(t), 1, fp);
+	g_assert(res == 1);
 
 	do {
 		if(feof(fp) || ferror(fp)) goto end_loop;
@@ -1208,10 +1220,12 @@ end_loop:
 		int cpu_num;
 		hdr = fgetc(fp);
 		g_assert(hdr == HDR_CPU);
-		fread(&cpu_num, sizeof(cpu_num), 1, fp); /* cpu number */
+		res = fread(&cpu_num, sizeof(cpu_num), 1, fp); /* cpu number */
+		g_assert(res == 1);
 		g_assert(i == cpu_num);
-		fread(&self->running_process[i]->pid,
+		res = fread(&self->running_process[i]->pid,
 				sizeof(self->running_process[i]->pid), 1, fp);
+		g_assert(res == 1);
 	}
 
 	nb_tracefile = self->parent.tracefiles->len;
@@ -1226,13 +1240,15 @@ end_loop:
 		g_tree_remove(pqueue, &tfcs->parent);
 		hdr = fgetc(fp);
 		g_assert(hdr == HDR_TRACEFILE);
-		fread(&tfcs->parent.timestamp, sizeof(tfcs->parent.timestamp), 1, fp);
+		res = fread(&tfcs->parent.timestamp, sizeof(tfcs->parent.timestamp), 1, fp);
+		g_assert(res == 1);
 		/* Note : if timestamp if LTT_TIME_INFINITE, there will be no
 		 * position following : end of trace */
 		if(ltt_time_compare(tfcs->parent.timestamp, ltt_time_infinite) != 0) {
-			fread(&nb_block, sizeof(nb_block), 1, fp);
-			fread(&offset, sizeof(offset), 1, fp);
-			fread(&tsc, sizeof(tsc), 1, fp);
+			res = fread(&nb_block, sizeof(nb_block), 1, fp);
+			res += fread(&offset, sizeof(offset), 1, fp);
+			res += fread(&tsc, sizeof(tsc), 1, fp);
+			g_assert(res == 3);
 			ltt_event_position_set(ep, tfcs->parent.tf, nb_block, offset, tsc);
 			gint ret = ltt_tracefile_seek_position(tfcs->parent.tf, ep);
 			g_assert(ret == 0);
