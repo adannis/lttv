@@ -51,7 +51,7 @@ static gboolean a_no_field_names;
 static gboolean a_state;
 static gboolean a_text;
 static gboolean a_strace;
-
+static gboolean a_meta;
 static char *a_file_name;
 static char *a_format;
 
@@ -59,18 +59,40 @@ static LttvHooks *before_traceset;
 static LttvHooks *event_hook;
 
 static const char default_format[] =
-		"channel:%c event:%e timestamp:%t elapsed:%l cpu:%u pid:%d ppid:%i "
-		"tgpid:%g process:%p brand:%b state:%a payload:{ %m }";
+		"channel:%c event:%e timestamp:%t elapsed:%l cpu:%u pid:%d "
+		"ppid:%i tgpid:%g process:%p brand:%b state:%a payload:{ %m }";
 static const char textDump_format[] =
 		"%c.%e: %s.%n (%r/%c_%u), %d, %g, %p, %b, %i, %y, %a { %m }";
 static const char strace_format[] = "%e(%m) %s.%n";
+static const char *fmt;
 
 static FILE *a_file;
 
 static GString *a_string;
 
+static int output_format_len;
+
 static gboolean open_output_file(void *hook_data, void *call_data)
 {
+	if (a_text) {
+		/* textDump format (used with -T command option) */
+		fmt = textDump_format;
+	} else if (a_strace) {
+		/* strace-like format (used with -S command option) */
+		fmt = strace_format;
+	} else if (!a_format) {
+		/* Default format (used if no option) */
+		fmt = default_format;
+	} else {
+		/*
+		 * formattedDump format
+		 * (used with -F command option following by the desired format)
+		 */
+		fmt = a_format;
+	}
+
+	output_format_len = strlen(fmt);
+
 	g_info("Open the output file");
 	if (a_file_name == NULL) {
 		a_file = stdout;
@@ -118,6 +140,20 @@ static int write_event_content(void *hook_data, void *call_data)
 		}
 	}
 
+	/*
+	 * By default, metadata's channel won't be display: it goes directly
+	 * to the next event. You can have metadata's informations with -M
+	 * switch (a_meta option).
+	 */
+	if (!a_meta && ltt_tracefile_name(tfs->parent.tf) ==
+			g_quark_from_string("metadata")) {
+		return FALSE;
+		/*
+		 * TODO:
+		 * Investigate the use of filter to do it.
+		 */
+	}
+
 	lttv_event_to_string(e, a_string, TRUE, !a_no_field_names, tfs);
 
 	if (a_state) {
@@ -136,18 +172,17 @@ void lttv_event_to_string(LttEvent *e, GString *string_buffer, gboolean mandator
 {
 	struct marker_field *field;
 	struct marker_info *info;
-	LttTime time;
 
+	LttTime time;
+	LttTime elapse;
 	static LttTime time_prev = {0, 0};
 	/*
 	 * TODO:
 	 * Added this static value into state.c and reset each time you do a
 	 * seek for using it in the GUI.
 	 */
-	LttTime elapse;
-	const char *fmt;
+
 	int i;
-	int len;
 	guint cpu = tfs->cpu;
 	LttvTraceState *ts = (LttvTraceState *)tfs->parent.t_context;
 	LttvProcessState *process = ts->running_process[cpu];
@@ -171,30 +206,12 @@ void lttv_event_to_string(LttEvent *e, GString *string_buffer, gboolean mandator
 			time_prev = time;
 		}
 	}
-	if (a_text) {
-		/* textDump format (used with -T command option) */
-		fmt = textDump_format;
-	} else if (a_strace) {
-		/* strace-like format (used with -S command option) */
-		fmt = strace_format;
-	} else if (!a_format) {
-		/* Default format (used if no option) */
-		fmt = default_format;
-	} else {
-		/*
-		 * formattedDump format
-		 * (used with -F command option following by the desired format)
-		 */
-		fmt = a_format;
-	}
-
 	g_string_set_size(string_buffer, 0);
 	/*
 	 * Switch case:
 	 * all '%-' are replaced by the desired value in 'string_buffer'
 	 */
-	len = strlen(fmt);
-	for (i = 0; i < len; i++) {
+	for (i = 0; i < output_format_len; i++) {
 		if (fmt[i] == '%') {
 			switch (fmt[++i]) {
 			case 't':
@@ -238,8 +255,8 @@ void lttv_event_to_string(LttEvent *e, GString *string_buffer, gboolean mandator
 						g_quark_to_string(process->name));
 				break;
 			case 'b':
-				g_string_append_printf(string_buffer, "%u",
-						process->brand);
+				g_string_append(string_buffer,
+						g_quark_to_string(process->brand));
 				break;
 			case 'u':
 				g_string_append_printf(string_buffer, "%u", cpu);
@@ -322,6 +339,12 @@ static void init()
 			"",
 			LTTV_OPT_NONE, &a_strace, NULL, NULL);
 
+	a_meta = FALSE;
+	lttv_option_add("metadata", 'M',
+			"add metadata informations",
+			"",
+			LTTV_OPT_NONE, &a_meta, NULL, NULL);
+
 	a_format = NULL;
 	lttv_option_add("format", 'F',
 			"output the desired format\n"
@@ -375,6 +398,8 @@ static void destroy()
 	lttv_option_remove("text");
 
 	lttv_option_remove("strace");
+
+	lttv_option_remove("metadata");
 
 	g_string_free(a_string, TRUE);
 
