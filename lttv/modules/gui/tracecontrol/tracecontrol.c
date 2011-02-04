@@ -1242,7 +1242,11 @@ void disarm_clicked (GtkButton *button, gpointer user_data)
 GtkWidget *
 h_guicontrol(LttvPlugin *plugin)
 {
-  return NULL;
+	LttvPluginTab *ptab = LTTV_PLUGIN_TAB(plugin);
+	gui_control(ptab) ;
+
+	/* TODO ybrosseau 2011-02-04: We should probably return a widget here */
+	return NULL;
 }
 
 /**

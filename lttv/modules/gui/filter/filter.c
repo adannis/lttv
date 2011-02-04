@@ -462,7 +462,10 @@ gui_filter_destructor(FilterViewerData *fvd)
 GtkWidget *
 h_guifilter(LttvPlugin *plugin)
 {
-  return NULL;
+	gui_filter(plugin);
+
+	/* TODO ybrosseau 2011-02-04: We should probably return a widget here */
+	return NULL;
 }
 
 /**
