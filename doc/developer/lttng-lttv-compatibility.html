@@ -4183,6 +4183,7 @@ powerpc64, s390, sparc, sparc64.<br>
 0.241<br>
 0.242<br>
 linaro-0.242-1<br>
+0.243<br>
 </td>
 <td style="vertical-align: top;">
 0.76<br>
@@ -4193,6 +4194,7 @@ linaro-0.242-1<br>
 <td style="vertical-align: top;">
 0.19.4<br>
 0.19.5<br>
+0.19.6<br>
 </td>
 <td style="vertical-align: top;">
 0.6<br>
@@ -4214,6 +4216,10 @@ instrumentation integration.<br>
 lttng-modules 0.19.5 fixes a module teardown bug and adapts the net-probe module
 to the 2.6.37 lttng tracepoint name change.<br>
 LTTng 0.242-1 for Linaro supports the 2.6.37 Linaro kernel tree.<br>
+LTTng 0.243 removes the NMI-safe page fault for x86_64, which causes problems on
+some setups. vmalloc_sync_all() called after buffer allocation and after module
+load ensures that no vmalloc faults are triggered by LTTng from NMI context.<br>
+lttng-modules 0.19.6 fixes uninitialized fields in net-extended events.<br>
 </td>
 <td style="vertical-align: top;">
 </td>
