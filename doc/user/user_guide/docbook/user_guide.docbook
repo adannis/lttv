@@ -564,7 +564,116 @@ order of registration of the options by the modules, therefore the invocation
 order of the modules.
 </para>
 </sect1>
-
+<sect1 id="formattedDump">
+<title>The formatted dump module</title>
+<para>
+Like text dump the goal of this module is to convert the binary data of the
+traces into a desired formatted text file. This module allows for a flexible
+text output, where you specify which information you want. It also provides
+several preset format.
+</para>
+<para>
+Formatted dump plugin prints a formatted output of each events in a trace.
+The output format is defined as a parameter. It provides a default easy
+to read format, a "strace-like" format and the original textDump format for
+backward compatibility. Like text dump, formatted dump uses the batch analysis
+module. That's why you may specify the -o switch for the output file name of
+the formatted dump.
+</para>
+<para>
+The formatted dump module is invoked just like the text module. It adds more
+options that can be specified as argument. You may specify the -F switch for
+the format of the output followed by your output format between quotes. The -T
+switch activates the text dump format while -S provides the "strace-like" format.
+If there is no argument or option following formattedDump, it will provides the
+default format, which is easier to read than textDump.
+</para>
+<para>
+If you pass the --help (or -h) option to the formattedDump module, you will see
+all the detail about the switches that can be used. You will notice that you
+can use both the switches for batchAnalysis and those for formattedDump. You
+will also remark that all interpreted sequences follow the FORMAT description.
+</para>
+<para>
+For example, if you load the formattedDump module with -m formattedDump, you
+have to add the -t switch from batchAnalysis followed by the path to trace.
+Then you can add the formatted dump options like this:
+</para>
+<screen>
+<prompt>$</prompt> <userinput>lttv -m formattedDump -t path/to/trace -F
+"event name:%e timestamp:%t process name:%p"</userinput>
+</screen>
+<para>
+With the same example, you can add the -o switch followed by the name of the
+file where you want store the output:
+<screen>
+<prompt>$</prompt> <userinput>lttv -m formattedDump -t path/to/trace -F
+"event name:%e timestamp:%t process name:%p -o output.txt"</userinput>
+</screen>
+</para>
+<para>The get the full list of options for the format, use the help option on
+the command line.
+<screen>
+<prompt>$</prompt> <userinput>lttv -m formattedDump -h</userinput>
+</screen></para>
+</sect1>
+<sect1 id="textFilter">
+<title>The text filter module</title>
+<para>
+The text filter module provides the ability to filter the events of a trace.
+Unlike formattedDump which let you select which information to display,
+textFilter let you filter complete events and not simply their information.
+It should be used with either textDump or formattedDump to display the
+remaining events.
+</para>
+<para>
+The possibilities of filtering are numerous through this module. You can filter
+events by: event name, channel name, time(current, creation, insertion,...),
+pid, ppid, process name, cpu... and many other opportunities are provided. All
+possible fields and operators are listed in the switch -l (or --list) of
+textFilter.
+</para>
+<para>
+The text filter module is invoked just like all other text modules of lttv
+except that you should specify if you want use textDump or formattedDump for
+displaying your trace. You also need describe your filtering expression with -e
+switch followed by your filter request between quotes.
+</para>
+<para>
+If you use the --help (or -h) option on the textFilter module, you will see
+all the detail about the switches that can be used. Remember that all possible
+filtering field are listed in --list switch.
+</para>
+<para>
+This module is an addition of textDump and formattedDump. The combo textFilter
+and formattedDump provides a complete filter of a trace: event and event's
+information.
+</para>
+<para>
+If you load the textFilter module with -m textFilter, you should first add the
+filtering expression, then load formattedDump (or textDump) module and use it
+with its normal way. For exemple you can use textFilter and formattedDump like
+this:
+</para>
+<screen>
+<prompt>$</prompt> <userinput>lttv -m textFilter -e "channel.name=kernel"
+-m formattedDump -t path/to/trace -F "channel name:%c timestamp:%t process
+name:%p"</userinput>
+</screen>
+<para>
+If you want use textDump instead of formattedDump with textFilter the same
+principle apply, you just have to write:
+<screen>
+<prompt>$</prompt> <userinput>lttv -m textFilter -e
+"event.name=kernel.syscall_entry" -m textDump -t path/to/trace</userinput>
+</screen>
+</para>
+<para>To get the full list of options and filtering expressions, use the help
+option followed by -l switch on the command line.
+<screen>
+<prompt>$</prompt> <userinput>lttv -m textFilter -h -l</userinput>
+</screen></para>
+</sect1>
 </chapter>
 
 
