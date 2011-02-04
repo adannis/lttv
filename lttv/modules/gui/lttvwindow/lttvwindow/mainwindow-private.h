@@ -75,37 +75,9 @@ struct _Tab{
   GtkWidget *viewer_container;
   GtkWidget *scrollbar;
 
-  /* Paste zones */
-  GtkTooltips *tooltips;
-  
   /* time bar */
   GtkWidget *MTimebar;
-  GtkWidget *MEventBox1a;
-  GtkWidget *MText1a;
-  GtkWidget *MEventBox1b;
-  GtkWidget *MText1b;
-  GtkWidget *MEntry1;
-  GtkWidget *MText2;
-  GtkWidget *MEntry2;
-  GtkWidget *MText3a;
-  GtkWidget *MEventBox3b;
-  GtkWidget *MText3b;
-  GtkWidget *MEntry3;
-  GtkWidget *MText4;
-  GtkWidget *MEntry4;
-  GtkWidget *MText5a;
-  GtkWidget *MEventBox5b;
-  GtkWidget *MText5b;
-  GtkWidget *MEntry5;
-  GtkWidget *MText6;
-  GtkWidget *MEntry6;
-  GtkWidget *MText7;
-  GtkWidget *MEventBox8;
-  GtkWidget *MText8;
-  GtkWidget *MEntry7;
-  GtkWidget *MText9;
-  GtkWidget *MEntry8;
-  GtkWidget *MText10;
+
    
   // startTime is the left of the visible area. Corresponds to the scrollbar
   // value.

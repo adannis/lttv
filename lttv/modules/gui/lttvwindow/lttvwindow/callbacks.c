@@ -43,6 +43,7 @@
 #include <lttvwindow/mainwindow.h>
 #include <lttvwindow/mainwindow-private.h>
 #include <lttvwindow/menu.h>
+#include <lttvwindow/timebar.h>
 #include <lttvwindow/toolbar.h>
 #include <lttvwindow/lttvwindow.h>
 #include <lttvwindow/lttvwindowtraces.h>
@@ -80,6 +81,13 @@ LttvPluginTab *create_new_tab(GtkWidget* widget, gpointer user_data);
 
 static gboolean lttvwindow_process_pending_requests(Tab *tab);
 
+static void on_timebar_starttime_changed(Timebar *timebar,
+				gpointer user_data);
+static void on_timebar_endtime_changed(Timebar *timebar,
+				gpointer user_data);
+static void on_timebar_currenttime_changed(Timebar *timebar,
+				gpointer user_data);
+
 enum {
   CHECKBOX_COLUMN,
   NAME_COLUMN,
@@ -92,262 +100,7 @@ enum
   N_COLUMNS
 };
 
-/* Pasting routines */
 
-static void MEventBox1a_receive(GtkClipboard *clipboard,
-                          const gchar *text,
-                          gpointer data)
-{
-  if(text == NULL) return;
-  Tab *tab = (Tab *)data;
-  gchar buffer[CLIP_BUF];
-  gchar *ptr = buffer, *ptr_ssec, *ptr_snsec, *ptr_esec, *ptr_ensec;
-
-  strncpy(buffer, text, CLIP_BUF);
- 
-  /* start */
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_ssec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-  ptr++;
-
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_snsec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-
-  /* end */ 
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_esec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-  ptr++;
-
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_ensec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry1),
-                            (double)strtoul(ptr_ssec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry2),
-                            (double)strtoul(ptr_snsec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry3),
-                            (double)strtoul(ptr_esec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry4),
-                            (double)strtoul(ptr_ensec, NULL, 10));
-}
-
-static gboolean on_MEventBox1a_paste(GtkWidget *widget, GdkEventButton *event,
-                                gpointer data)
-{
-  Tab *tab = (Tab*)data;
-
-  GtkClipboard *clip = gtk_clipboard_get_for_display(gdk_display_get_default(),
-                                                     GDK_SELECTION_PRIMARY);
-  gtk_clipboard_request_text(clip,
-                             (GtkClipboardTextReceivedFunc)MEventBox1a_receive,
-                             (gpointer)tab);
-  return 0;
-}
-
-
-/* Start */
-static void MEventBox1b_receive(GtkClipboard *clipboard,
-                          const gchar *text,
-                          gpointer data)
-{
-  if(text == NULL) return;
-  Tab *tab = (Tab *)data;
-  gchar buffer[CLIP_BUF];
-  gchar *ptr = buffer, *ptr_sec, *ptr_nsec;
-
-  strncpy(buffer, text, CLIP_BUF);
-  
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_sec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-  ptr++;
-
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_nsec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry1),
-                            (double)strtoul(ptr_sec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry2),
-                            (double)strtoul(ptr_nsec, NULL, 10));
-}
-
-/* Start */
-static gboolean on_MEventBox1b_paste(GtkWidget *widget, GdkEventButton *event,
-                                gpointer data)
-{
-  Tab *tab = (Tab*)data;
-
-  GtkClipboard *clip = gtk_clipboard_get_for_display(gdk_display_get_default(),
-                                                     GDK_SELECTION_PRIMARY);
-  gtk_clipboard_request_text(clip,
-                             (GtkClipboardTextReceivedFunc)MEventBox1b_receive,
-                             (gpointer)tab);
-  return 0;
-}
-
-/* End */
-static void MEventBox3b_receive(GtkClipboard *clipboard,
-                          const gchar *text,
-                          gpointer data)
-{
-  if(text == NULL) return;
-  Tab *tab = (Tab *)data;
-  gchar buffer[CLIP_BUF];
-  gchar *ptr = buffer, *ptr_sec, *ptr_nsec;
-
-  strncpy(buffer, text, CLIP_BUF);
-  
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_sec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-  ptr++;
-
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_nsec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry3),
-                            (double)strtoul(ptr_sec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry4),
-                            (double)strtoul(ptr_nsec, NULL, 10));
-}
-
-/* End */
-static gboolean on_MEventBox3b_paste(GtkWidget *widget, GdkEventButton *event,
-                                gpointer data)
-{
-  Tab *tab = (Tab*)data;
-
-  GtkClipboard *clip = gtk_clipboard_get_for_display(gdk_display_get_default(),
-                                                     GDK_SELECTION_PRIMARY);
-  gtk_clipboard_request_text(clip,
-                             (GtkClipboardTextReceivedFunc)MEventBox3b_receive,
-                             (gpointer)tab);
-  return 0;
-}
-
-/* Current */
-static void MEventBox5b_receive(GtkClipboard *clipboard,
-                          const gchar *text,
-                          gpointer data)
-{
-  if(text == NULL) return;
-  Tab *tab = (Tab *)data;
-  gchar buffer[CLIP_BUF];
-  gchar *ptr = buffer, *ptr_sec, *ptr_nsec;
-
-  strncpy(buffer, text, CLIP_BUF);
-  
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_sec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-  ptr++;
-
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_nsec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry5),
-                            (double)strtoul(ptr_sec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry6),
-                            (double)strtoul(ptr_nsec, NULL, 10));
-}
-
-/* Current */
-static gboolean on_MEventBox5b_paste(GtkWidget *widget, GdkEventButton *event,
-                                gpointer data)
-{
-  Tab *tab = (Tab*)data;
-
-  GtkClipboard *clip = gtk_clipboard_get_for_display(gdk_display_get_default(),
-                                                     GDK_SELECTION_PRIMARY);
-  gtk_clipboard_request_text(clip,
-                             (GtkClipboardTextReceivedFunc)MEventBox5b_receive,
-                             (gpointer)tab);
-  return 0;
-}
-
-/* Interval */
-static void MEventBox8_receive(GtkClipboard *clipboard,
-                          const gchar *text,
-                          gpointer data)
-{
-  if(text == NULL) return;
-  Tab *tab = (Tab *)data;
-  gchar buffer[CLIP_BUF];
-  gchar *ptr = buffer, *ptr_sec, *ptr_nsec;
-
-  strncpy(buffer, text, CLIP_BUF);
-  
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_sec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-  ptr++;
-
-  while(!isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                       /* remove leading junk */
-  ptr_nsec = ptr;
-  while(isdigit(*ptr) && ptr < buffer+CLIP_BUF-1) ptr++;
-                                                 /* read all the first number */
-  *ptr = '\0';
-
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry7),
-                            (double)strtoul(ptr_sec, NULL, 10));
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry8),
-                            (double)strtoul(ptr_nsec, NULL, 10));
-}
-
-/* Interval */
-static gboolean on_MEventBox8_paste(GtkWidget *widget, GdkEventButton *event,
-                                gpointer data)
-{
-  Tab *tab = (Tab*)data;
-
-  GtkClipboard *clip = gtk_clipboard_get_for_display(gdk_display_get_default(),
-                                                     GDK_SELECTION_PRIMARY);
-  gtk_clipboard_request_text(clip,
-                             (GtkClipboardTextReceivedFunc)MEventBox8_receive,
-                             (gpointer)tab);
-  return 0;
-}
 
 #if 0
 static void on_top_notify(GObject    *gobject,
@@ -3490,108 +3243,15 @@ void time_change_manager               (Tab *tab,
                 ltt_time_sub(start_time, time_span.start_time)) /* value */);
 
   /* set the time bar. */
-  /* start seconds */
-  gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry1),
-                            (double)time_span.start_time.tv_sec,
-                            (double)time_span.end_time.tv_sec);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry1),
-                            (double)start_time.tv_sec);
 
-  /* start nanoseconds */
-  if(start_time.tv_sec == time_span.start_time.tv_sec) {
-    /* can be both beginning and end at the same time. */
-    if(start_time.tv_sec == time_span.end_time.tv_sec) {
-      /* If we are at the end, max nsec to end..  -1 (not zero length) */
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry2),
-                                (double)time_span.start_time.tv_nsec,
-                                (double)time_span.end_time.tv_nsec-1);
-    } else {
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry2),
-                                (double)time_span.start_time.tv_nsec,
-                                (double)NANOSECONDS_PER_SECOND-1);
-    }
-  } else if(start_time.tv_sec == time_span.end_time.tv_sec) {
-      /* If we are at the end, max nsec to end..  -1 (not zero length) */
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry2),
-                                0.0,
-                                (double)time_span.end_time.tv_nsec-1);
-  } else /* anywhere else */
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry2),
-                              0.0,
-                              (double)NANOSECONDS_PER_SECOND-1);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry2),
-                            (double)start_time.tv_nsec);
 
-  /* end seconds */
-  gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry3),
-                            (double)time_span.start_time.tv_sec,
-                            (double)time_span.end_time.tv_sec);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry3),
-                            (double)end_time.tv_sec);
+  timebar_set_minmax_time(TIMEBAR(tab->MTimebar),
+			  &time_span.start_time,
+			  &time_span.end_time );
+  timebar_set_start_time(TIMEBAR(tab->MTimebar),&start_time);
+  timebar_set_end_time(TIMEBAR(tab->MTimebar),&end_time);
 
-  /* end nanoseconds */
-  if(end_time.tv_sec == time_span.start_time.tv_sec) {
-    /* can be both beginning and end at the same time. */
-    if(end_time.tv_sec == time_span.end_time.tv_sec) {
-      /* If we are at the end, max nsec to end.. */
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry4),
-                                (double)time_span.start_time.tv_nsec+1,
-                                (double)time_span.end_time.tv_nsec);
-    } else {
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry4),
-                                (double)time_span.start_time.tv_nsec+1,
-                                (double)NANOSECONDS_PER_SECOND-1);
-    }
-  }
-  else if(end_time.tv_sec == time_span.end_time.tv_sec) {
-    /* If we are at the end, max nsec to end.. */
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry4),
-                              0.0,
-                              (double)time_span.end_time.tv_nsec);
-  }
-  else /* anywhere else */
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry4),
-                              0.0,
-                              (double)NANOSECONDS_PER_SECOND-1);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry4),
-                            (double)end_time.tv_nsec);
 
-  /* width seconds */
-  if(time_width.tv_nsec == 0) {
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry7),
-                              (double)1,
-                              (double)upper.tv_sec);
-  } else {
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry7),
-                              (double)0,
-                              (double)upper.tv_sec);
-  }
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry7),
-                            (double)time_width.tv_sec);
-
-  /* width nanoseconds */
-  if(time_width.tv_sec == upper.tv_sec) {
-    if(time_width.tv_sec == 0) {
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry8),
-                                (double)1,
-                                (double)upper.tv_nsec);
-    } else {
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry8),
-                                (double)0,
-                                (double)upper.tv_nsec);
-    }
-  }
-  else if(time_width.tv_sec == 0) {
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry8),
-                              1.0,
-                              (double)upper.tv_nsec);
-  }
-  else /* anywhere else */
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry8),
-                              0.0,
-                              (double)NANOSECONDS_PER_SECOND-1);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry8),
-                            (double)time_width.tv_nsec);
 
   /* call viewer hooks for new time window */
   set_time_window(tab, &new_time_window);
@@ -3600,322 +3260,6 @@ void time_change_manager               (Tab *tab,
 }
 
 
-/* value changed for frame start s
- *
- * Check time span : if ns is out of range, clip it the nearest good value.
- */
-void
-on_MEntry1_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
-{
-  Tab *tab =(Tab *)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-
-  TimeWindow new_time_window = tab->time_window;
- 
-  LttTime end_time = new_time_window.end_time;
-
-  new_time_window.start_time.tv_sec = value;
-
-  /* start nanoseconds */
-  if(new_time_window.start_time.tv_sec == time_span.start_time.tv_sec) {
-    if(new_time_window.start_time.tv_sec == time_span.end_time.tv_sec) {
-      if(new_time_window.start_time.tv_nsec > time_span.end_time.tv_nsec)
-        new_time_window.start_time.tv_nsec = time_span.end_time.tv_nsec-1;
-      if(new_time_window.start_time.tv_nsec < time_span.start_time.tv_nsec)
-        new_time_window.start_time.tv_nsec = time_span.start_time.tv_nsec;
-    } else {
-      if(new_time_window.start_time.tv_nsec < time_span.start_time.tv_nsec)
-        new_time_window.start_time.tv_nsec = time_span.start_time.tv_nsec;
-    }
-  }
-  else if(new_time_window.start_time.tv_sec == time_span.end_time.tv_sec) {
-    if(new_time_window.start_time.tv_nsec > time_span.end_time.tv_nsec)
-      new_time_window.start_time.tv_nsec = time_span.end_time.tv_nsec-1;
-  }
-
-  if(ltt_time_compare(new_time_window.start_time, end_time) >= 0) {
-    /* Then, we must push back end time : keep the same time width
-     * if possible, else end traceset time */
-    end_time = LTT_TIME_MIN(ltt_time_add(new_time_window.start_time,
-                                         new_time_window.time_width),
-                            time_span.end_time);
-  }
-
-  /* Fix the time width to fit start time and end time */
-  new_time_window.time_width = ltt_time_sub(end_time,
-                                            new_time_window.start_time);
-  new_time_window.time_width_double =
-              ltt_time_to_double(new_time_window.time_width);
-
-  new_time_window.end_time = end_time;
-
-  time_change_manager(tab, new_time_window);
-
-}
-
-void
-on_MEntry2_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
-{
-  Tab *tab =(Tab *)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-
-  TimeWindow new_time_window = tab->time_window;
- 
-  LttTime end_time = new_time_window.end_time;
-
-  new_time_window.start_time.tv_nsec = value;
-
-  if(ltt_time_compare(new_time_window.start_time, end_time) >= 0) {
-    /* Then, we must push back end time : keep the same time width
-     * if possible, else end traceset time */
-    end_time = LTT_TIME_MIN(ltt_time_add(new_time_window.start_time,
-                                         new_time_window.time_width),
-                            time_span.end_time);
-  }
-
-  /* Fix the time width to fit start time and end time */
-  new_time_window.time_width = ltt_time_sub(end_time,
-                                            new_time_window.start_time);
-  new_time_window.time_width_double =
-              ltt_time_to_double(new_time_window.time_width);
-
-  new_time_window.end_time = end_time;
-
-  time_change_manager(tab, new_time_window);
-
-}
-
-void
-on_MEntry3_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
-{
-  Tab *tab =(Tab *)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-
-  TimeWindow new_time_window = tab->time_window;
- 
-  LttTime end_time = new_time_window.end_time;
-
-  end_time.tv_sec = value;
-
-  /* end nanoseconds */
-  if(end_time.tv_sec == time_span.start_time.tv_sec) {
-    if(end_time.tv_sec == time_span.end_time.tv_sec) {
-      if(end_time.tv_nsec > time_span.end_time.tv_nsec)
-        end_time.tv_nsec = time_span.end_time.tv_nsec;
-      if(end_time.tv_nsec < time_span.start_time.tv_nsec)
-        end_time.tv_nsec = time_span.start_time.tv_nsec+1;
-    } else {
-      if(end_time.tv_nsec < time_span.start_time.tv_nsec)
-        end_time.tv_nsec = time_span.start_time.tv_nsec+1;
-    }
-  }
-  else if(end_time.tv_sec == time_span.end_time.tv_sec) {
-    if(end_time.tv_nsec > time_span.end_time.tv_nsec)
-      end_time.tv_nsec = time_span.end_time.tv_nsec;
-  }
-
-  if(ltt_time_compare(new_time_window.start_time, end_time) >= 0) {
-    /* Then, we must push front start time : keep the same time width
-     * if possible, else end traceset time */
-    new_time_window.start_time = LTT_TIME_MAX(
-                                  ltt_time_sub(end_time,
-                                               new_time_window.time_width),
-                                  time_span.start_time);
-  }
-
-  /* Fix the time width to fit start time and end time */
-  new_time_window.time_width = ltt_time_sub(end_time,
-                                            new_time_window.start_time);
-  new_time_window.time_width_double =
-              ltt_time_to_double(new_time_window.time_width);
-
-  new_time_window.end_time = end_time;
-  
-  time_change_manager(tab, new_time_window);
-
-}
-
-void
-on_MEntry4_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
-{
-  Tab *tab =(Tab *)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-
-  TimeWindow new_time_window = tab->time_window;
- 
-  LttTime end_time = new_time_window.end_time;
-
-  end_time.tv_nsec = value;
-
-  if(ltt_time_compare(new_time_window.start_time, end_time) >= 0) {
-    /* Then, we must push front start time : keep the same time width
-     * if possible, else end traceset time */
-    new_time_window.start_time = LTT_TIME_MAX(
-                                ltt_time_sub(end_time,
-                                             new_time_window.time_width),
-                                time_span.start_time);
-  }
-
-  /* Fix the time width to fit start time and end time */
-  new_time_window.time_width = ltt_time_sub(end_time,
-                                            new_time_window.start_time);
-  new_time_window.time_width_double =
-              ltt_time_to_double(new_time_window.time_width);
-  new_time_window.end_time = end_time;
-
-  time_change_manager(tab, new_time_window);
-
-}
-
-/* value changed for time frame interval s
- *
- * Check time span : if ns is out of range, clip it the nearest good value.
- */
-void
-on_MEntry7_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
-{
-  Tab *tab =(Tab *)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-  LttTime    current_time, time_delta;
-  TimeWindow new_time_window =  tab->time_window;
-  current_time = tab->current_time;
-  
-  time_delta = ltt_time_sub(time_span.end_time,time_span.start_time);
-  new_time_window.time_width.tv_sec = value;
-  new_time_window.time_width_double = 
-                 ltt_time_to_double(new_time_window.time_width);
-  if(ltt_time_compare(new_time_window.time_width,time_delta) > 0)
-  { /* Case where zoom out is bigger than trace length */
-    new_time_window.start_time = time_span.start_time;
-    new_time_window.time_width = time_delta;
-    new_time_window.time_width_double = ltt_time_to_double(time_delta);
-    new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                          new_time_window.time_width) ;
-  }
-  else
-  {
-    /* Center the image on the current time */
-    new_time_window.start_time = 
-      ltt_time_sub(current_time,
-          ltt_time_from_double(new_time_window.time_width_double/2.0));
-    new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                          new_time_window.time_width) ;
-    /* If on borders, don't fall off */
-    if(ltt_time_compare(new_time_window.start_time, time_span.start_time) <0
-     || ltt_time_compare(new_time_window.start_time, time_span.end_time) >0)
-    {
-      new_time_window.start_time = time_span.start_time;
-      new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                          new_time_window.time_width) ;
-    }
-    else 
-    {
-      if(ltt_time_compare(new_time_window.end_time,
-                          time_span.end_time) > 0
-       || ltt_time_compare(new_time_window.end_time,
-                          time_span.start_time) < 0)
-      {
-        new_time_window.start_time = 
-                ltt_time_sub(time_span.end_time, new_time_window.time_width);
-
-        new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                                new_time_window.time_width) ;
-      }
-    }
-    
-  }
-
-  if(ltt_time_compare(new_time_window.time_width, ltt_time_zero) == 0) {
-    g_warning("Zoom more than 1 ns impossible");
-  } else {
-   time_change_manager(tab, new_time_window);
-  }
-}
-
-void
-on_MEntry8_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
-{
-  Tab *tab =(Tab *)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-  LttTime    current_time, time_delta;
-  TimeWindow new_time_window =  tab->time_window;
-  current_time = tab->current_time;
-  
-  time_delta = ltt_time_sub(time_span.end_time,time_span.start_time);
-  new_time_window.time_width.tv_nsec = value;
-  new_time_window.time_width_double = 
-                 ltt_time_to_double(new_time_window.time_width);
-  if(ltt_time_compare(new_time_window.time_width,time_delta) > 0)
-  { /* Case where zoom out is bigger than trace length */
-    new_time_window.start_time = time_span.start_time;
-    new_time_window.time_width = time_delta;
-    new_time_window.time_width_double = ltt_time_to_double(time_delta);
-    new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                          new_time_window.time_width) ;
-  }
-  else
-  {
-    /* Center the image on the current time */
-    new_time_window.start_time = 
-      ltt_time_sub(current_time,
-          ltt_time_from_double(new_time_window.time_width_double/2.0));
-    new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                          new_time_window.time_width) ;
-    /* If on borders, don't fall off */
-    if(ltt_time_compare(new_time_window.start_time, time_span.start_time) <0
-     || ltt_time_compare(new_time_window.start_time, time_span.end_time) >0)
-    {
-      new_time_window.start_time = time_span.start_time;
-      new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                          new_time_window.time_width) ;
-    }
-    else 
-    {
-      if(ltt_time_compare(new_time_window.end_time,
-                          time_span.end_time) > 0
-       || ltt_time_compare(new_time_window.end_time,
-                          time_span.start_time) < 0)
-      {
-        new_time_window.start_time = 
-                ltt_time_sub(time_span.end_time, new_time_window.time_width);
-
-        new_time_window.end_time = ltt_time_add(new_time_window.start_time,
-                                                new_time_window.time_width) ;
-      }
-    }
-    
-  }
-
-  if(ltt_time_compare(new_time_window.time_width, ltt_time_zero) == 0) {
-    g_warning("Zoom more than 1 ns impossible");
-  } else {
-   time_change_manager(tab, new_time_window);
-  }
-}
 
 
 
@@ -3930,39 +3274,7 @@ void current_time_change_manager       (Tab *tab,
   LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
   TimeInterval time_span = tsc->time_span;
 
-  /* current seconds */
-  gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry5),
-                            (double)time_span.start_time.tv_sec,
-                            (double)time_span.end_time.tv_sec);
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry5),
-                            (double)new_current_time.tv_sec);
-
-
-  /* start nanoseconds */
-  if(new_current_time.tv_sec == time_span.start_time.tv_sec) {
-    /* can be both beginning and end at the same time. */
-    if(new_current_time.tv_sec == time_span.end_time.tv_sec) {
-      /* If we are at the end, max nsec to end..  */
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry6),
-                                (double)time_span.start_time.tv_nsec,
-                                (double)time_span.end_time.tv_nsec);
-    } else {
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry6),
-                                (double)time_span.start_time.tv_nsec,
-                                (double)NANOSECONDS_PER_SECOND-1);
-    }
-  } else if(new_current_time.tv_sec == time_span.end_time.tv_sec) {
-      /* If we are at the end, max nsec to end..  */
-      gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry6),
-                                0.0,
-                                (double)time_span.end_time.tv_nsec);
-  } else /* anywhere else */
-    gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry6),
-                              0.0,
-                              (double)NANOSECONDS_PER_SECOND-1);
-
-  gtk_spin_button_set_value(GTK_SPIN_BUTTON(tab->MEntry6),
-                            (double)new_current_time.tv_nsec);
+  timebar_set_current_time(TIMEBAR(tab->MTimebar), &new_current_time);
 
   set_current_time(tab, &new_current_time);
 
@@ -3988,50 +3300,87 @@ void current_position_change_manager(Tab *tab,
 }
 
 
-void
-on_MEntry5_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
+static void on_timebar_starttime_changed(Timebar *timebar,
+				gpointer user_data)
 {
-  Tab *tab = (Tab*)user_data;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-  LttTime new_current_time = tab->current_time;
-  new_current_time.tv_sec = value;
+	Tab *tab = (Tab *)user_data;
+	LttvTracesetContext * tsc =
+		LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
+	TimeInterval time_span = tsc->time_span;
 
-  /* current nanoseconds */
-  if(new_current_time.tv_sec == time_span.start_time.tv_sec) {
-    if(new_current_time.tv_sec == time_span.end_time.tv_sec) {
-      if(new_current_time.tv_nsec > time_span.end_time.tv_nsec)
-        new_current_time.tv_nsec = time_span.end_time.tv_nsec;
-      if(new_current_time.tv_nsec < time_span.start_time.tv_nsec)
-        new_current_time.tv_nsec = time_span.start_time.tv_nsec;
-    } else {
-      if(new_current_time.tv_nsec < time_span.start_time.tv_nsec)
-        new_current_time.tv_nsec = time_span.start_time.tv_nsec;
-    }
-  }
-  else if(new_current_time.tv_sec == time_span.end_time.tv_sec) {
-    if(new_current_time.tv_nsec > time_span.end_time.tv_nsec)
-      new_current_time.tv_nsec = time_span.end_time.tv_nsec;
-  }
+	TimeWindow new_time_window = tab->time_window;
+	new_time_window.start_time = timebar_get_start_time(timebar);
 
-  current_time_change_manager(tab, new_current_time);
+	LttTime end_time = new_time_window.end_time;
+
+	/* TODO ybrosseau 2010-12-02: This if should have been checked 
+	   by the timebar already */
+	if(ltt_time_compare(new_time_window.start_time, end_time) >= 0) {
+		/* Then, we must push back end time : keep the same time width
+		 * if possible, else end traceset time */
+		end_time = LTT_TIME_MIN(ltt_time_add(new_time_window.start_time,
+						    new_time_window.time_width),
+					time_span.end_time);
+	}
+
+	/* Fix the time width to fit start time and end time */
+	new_time_window.time_width = ltt_time_sub(end_time,
+						new_time_window.start_time);
+	
+	new_time_window.time_width_double =
+		ltt_time_to_double(new_time_window.time_width);
+	
+	new_time_window.end_time = end_time;
+
+	/* Notify the time_manager */
+	time_change_manager(tab, new_time_window);
+
 }
 
-void
-on_MEntry6_value_changed               (GtkSpinButton *spinbutton,
-                                        gpointer user_data)
+static void on_timebar_endtime_changed(Timebar *timebar,
+				gpointer user_data)
 {
-  Tab *tab = (Tab*)user_data;
-  gint value = gtk_spin_button_get_value_as_int(spinbutton);
-  LttTime new_current_time = tab->current_time;
-  new_current_time.tv_nsec = value;
+	Tab *tab = (Tab *)user_data;
+	LttvTracesetContext * tsc = 
+		LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
+	TimeInterval time_span = tsc->time_span;
 
-  current_time_change_manager(tab, new_current_time);
+	TimeWindow new_time_window = tab->time_window;
+
+	LttTime end_time = timebar_get_end_time(timebar);
+
+	/* TODO ybrosseau 2010-12-02: This if should have been 
+	   checked by the timebar already */
+	if(ltt_time_compare(new_time_window.start_time, end_time) >= 0) {
+		/* Then, we must push front start time : keep the same time 
+		   width if possible, else end traceset time */
+		new_time_window.start_time = LTT_TIME_MAX(
+			ltt_time_sub(end_time,
+				new_time_window.time_width),
+			time_span.start_time);
+	}
+
+	/* Fix the time width to fit start time and end time */
+	new_time_window.time_width = ltt_time_sub(end_time,
+						new_time_window.start_time);
+	
+	new_time_window.time_width_double =
+		ltt_time_to_double(new_time_window.time_width);
+	
+	new_time_window.end_time = end_time;
+
+	/* Notify the time_manager */
+	time_change_manager(tab, new_time_window);  
 }
-
+static void on_timebar_currenttime_changed(Timebar *timebar,
+				gpointer user_data)
+{
+	Tab *tab = (Tab *)user_data;
+	
+	LttTime new_current_time = timebar_get_current_time(timebar);
+	
+	current_time_change_manager(tab, new_current_time);
+}
 
 void scroll_value_changed_cb(GtkWidget *scrollbar,
                              gpointer user_data)
@@ -4470,8 +3819,6 @@ void tab_destructor(LttvPluginTab * ptab)
   LttvTrace * trace;
   Tab *tab = ptab->tab;
 
-  gtk_object_destroy(GTK_OBJECT(tab->tooltips));
-  
   if(tab->attributes)
     g_object_unref(tab->attributes);
 
@@ -4615,180 +3962,8 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
 //  }
 
   /* Create the timebar */
-  {
-    tab->MTimebar = gtk_hbox_new(FALSE, 2);
-    gtk_widget_show(tab->MTimebar);
-    tab->tooltips = gtk_tooltips_new();
-
-    tab->MEventBox1a = gtk_event_box_new();
-    gtk_widget_show(tab->MEventBox1a);
-    gtk_tooltips_set_tip(tab->tooltips, tab->MEventBox1a, 
-        "Paste Start and End Times Here", "");
-    tab->MText1a = gtk_label_new("Time Frame ");
-    gtk_widget_show(tab->MText1a);
-    gtk_container_add(GTK_CONTAINER(tab->MEventBox1a), tab->MText1a);
-    tab->MEventBox1b = gtk_event_box_new();
-    gtk_widget_show(tab->MEventBox1b);
-    gtk_tooltips_set_tip(tab->tooltips, tab->MEventBox1b, 
-        "Paste Start Time Here", "");
-    tab->MText1b = gtk_label_new("start: ");
-    gtk_widget_show(tab->MText1b);
-    gtk_container_add(GTK_CONTAINER(tab->MEventBox1b), tab->MText1b);
-    tab->MText2 = gtk_label_new("s");
-    gtk_widget_show(tab->MText2);
-    tab->MText3a = gtk_label_new("ns");
-    gtk_widget_show(tab->MText3a);
-
-    tab->MEventBox3b = gtk_event_box_new();
-    gtk_widget_show(tab->MEventBox3b);
-    gtk_tooltips_set_tip(tab->tooltips, tab->MEventBox3b, 
-        "Paste End Time Here", "");
-    tab->MText3b = gtk_label_new("end:");
-    gtk_widget_show(tab->MText3b);
-    gtk_container_add(GTK_CONTAINER(tab->MEventBox3b), tab->MText3b);
-    tab->MText4 = gtk_label_new("s");
-    gtk_widget_show(tab->MText4);
-    tab->MText5a = gtk_label_new("ns");
-    gtk_widget_show(tab->MText5a);
-
-    tab->MEventBox8 = gtk_event_box_new();
-    gtk_widget_show(tab->MEventBox8);
-    gtk_tooltips_set_tip(tab->tooltips, tab->MEventBox8, 
-        "Paste Time Interval here", "");
-    tab->MText8 = gtk_label_new("Time Interval:");
-    gtk_widget_show(tab->MText8);
-    gtk_container_add(GTK_CONTAINER(tab->MEventBox8), tab->MText8);
-    tab->MText9 = gtk_label_new("s");
-    gtk_widget_show(tab->MText9);
-    tab->MText10 = gtk_label_new("ns");
-    gtk_widget_show(tab->MText10);
-
-    tab->MEventBox5b = gtk_event_box_new();
-    gtk_widget_show(tab->MEventBox5b);
-    gtk_tooltips_set_tip(tab->tooltips, tab->MEventBox5b, 
-        "Paste Current Time Here", "");
-    tab->MText5b = gtk_label_new("Current Time:");
-    gtk_widget_show(tab->MText5b);
-    gtk_container_add(GTK_CONTAINER(tab->MEventBox5b), tab->MText5b);
-    tab->MText6 = gtk_label_new("s");
-    gtk_widget_show(tab->MText6);
-    tab->MText7 = gtk_label_new("ns");
-    gtk_widget_show(tab->MText7);
-
-    tab->MEntry1 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry1),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry1),TRUE);
-    gtk_widget_show(tab->MEntry1);
-    tab->MEntry2 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry2),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry2),TRUE);
-    gtk_widget_show(tab->MEntry2);
-    tab->MEntry3 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry3),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry3),TRUE);
-    gtk_widget_show(tab->MEntry3);
-    tab->MEntry4 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry4),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry4),TRUE);
-    gtk_widget_show(tab->MEntry4);
-    tab->MEntry5 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry5),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry5),TRUE);
-    gtk_widget_show(tab->MEntry5);
-    tab->MEntry6 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry6),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry6),TRUE);
-    gtk_widget_show(tab->MEntry6);
-    tab->MEntry7 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry7),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry7),TRUE);
-    gtk_widget_show(tab->MEntry7);
-    tab->MEntry8 = gtk_spin_button_new_with_range(0.0, 1.0, 1.0);
-    gtk_spin_button_set_digits(GTK_SPIN_BUTTON(tab->MEntry8),0);
-    gtk_spin_button_set_snap_to_ticks(GTK_SPIN_BUTTON(tab->MEntry8),TRUE);
-    gtk_widget_show(tab->MEntry8);
-    
-    GtkWidget *temp_widget;
-    
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEventBox1a, FALSE,
-                         FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEventBox1b, FALSE,
-                         FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEntry1, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MText2, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEntry2, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MText3a, FALSE, FALSE, 0);
-    temp_widget = gtk_vseparator_new();
-    gtk_widget_show(temp_widget);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), temp_widget, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEventBox3b, FALSE,
-                         FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEntry3, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MText4, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEntry4, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MText5a, FALSE, FALSE, 0);
-    temp_widget = gtk_vseparator_new();
-    gtk_widget_show(temp_widget);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), temp_widget, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEventBox8, FALSE,
-                         FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEntry7, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MText9, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MEntry8, FALSE, FALSE, 0);
-    gtk_box_pack_start (GTK_BOX (tab->MTimebar), tab->MText10, FALSE, FALSE, 0);
-
-    temp_widget = gtk_vseparator_new();
-    gtk_widget_show(temp_widget);
-    gtk_box_pack_end (GTK_BOX (tab->MTimebar), tab->MText7, FALSE, FALSE, 0);
-    gtk_box_pack_end (GTK_BOX (tab->MTimebar), tab->MEntry6, FALSE, FALSE, 0);
-    gtk_box_pack_end (GTK_BOX (tab->MTimebar), tab->MText6, FALSE, FALSE, 0);
-    gtk_box_pack_end (GTK_BOX (tab->MTimebar), tab->MEntry5, FALSE, FALSE, 0);
-    gtk_box_pack_end (GTK_BOX (tab->MTimebar), tab->MEventBox5b, FALSE,
-                         FALSE, 0);
-    gtk_box_pack_end (GTK_BOX (tab->MTimebar), temp_widget, FALSE, FALSE, 0);
-    
-
-    //GtkWidget *test = gtk_button_new_with_label("drop");
-    //gtk_button_set_relief(GTK_BUTTON(test), GTK_RELIEF_NONE);
-    //gtk_widget_show(test);
-    //gtk_box_pack_end(GTK_BOX (tab->MTimebar), test, FALSE, FALSE, 0);
-    //gtk_widget_add_events(tab->MText1, GDK_ALL_EVENTS_MASK);//GDK_BUTTON_PRESS_MASK);
-    /*GtkWidget *event_box = gtk_event_box_new();
-    gtk_widget_show(event_box);
-    gtk_tooltips_set_tip(tooltips, event_box, 
-        "Paste Current Time Here", "");
-    gtk_box_pack_end(GTK_BOX (tab->MTimebar), event_box, FALSE, FALSE, 0);
-    GtkWidget *test = gtk_label_new("drop");
-    gtk_container_add(GTK_CONTAINER(event_box), test);
-    gtk_widget_show(test);
-    g_signal_connect (G_OBJECT(event_box),
-                      "button-press-event",
-                      G_CALLBACK (on_MText1_paste),
-                      (gpointer)tab);
-*/
-
-    g_signal_connect (G_OBJECT(tab->MEventBox1a),
-                      "button-press-event",
-                      G_CALLBACK (on_MEventBox1a_paste),
-                      (gpointer)tab);
-
-    g_signal_connect (G_OBJECT(tab->MEventBox1b),
-                      "button-press-event",
-                      G_CALLBACK (on_MEventBox1b_paste),
-                      (gpointer)tab);
-    g_signal_connect (G_OBJECT(tab->MEventBox3b),
-                      "button-press-event",
-                      G_CALLBACK (on_MEventBox3b_paste),
-                      (gpointer)tab);
-    g_signal_connect (G_OBJECT(tab->MEventBox5b),
-                      "button-press-event",
-                      G_CALLBACK (on_MEventBox5b_paste),
-                      (gpointer)tab);
-    g_signal_connect (G_OBJECT(tab->MEventBox8),
-                      "button-press-event",
-                      G_CALLBACK (on_MEventBox8_paste),
-                      (gpointer)tab);
-  }
+  
+  tab->MTimebar = timebar_new(); 
 
   gtk_box_pack_end(GTK_BOX(tab->vbox),
                    tab->scrollbar,
@@ -4841,8 +4016,10 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
 
   gtk_widget_show(tab->label);
   gtk_widget_show(tab->scrollbar);
+  gtk_widget_show(tab->MTimebar);
   gtk_widget_show(tab->viewer_container);
   gtk_widget_show(tab->vbox);
+
   //gtk_widget_show(tab->multivpaned);
 
 
@@ -4856,30 +4033,14 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
   g_signal_connect(G_OBJECT(tab->scrollbar), "value-changed",
       G_CALLBACK(scroll_value_changed_cb), tab);
 
-  g_signal_connect ((gpointer) tab->MEntry1, "value-changed",
-                    G_CALLBACK (on_MEntry1_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry2, "value-changed",
-                    G_CALLBACK (on_MEntry2_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry3, "value-changed",
-                    G_CALLBACK (on_MEntry3_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry4, "value-changed",
-                    G_CALLBACK (on_MEntry4_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry5, "value-changed",
-                    G_CALLBACK (on_MEntry5_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry6, "value-changed",
-                    G_CALLBACK (on_MEntry6_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry7, "value-changed",
-                    G_CALLBACK (on_MEntry7_value_changed),
-                    tab);
-  g_signal_connect ((gpointer) tab->MEntry8, "value-changed",
-                    G_CALLBACK (on_MEntry8_value_changed),
-                    tab);
+
+  /* Timebar signal handler */
+  g_signal_connect(G_OBJECT(tab->MTimebar), "start-time-changed",
+		  G_CALLBACK(on_timebar_starttime_changed), tab);
+  g_signal_connect(G_OBJECT(tab->MTimebar), "end-time-changed",
+		  G_CALLBACK(on_timebar_endtime_changed), tab);  
+  g_signal_connect(G_OBJECT(tab->MTimebar), "current-time-changed",
+		  G_CALLBACK(on_timebar_currenttime_changed), tab);		    
 
   //g_signal_connect(G_OBJECT(tab->scrollbar), "changed",
   //    G_CALLBACK(scroll_value_changed_cb), tab);

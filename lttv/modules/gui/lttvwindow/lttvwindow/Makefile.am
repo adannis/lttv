@@ -15,6 +15,8 @@ lib_LTLIBRARIES = liblttvwindow.la
 liblttvwindow_la_SOURCES = \
 	toolbar.c\
 	menu.c\
+	timebar.c\
+	timeentry.c\
 	lttvwindow.c \
 	lttvwindowtraces.c \
 	init_module.c \
@@ -36,6 +38,8 @@ lttvwindowinclude_HEADERS = \
 	mainwindow.h\
 	menu.h\
 	toolbar.h\
+	timebar.h\
+	timeentry.h\
 	lttv_plugin_tab.h \
 	lttv_plugin.h
 
