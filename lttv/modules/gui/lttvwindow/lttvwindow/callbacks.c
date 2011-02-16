@@ -3196,7 +3196,6 @@ void time_change_manager               (Tab *tab,
   TimeInterval time_span = tsc->time_span;
   LttTime start_time = new_time_window.start_time;
   LttTime end_time = new_time_window.end_time;
-  LttTime time_width = new_time_window.time_width;
 
   g_assert(ltt_time_compare(start_time, end_time) < 0);
   
@@ -3270,9 +3269,6 @@ void current_time_change_manager       (Tab *tab,
   if(tab->current_time_manager_lock == TRUE) return;
 
   tab->current_time_manager_lock = TRUE;
-
-  LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
 
   timebar_set_current_time(TIMEBAR(tab->MTimebar), &new_current_time);
 
