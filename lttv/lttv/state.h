@@ -43,7 +43,7 @@
    which events have been processed) and a pointer to the current process,
    in the process table, being run on that cpu.
 
-   For each process in the process table, various informations such as exec 
+   For each process in the process table, various information such as exec 
    file name, pid, ppid and creation time are stored. Each process state also
    contains an execution mode stack (e.g. irq within system call, called
    from user mode). */

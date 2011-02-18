@@ -195,7 +195,7 @@ necessary. You will find them in
 core.xml.
 </para>
 <para>
-sysInfo is a script that get informations about the traced computer. It should
+sysInfo is a script that get information about the traced computer. It should
 be invoked like this :
 </para>
 <screen>

@@ -142,7 +142,7 @@ static int write_event_content(void *hook_data, void *call_data)
 
 	/*
 	 * By default, metadata's channel won't be display: it goes directly
-	 * to the next event. You can have metadata's informations with -M
+	 * to the next event. You can have metadata's information with -M
 	 * switch (a_meta option).
 	 */
 	if (!a_meta && ltt_tracefile_name(tfs->parent.tf) ==
@@ -341,7 +341,7 @@ static void init()
 
 	a_meta = FALSE;
 	lttv_option_add("metadata", 'M',
-			"add metadata informations",
+			"add metadata information",
 			"",
 			LTTV_OPT_NONE, &a_meta, NULL, NULL);
 
