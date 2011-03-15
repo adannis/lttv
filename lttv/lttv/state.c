@@ -143,8 +143,11 @@ GQuark
 LttvExecutionMode
 	LTTV_STATE_MODE_UNKNOWN,
 	LTTV_STATE_USER_MODE,
+	LTTV_STATE_MAYBE_USER_MODE,
 	LTTV_STATE_SYSCALL,
+	LTTV_STATE_MAYBE_SYSCALL,
 	LTTV_STATE_TRAP,
+	LTTV_STATE_MAYBE_TRAP,
 	LTTV_STATE_IRQ,
 	LTTV_STATE_SOFT_IRQ;
 
@@ -3016,8 +3019,11 @@ static gboolean schedchange(void *hook_data, void *call_data)
 		if(process->pid == 0
 			&& process->state->t == LTTV_STATE_MODE_UNKNOWN) {
 			if(pid_out == 0) {
-				/* Scheduling out of pid 0 at beginning of the trace :
-				 * we know for sure it is in syscall mode at this point. */
+				/*
+				 * Scheduling out of pid 0 at beginning of the trace.
+				 * We are typically in system call mode at this point although
+				 * (FIXME) we might be in a trap handler.
+				 */
 				g_assert(process->execution_stack->len == 1);
 				process->state->t = LTTV_STATE_SYSCALL;
 				process->state->s = LTTV_STATE_WAIT;
@@ -3363,7 +3369,7 @@ static void fix_process(gpointer key, gpointer value, gpointer user_data)
 
 	if(process->type == LTTV_STATE_KERNEL_THREAD) {
 		es = &g_array_index(process->execution_stack, LttvExecutionState, 0);
-		if(es->t == LTTV_STATE_MODE_UNKNOWN) {
+		if(es->t == LTTV_STATE_MAYBE_SYSCALL) {
 			es->t = LTTV_STATE_SYSCALL;
 			es->n = LTTV_STATE_SUBMODE_NONE;
 			es->entry = *timestamp;
@@ -3374,7 +3380,7 @@ static void fix_process(gpointer key, gpointer value, gpointer user_data)
 		}
 	} else {
 		es = &g_array_index(process->execution_stack, LttvExecutionState, 0);
-		if(es->t == LTTV_STATE_MODE_UNKNOWN) {
+		if(es->t == LTTV_STATE_MAYBE_USER_MODE) {
 			es->t = LTTV_STATE_USER_MODE;
 			es->n = LTTV_STATE_SUBMODE_NONE;
 			es->entry = *timestamp;
@@ -3520,14 +3526,11 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 				es = process->state = &g_array_index(process->execution_stack,
 						LttvExecutionState, 0);
 				process->type = LTTV_STATE_KERNEL_THREAD;
-				es->t = LTTV_STATE_MODE_UNKNOWN;
+				es->t = LTTV_STATE_MAYBE_SYSCALL;
 				es->s = LTTV_STATE_UNNAMED;
 				es->n = LTTV_STATE_SUBMODE_UNKNOWN;
-#if 0
-				es->t = LTTV_STATE_SYSCALL;
-				es->s = status;
-				es->n = submode;
-#endif //0
+				//es->s = status;
+				//es->n = submode;
 			} else {
 				/* User space process :
 				 * bottom : user mode
@@ -3545,14 +3548,11 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 				process->execution_stack = g_array_set_size(process->execution_stack, 1);
 				es = process->state = &g_array_index(process->execution_stack,
 						LttvExecutionState, 0);
-				es->t = LTTV_STATE_MODE_UNKNOWN;
+				es->t = LTTV_STATE_MAYBE_USER_MODE;
 				es->s = LTTV_STATE_UNNAMED;
 				es->n = LTTV_STATE_SUBMODE_UNKNOWN;
-	#if 0
-				es->t = LTTV_STATE_USER_MODE;
-				es->s = status;
-				es->n = submode;
-	#endif //0
+				//es->s = status;
+				//es->n = submode;
 			}
 	#if 0
 			/* UNKNOWN STATE */
@@ -4436,8 +4436,11 @@ static void module_init()
 	LTTV_STATE_UNBRANDED = g_quark_from_string("");
 	LTTV_STATE_MODE_UNKNOWN = g_quark_from_string("MODE_UNKNOWN");
 	LTTV_STATE_USER_MODE = g_quark_from_string("USER_MODE");
+	LTTV_STATE_MAYBE_USER_MODE = g_quark_from_string("MAYBE_USER_MODE");
 	LTTV_STATE_SYSCALL = g_quark_from_string("SYSCALL");
+	LTTV_STATE_MAYBE_SYSCALL = g_quark_from_string("MAYBE_SYSCALL");
 	LTTV_STATE_TRAP = g_quark_from_string("TRAP");
+	LTTV_STATE_MAYBE_TRAP = g_quark_from_string("MAYBE_TRAP");
 	LTTV_STATE_IRQ = g_quark_from_string("IRQ");
 	LTTV_STATE_SOFT_IRQ = g_quark_from_string("SOFTIRQ");
 	LTTV_STATE_SUBMODE_UNKNOWN = g_quark_from_string("UNKNOWN");

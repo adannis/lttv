@@ -245,6 +245,12 @@ static inline PropertiesLine prepare_s_e_line(LttvProcessState *process)
       prop_line.color = drawing_colors[COL_RUN_IRQ];
     else if(process->state->t == LTTV_STATE_SOFT_IRQ)
       prop_line.color = drawing_colors[COL_RUN_SOFT_IRQ];
+    else if(process->state->t == LTTV_STATE_MAYBE_SYSCALL)
+      prop_line.color = drawing_colors[COL_MODE_UNKNOWN];
+    else if(process->state->t == LTTV_STATE_MAYBE_USER_MODE)
+      prop_line.color = drawing_colors[COL_MODE_UNKNOWN];
+    else if(process->state->t == LTTV_STATE_MAYBE_TRAP)
+      prop_line.color = drawing_colors[COL_MODE_UNKNOWN];
     else if(process->state->t == LTTV_STATE_MODE_UNKNOWN)
       prop_line.color = drawing_colors[COL_MODE_UNKNOWN];
     else
