@@ -4247,6 +4247,7 @@ powerpc64, s390, sparc, sparc64.<br>
 0.12.35<br>
 0.12.36<br>
 0.12.37<br>
+0.12.38<br>
 </td>
 <td style="vertical-align: top;">
 0.246<br>
@@ -4278,6 +4279,9 @@ obsolete<br>
 LTTng 0.246 and lttng-modules 0.19.7 support Linux 2.6.38.<br>
 LTTng 0.247 and lttng-modules 0.19.8 add back MAYBE_BUILD_BUG_ON specifically
 for lttng modules and fix a prototype mismatch warning.<br>
+LTTV 0.12.38 fixes a bug in state.c raise softirq handling of softirq IDs larger
+than 31 (this was a bug in fallback code), which causes segmentation faults when
+viewing traces recorded on a 2.6.38 kernel.<br>
 </td>
 <td style="vertical-align: top;">
 </td>
