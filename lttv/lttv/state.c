@@ -2020,9 +2020,9 @@ static void create_name_tables(LttvTraceState *tcs)
 //			}
 //		}
 
-		name_tables->nb_syscalls = 256;
-		name_tables->syscall_names = g_new(GQuark, 256);
-		for(i = 0 ; i < 256 ; i++) {
+		name_tables->nb_syscalls = PREALLOC_NB_SYSCALLS;
+		name_tables->syscall_names = g_new(GQuark, name_tables->nb_syscalls);
+		for(i = 0 ; i < name_tables->nb_syscalls; i++) {
 			g_string_printf(fe_name, "syscall %d", i);
 			name_tables->syscall_names[i] = g_quark_from_string(fe_name->str);
 		}
@@ -2054,9 +2054,9 @@ static void create_name_tables(LttvTraceState *tcs)
 //					ltt_enum_string_get(t, i));
 //		}
 
-		name_tables->nb_traps = 256;
-		name_tables->trap_names = g_new(GQuark, 256);
-		for(i = 0 ; i < 256 ; i++) {
+		name_tables->nb_traps = PREALLOC_NB_TRAPS;
+		name_tables->trap_names = g_new(GQuark, name_tables->nb_traps);
+		for(i = 0 ; i < name_tables->nb_traps; i++) {
 			g_string_printf(fe_name, "trap %d", i);
 			name_tables->trap_names[i] = g_quark_from_string(fe_name->str);
 		}
@@ -2079,11 +2079,10 @@ static void create_name_tables(LttvTraceState *tcs)
 		}
 		*/
 		/* FIXME: LttvIRQState *irq_states should become a g_array */
-		/* temp fix: increase from 256 to 512 default size */
 
-		name_tables->nb_irqs = 512;
-		name_tables->irq_names = g_new(GQuark, 512);
-		for(i = 0 ; i < 512 ; i++) {
+		name_tables->nb_irqs = PREALLOC_NB_IRQS;
+		name_tables->irq_names = g_new(GQuark, name_tables->nb_irqs);
+		for(i = 0 ; i < name_tables->nb_irqs; i++) {
 			g_string_printf(fe_name, "irq %d", i);
 			name_tables->irq_names[i] = g_quark_from_string(fe_name->str);
 		}
@@ -2099,8 +2098,7 @@ static void create_name_tables(LttvTraceState *tcs)
 	}
 	*/
 
-	/* the kernel is limited to 32 statically defined softirqs */
-	name_tables->nb_soft_irqs = 32;
+	name_tables->nb_soft_irqs = PREALLOC_NB_SOFT_IRQS;
 	name_tables->soft_irq_names = g_new(GQuark, name_tables->nb_soft_irqs);
 	for(i = 0 ; i < name_tables->nb_soft_irqs ; i++) {
 		g_string_printf(fe_name, "softirq %d", i);
@@ -2698,20 +2696,12 @@ static gboolean soft_irq_raise(void *hook_data, void *call_data)
 	LttvTraceHook *th = (LttvTraceHook *)hook_data;
 	struct marker_field *f = lttv_trace_get_hook_field(th, 0);
 	LttvNameTables *nt = ((LttvTraceState *)(s->parent.t_context))->name_tables;
-
 	LttvExecutionSubmode submode;
 	guint64 softirq = ltt_event_get_long_unsigned(e, f);
-	guint64 nb_softirqs = nt->nb_soft_irqs;
 
-	if(softirq < nb_softirqs) {
-		submode = nt->soft_irq_names[softirq];
-	} else {
-		/* Fixup an incomplete irq table */
-		GString *string = g_string_new("");
-		g_string_printf(string, "softirq %" PRIu64, softirq);
-		submode = g_quark_from_string(string->str);
-		g_string_free(string, TRUE);
-	}
+	expand_soft_irq_table(ts, softirq);
+
+	submode = nt->soft_irq_names[softirq];
 
 	/* update softirq status */
 	/* a soft irq raises are not cumulative */

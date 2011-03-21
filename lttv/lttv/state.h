@@ -53,6 +53,17 @@
 
 #define LTTV_STATE_SAVE_INTERVAL 50000
 
+
+#define PREALLOC_NB_SYSCALLS	256
+/*
+ * As of 2.6.38, IRQ 239 has been seen (and we have seen higher than
+ * 256 too.
+ */
+#define PREALLOC_NB_IRQS	512
+/* As of 2.6.38, 255 softirqs are used. */
+#define PREALLOC_NB_SOFT_IRQS	512
+#define PREALLOC_NB_TRAPS	256
+
 /* Channel Quarks */
 
 extern GQuark
