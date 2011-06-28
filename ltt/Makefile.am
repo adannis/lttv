@@ -27,6 +27,7 @@ lttinclude_HEADERS = \
 	marker.h\
 	marker-field.h\
 	ltt.h\
+	ltt-private.h\
 	time.h\
 	trace.h\
 	event.h\
