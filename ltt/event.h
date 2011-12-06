@@ -70,7 +70,7 @@ static inline LttTime ltt_event_time(const struct LttEvent *event)
    of which are user accessible: block number and event index
    within the block. */
 
-void ltt_event_position(LttEvent *e, LttEventPosition *ep);
+void ltt_event_position(const LttEvent *e, LttEventPosition *ep);
 
 LttEventPosition * ltt_event_position_new();
 

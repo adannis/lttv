@@ -165,7 +165,7 @@ struct LttTracefile {
   uint32_t  subbuf_corrupt;
 
   GArray *buf_index;                 /* index mapping buffer index to offset */
-
+	uint64_t end_timestamp; /* Last timestamp of file */
   /* Current event */
   LttEvent event;                    //Event currently accessible in the trace
 

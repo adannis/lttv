@@ -30,7 +30,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-
+#include <errno.h>
 /* 
 ***FIXME***
 ***HACK***
@@ -142,7 +142,24 @@ JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1open
         }
         
         const char *c_pathname = (*env)->GetStringUTFChars(env, pathname, 0);
-        LttTrace *newPtr = ltt_trace_open( c_pathname );
+        LttTrace *newPtr = ltt_trace_open(c_pathname);
+        
+        (*env)->ReleaseStringUTFChars(env, pathname, c_pathname);
+        
+        return CONVERT_PTR_TO_JLONG(newPtr); 
+}
+
+/* JNI mapping of   < LttTrace *ltt_trace_open_live(const gchar *pathname)  > (trace.h) */
+JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive(JNIEnv *env, jobject jobj, jstring pathname, jboolean show_debug) {
+        
+        if ( !show_debug) {
+                /* Make sure we don't use any debug (speed up the read) */
+                g_log_set_handler(NULL, G_LOG_LEVEL_INFO, ignore_and_drop_message, NULL);
+                g_log_set_handler(NULL, G_LOG_LEVEL_DEBUG, ignore_and_drop_message, NULL);
+        }
+        
+        const char *c_pathname = (*env)->GetStringUTFChars(env, pathname, 0);
+        LttTrace *newPtr = ltt_trace_open_live(c_pathname);
         
         (*env)->ReleaseStringUTFChars(env, pathname, c_pathname);
         
@@ -240,6 +257,14 @@ JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getS
         LttTrace *newPtr = (LttTrace*)CONVERT_JLONG_TO_PTR(trace_ptr);
         
         return CONVERT_UINT64_TO_JLONG(newPtr->start_monotonic);
+}
+
+/* JNI mapping of  < int ltt_trace_update(LttTrace *t)  > (trace.h) */
+JNIEXPORT jint JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace(JNIEnv *env, jobject jobj, jlong trace_ptr){
+        
+        LttTrace *newPtr = (LttTrace*)CONVERT_JLONG_TO_PTR(trace_ptr);
+        
+        return (jint)ltt_trace_update(newPtr);
 }
 
 /* Access to start_time */
@@ -671,6 +696,9 @@ JNIEXPORT jint JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniEvent_ltt_1posit
             ERANGE  = 34    out of range, back to last event (might be system dependent?)
             EPERM   = 1     error while reading              (might be system dependent?)  */
         
+        if (tracefilePtr->trace == NULL) {
+            return (jint) EPERM;
+        }
         
         /* Seek to the start time... this will also read the first event, as we want. */
         int returnedValue = ltt_tracefile_seek_time(tracefilePtr, ((struct LttTrace)*(tracefilePtr->trace)).start_time_from_tsc);

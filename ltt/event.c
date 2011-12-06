@@ -69,7 +69,7 @@ void ltt_event_position_set(LttEventPosition *ep, LttTracefile *tf,
  *    ep                 : a pointer to event's position structure
  ****************************************************************************/
 
-void ltt_event_position(LttEvent *e, LttEventPosition *ep)
+void ltt_event_position(const LttEvent *e, LttEventPosition *ep)
 {
   ep->tracefile = e->tracefile;
   ep->block = e->block;

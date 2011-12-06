@@ -107,6 +107,9 @@ static void ltt_tracefile_time_span_get(LttTracefile *tf,
 static void group_time_span_get(GQuark name, gpointer data, gpointer user_data);
 static gint map_block(LttTracefile * tf, guint block_num);
 static void ltt_update_event_size(LttTracefile *tf);
+static LttTrace *_ltt_trace_open(const gchar *pathname, gboolean is_live);
+static int ltt_tracefile_update(LttTracefile *tf);
+static void update_tracefile_group(GQuark name, gpointer data, gpointer user_data);
 
 /* Enable event debugging */
 static int a_event_debug = 0;
@@ -211,25 +214,18 @@ int get_block_offset_size(LttTracefile *tf, guint block_num,
   return 0;
 }
 
-int ltt_trace_create_block_index(LttTracefile *tf)
+static int ltt_trace_update_block_index(LttTracefile *tf, uint64_t offset, 
+					unsigned long firstBlock)
 {
-  int page_size = getpagesize();
-  uint64_t offset = 0;
-  unsigned long i = 0;
-  unsigned int header_map_size = PAGE_ALIGN(ltt_subbuffer_header_size());
+      int i = firstBlock;
+      int page_size = getpagesize();
+      unsigned int header_map_size = PAGE_ALIGN(ltt_subbuffer_header_size());
 
-  tf->buf_index = g_array_sized_new(FALSE, TRUE, sizeof(uint64_t),
-                                    DEFAULT_N_BLOCKS);
-
-  g_assert(tf->buf_index->len == i);
-
+      g_assert(tf->buf_index->len == i);
   while (offset < tf->file_size) {
     ltt_subbuffer_header_t *header;
     uint64_t *off;
-
-    tf->buf_index = g_array_set_size(tf->buf_index, i + 1);
-    off = &g_array_index(tf->buf_index, uint64_t, i);
-    *off = offset;
+    uint64_t size;
 
     /* map block header */
     header = mmap(0, header_map_size, PROT_READ, 
@@ -240,19 +236,145 @@ int ltt_trace_create_block_index(LttTracefile *tf)
     }
 
     /* read len, offset += len */
-    offset += ltt_get_uint32(LTT_GET_BO(tf), &header->sb_size);
+    size = ltt_get_uint32(LTT_GET_BO(tf), &header->sb_size);
 
+    /* Only index completly writen blocks */
+    if (offset + size  <= tf->file_size) {
+
+	    tf->buf_index = g_array_set_size(tf->buf_index, i + 1);
+	    off = &g_array_index(tf->buf_index, uint64_t, i);
+	    *off = offset;
+
+	    /* Store current buffer end cycle as the last file timestamp */
+	    /* TODO ybrosseau 2010-11-04: Might want to convert it to a LttTime */
+	    tf->end_timestamp = ltt_get_uint64(LTT_GET_BO(tf), 
+					       &header->cycle_count_end);
+	    
+	    ++i;
+    }
+    offset += size;
     /* unmap block header */
     if(munmap(header, header_map_size)) {
       g_warning("unmap size : %u\n", header_map_size);
       perror("munmap error");
       return -1;
     }
-    ++i;
   }
   tf->num_blocks = i;
 
   return 0;
+}
+
+/* parse the new information from the file and reajust the number of blocks.
+ *
+ * Return value : 0 success, -1 error
+ */
+int ltt_trace_continue_block_index(LttTracefile *tf)
+{
+	int ret;
+	uint64_t offset;
+	uint32_t last_block_size;
+	unsigned long i = tf->num_blocks;
+	int page_size = getpagesize();
+	unsigned int header_map_size = PAGE_ALIGN(ltt_subbuffer_header_size());
+
+	get_block_offset_size(tf, tf->num_blocks-1, &offset, &last_block_size);
+
+	ltt_subbuffer_header_t *header_tmp = mmap(0, header_map_size, PROT_READ,
+					MAP_PRIVATE, tf->fd, (off_t)offset);
+	if(header_tmp == MAP_FAILED) {
+		perror("Error in allocating memory for buffer of tracefile");
+		return -1;
+	}
+
+	/* read len, offset += len */
+	offset += ltt_get_uint32(LTT_GET_BO(tf), &header_tmp->sb_size);
+
+	ret = ltt_trace_update_block_index(tf, offset, i);
+
+	return ret;
+}
+
+int ltt_trace_create_block_index(LttTracefile *tf)
+{
+	int ret;
+	uint64_t offset = 0;
+	unsigned long i = 0;
+
+	tf->buf_index = g_array_sized_new(FALSE, TRUE, sizeof(uint64_t),
+					DEFAULT_N_BLOCKS);
+	if(!tf->buf_index)
+		return -1;
+	ret = ltt_trace_update_block_index(tf, offset, i);
+	return ret;
+}
+
+/* 
+   Read file header and initialise buffer indexes
+
+   Return value : 0 for success, -1 otherwise.
+*/
+static int ltt_tracefile_init(LttTracefile *tf) 
+{
+	ltt_subbuffer_header_t *header;
+	int page_size = getpagesize();
+
+	/* Temporarily map the buffer start header to get trace information */
+	/* Multiple of pages aligned head */
+	tf->buffer.head = mmap(0,
+			PAGE_ALIGN(ltt_subbuffer_header_size()), PROT_READ,
+			MAP_PRIVATE, tf->fd, 0);
+	if(tf->buffer.head == MAP_FAILED) {
+		perror("Error in allocating memory for buffer of tracefile");
+		goto unmap_file;
+	}
+	g_assert( ( (gulong)tf->buffer.head&(8-1) ) == 0); // make sure it's aligned.
+				
+	header = (ltt_subbuffer_header_t *)tf->buffer.head;
+				
+	if(parse_trace_header(header, tf, tf->trace)) 
+	{
+		g_warning("parse_trace_header error");
+		goto unmap_file;
+	}
+				
+	if(munmap(tf->buffer.head,
+			PAGE_ALIGN(ltt_subbuffer_header_size()))) 
+	{
+		g_warning("unmap size : %zu\n",
+			PAGE_ALIGN(ltt_subbuffer_header_size()));
+		perror("munmap error");
+		g_assert(0);
+	}
+	tf->buffer.head = NULL;
+				
+	/* Create fields offset table */
+	tf->event.fields_offsets = g_array_sized_new(FALSE, FALSE,
+						sizeof(struct LttField), 1);
+	if (!tf->event.fields_offsets) {
+		g_warning("Cannot create fields offset table");
+		goto unmap_file;
+	}
+
+	/* Create block index */
+	ltt_trace_create_block_index(tf);
+
+	if(map_block(tf,0)) 
+	{
+		perror("Cannot map block for tracefile");
+		goto unmap_file;
+	}
+	return 0;
+	/* Error */
+unmap_file:
+	if(munmap(tf->buffer.head,
+			PAGE_ALIGN(ltt_subbuffer_header_size()))) {
+		g_warning("unmap size : %zu\n",
+			PAGE_ALIGN(ltt_subbuffer_header_size()));
+		perror("munmap error");
+		g_assert(0);
+	}
+	return -1;
 }
 
 /*****************************************************************************
@@ -265,94 +387,51 @@ int ltt_trace_create_block_index(LttTracefile *tf)
  *Return value
  *                       : 0 for success, -1 otherwise.
  ****************************************************************************/ 
-
 static gint ltt_tracefile_open(LttTrace *t, gchar * fileName, LttTracefile *tf)
 {
   struct stat    lTDFStat;    /* Trace data file status */
-  ltt_subbuffer_header_t *header;
-  int page_size = getpagesize();
 
   //open the file
   tf->long_name = g_quark_from_string(fileName);
   tf->trace = t;
   tf->fd = open(fileName, O_RDONLY);
   tf->buf_index = NULL;
+  tf->num_blocks = 0;
   if(tf->fd < 0){
     g_warning("Unable to open input data file %s\n", fileName);
     goto end;
   }
- 
+
   // Get the file's status 
   if(fstat(tf->fd, &lTDFStat) < 0){
     g_warning("Unable to get the status of the input data file %s\n", fileName);
     goto close_file;
   }
-
-  // Is the file large enough to contain a trace 
-  if(lTDFStat.st_size <
-      (off_t)(ltt_subbuffer_header_size())){
-    g_print("The input data file %s does not contain a trace\n", fileName);
-    goto close_file;
-  }
-  
-  /* Temporarily map the buffer start header to get trace information */
-  /* Multiple of pages aligned head */
-  tf->buffer.head = mmap(0,
-      PAGE_ALIGN(ltt_subbuffer_header_size()), PROT_READ, 
-      MAP_PRIVATE, tf->fd, 0);
-  if(tf->buffer.head == MAP_FAILED) {
-    perror("Error in allocating memory for buffer of tracefile");
-    goto close_file;
-  }
-  g_assert( ( (gulong)tf->buffer.head&(8-1) ) == 0); // make sure it's aligned.
-  
-  header = (ltt_subbuffer_header_t *)tf->buffer.head;
-  
-  if(parse_trace_header(header, tf, NULL)) {
-    g_warning("parse_trace_header error");
-    goto unmap_file;
-  }
-    
   //store the size of the file
   tf->file_size = lTDFStat.st_size;
   tf->events_lost = 0;
   tf->subbuf_corrupt = 0;
-
-  if(munmap(tf->buffer.head,
-        PAGE_ALIGN(ltt_subbuffer_header_size()))) {
-    g_warning("unmap size : %zu\n",
-        PAGE_ALIGN(ltt_subbuffer_header_size()));
-    perror("munmap error");
-    g_assert(0);
-  }
   tf->buffer.head = NULL;
+  tf->event.fields_offsets = NULL;
 
-  /* Create block index */
-  ltt_trace_create_block_index(tf);
-
-  //read the first block
-  if(map_block(tf,0)) {
-    perror("Cannot map block for tracefile");
-    goto close_file;
+  /* Is the file large enough to contain a trace */
+  if(lTDFStat.st_size < (off_t)(ltt_subbuffer_header_size())){
+	  if (t->is_live) {
+		  /* It a live trace so the file can be empty at the start of the analysis */
+		  goto end;
+	  } else {
+		  g_print("The input data file %s does not contain a trace\n", fileName);
+		  goto close_file;
+	  }
   }
- 
-  /* Create fields offset table */
-  tf->event.fields_offsets = g_array_sized_new(FALSE, FALSE,
-                                               sizeof(struct LttField), 1);
-  if (!tf->event.fields_offsets)
-    goto close_file;
+  
+  if(ltt_tracefile_init(tf) < 0) {
+	  goto close_file;
+  }
 
   return 0;
 
   /* Error */
-unmap_file:
-  if(munmap(tf->buffer.head,
-        PAGE_ALIGN(ltt_subbuffer_header_size()))) {
-    g_warning("unmap size : %zu\n",
-        PAGE_ALIGN(ltt_subbuffer_header_size()));
-    perror("munmap error");
-    g_assert(0);
-  }
 close_file:
   close(tf->fd);
 end:
@@ -360,7 +439,6 @@ end:
     g_array_free(tf->buf_index, TRUE);
   return -1;
 }
-
 
 /*****************************************************************************
  *Function name
@@ -384,7 +462,9 @@ static void ltt_tracefile_close(LttTracefile *t)
   close(t->fd);
   if (t->buf_index)
     g_array_free(t->buf_index, TRUE);
-  g_array_free(t->event.fields_offsets, TRUE);
+  if (t->event.fields_offsets) {
+	  g_array_free(t->event.fields_offsets, TRUE);
+  }
 }
 
 /****************************************************************************
@@ -624,7 +704,6 @@ static int open_tracefiles(LttTrace *trace, gchar *root_path, gchar *relative_pa
   rel_path_ptr = rel_path + rel_path_len;
   
   while((entry = readdir(dir)) != NULL) {
-
     if(entry->d_name[0] == '.') continue;
     
     strncpy(path_ptr, entry->d_name, PATH_MAX - path_len);
@@ -659,9 +738,12 @@ static int open_tracefiles(LttTrace *trace, gchar *root_path, gchar *relative_pa
       
       g_debug("Opening file.\n");
       if(ltt_tracefile_open(trace, path, &tmp_tf)) {
-        g_info("Error opening tracefile %s", path);
-
-        continue; /* error opening the tracefile : bad magic number ? */
+	      /* Only consider the error for non live trace */
+	      if (!trace->is_live) {
+		      
+		      g_info("Error opening tracefile %s", path);
+		      continue; /* error opening the tracefile : bad magic number ? */
+	      }
       }
 
       g_debug("Tracefile name is %s and number is %u", 
@@ -806,13 +888,24 @@ seek_error:
   return err;
 }
 
+
+LttTrace *ltt_trace_open(const gchar *pathname)
+{
+	return _ltt_trace_open(pathname, FALSE);
+}
+
+LttTrace *ltt_trace_open_live(const gchar *pathname)
+{
+	return _ltt_trace_open(pathname, TRUE);
+}
+
 /*
  * Open a trace and return its LttTrace handle.
  *
  * pathname must be the directory of the trace
  */
 
-LttTrace *ltt_trace_open(const gchar *pathname)
+static LttTrace *_ltt_trace_open(const gchar *pathname, gboolean is_live)
 {
   gchar abs_path[PATH_MAX];
   LttTrace  * t;
@@ -851,7 +944,10 @@ LttTrace *ltt_trace_open(const gchar *pathname)
     }
   }
   closedir(dir);
-  
+
+  t->is_live = is_live;
+  t->live_safe_timestamp = ltt_time_zero;
+
   /* Open all the tracefiles */
   t->start_freq= 0;
   if(open_tracefiles(t, abs_path, "")) {
@@ -867,15 +963,27 @@ LttTrace *ltt_trace_open(const gchar *pathname)
   }
 
   /*
-   * Get the trace information for the metadata_0 tracefile.
+   * Get the trace information for the first valid metadata tracefile.
+   * In live trace mode, the metadata_0 might be empty
    * Getting a correct trace start_time and start_tsc is insured by the fact
    * that no subbuffers are supposed to be lost in the metadata channel.
    * Therefore, the first subbuffer contains the start_tsc timestamp in its
    * buffer header.
    */
   g_assert(group->len > 0);
-  tf = &g_array_index (group, LttTracefile, 0);
-  header = (ltt_subbuffer_header_t *)tf->buffer.head;
+  header = NULL;
+  for(i=0; i<group->len; i++) {
+	  tf = &g_array_index (group, LttTracefile, i);
+	  header = (ltt_subbuffer_header_t *)tf->buffer.head;
+	  if (header) {
+		  break;
+	  }
+  }
+  if (header == NULL) {
+	  g_warning("Trace %s has not one valid metadata tracefile", abs_path);
+	  goto find_error;
+  }
+  
   ret = parse_trace_header(header, tf, t);
   g_assert(!ret);
 
@@ -889,7 +997,7 @@ LttTrace *ltt_trace_open(const gchar *pathname)
 
   for(i=0; i<group->len; i++) {
     tf = &g_array_index (group, LttTracefile, i);
-    if (tf->cpu_online)
+    if (tf->cpu_online && tf->buffer.head )
       if(ltt_process_metadata_tracefile(tf))
         goto find_error;
       //  goto metadata_error;
@@ -909,6 +1017,135 @@ alloc_error:
 
 }
 
+
+/*****************************************************************************
+ Update the informations concerning the tracefile 
+
+ Must be called periodically to update trace file and file size
+      information.
+
+Input params
+   tf                  : the tracefile
+Return value
+                       : Number of tracefile with available events 
+                        -1 on error.
+ ****************************************************************************/
+int ltt_trace_update(LttTrace *trace)
+{
+	int trace_updated_count = 0;
+  
+	/* Only update live traces */
+	if(trace->is_live) {
+
+		/* Iterate on all tracefiles */
+		g_datalist_foreach(&trace->tracefiles, 
+				&update_tracefile_group, 
+				&trace_updated_count);
+    
+		return trace_updated_count;
+	}
+	return 0;
+  
+}
+
+static void update_tracefile_group(GQuark name, gpointer data, gpointer user_data)
+{
+	int *trace_updated_count = (int *)user_data;
+	unsigned int i;
+	LttTracefile *tf;
+	GArray *group = (GArray *)data;
+  
+	g_debug("Updating tracefile group %s", g_quark_to_string(name));
+	for(i=0; i<group->len; i++) {
+		tf = &g_array_index (group, LttTracefile, i);
+
+		/* Update safe timestamp */
+		tf->trace->live_safe_timestamp = 
+			LTT_TIME_MAX(tf->trace->live_safe_timestamp,
+				ltt_interpolate_time_from_tsc(tf, 
+							tf->end_timestamp));
+    
+		/* Update tracefile */
+		int ret = ltt_tracefile_update(tf);
+		if(ret < 0) {
+			g_warning("LIVE: Cannot update tracefile %s",
+				g_quark_to_string(ltt_tracefile_long_name(tf)));
+			*trace_updated_count = -1;
+			break;
+		} else {
+			*trace_updated_count += 1;
+		}
+	}
+}
+
+
+/*****************************************************************************
+ *Function name
+ *    ltt_tracefile_update : Update the informations concerning a tracefile
+ *      Must be called periodically to update trace file and file size
+      information.
+ *Input params
+ *    tf                  : the tracefile
+ *Return value
+ *                       : 1 for success and an event is available
+                           0 for success but no event available, 
+ *                        -1 on error.
+ ****************************************************************************/
+static int ltt_tracefile_update(LttTracefile *tf)
+{
+	struct stat    lTDFStat;    /* Trace data file status */
+	if(fstat(tf->fd, &lTDFStat) < 0){
+		perror("error in getting the tracefile informations.");
+	}
+
+
+	/* Process the file only on size change */
+	if(tf->file_size < lTDFStat.st_size) {
+		/* Update the size of the file */
+		tf->file_size = lTDFStat.st_size;
+		g_debug("Updating tracefile %s", g_quark_to_string(tf->long_name));
+
+		if( tf->file_size >= (off_t)(ltt_subbuffer_header_size()) ) {
+
+			if(tf->buf_index == NULL) {
+				if(ltt_tracefile_init(tf) < 0) {
+					return -1;
+				}
+				if(tf->name == LTT_TRACEFILE_NAME_METADATA) {
+
+				  LttTime start;
+				  start.tv_sec = 0;
+				  start.tv_nsec = 0;
+				  ltt_process_metadata_tracefile(tf);
+
+				  ltt_tracefile_seek_time(tf, start);
+				  tf->event.offset = 0;
+
+				} 
+			}
+			else
+			{
+				/* Retrieve the new subbuffers and index them */
+				ltt_trace_continue_block_index(tf);
+
+				if(tf->name == LTT_TRACEFILE_NAME_METADATA) {
+				  LttEventPosition *pos = ltt_event_position_new();
+				  ltt_tracefile_get_current_position(tf, pos);
+				  ltt_process_metadata_tracefile(tf);
+				  ltt_tracefile_seek_position(tf, pos);
+				  g_free(pos);
+				  
+				} 
+			}
+			
+			return 1;
+		}
+	}
+
+	return 0;
+
+}
+
 /* Open another, completely independant, instance of a trace.
  *
  * A read on this new instance will read the first event of the trace.
@@ -919,7 +1156,7 @@ alloc_error:
  */
 LttTrace *ltt_trace_copy(LttTrace *self)
 {
-  return ltt_trace_open(g_quark_to_string(self->pathname));
+	return _ltt_trace_open(g_quark_to_string(self->pathname), self->is_live);
 }
 
 /*
@@ -941,9 +1178,15 @@ void ltt_tracefile_time_span_get(LttTracefile *tf,
                                         LttTime *start, LttTime *end)
 {
   int err;
+  
 
   err = map_block(tf, 0);
-  if(unlikely(err)) {
+  /* Only empty live traces will return ERANGE */
+  if(err == ERANGE) {
+    *start = ltt_time_infinite;
+    *end = ltt_time_zero;
+    return;
+  } else if(unlikely(err)) {
     g_error("Can not map block");
     *start = ltt_time_infinite;
   } else
@@ -1039,7 +1282,9 @@ int ltt_tracefile_seek_time(LttTracefile *tf, LttTime time)
 
   /* seek at the beginning of trace */
   err = map_block(tf, 0);  /* First block */
-  if(unlikely(err)) {
+  if(unlikely(err == ERANGE)) {
+	  goto range;
+  } else if(unlikely(err)) {
     g_error("Can not map block");
     goto fail;
   }
@@ -1128,6 +1373,17 @@ fail:
   return EPERM;
 }
 
+
+/* Save the current tracefile position in the passed position pointer */
+int ltt_tracefile_get_current_position(const LttTracefile *tf,  LttEventPosition *ep)
+{
+  /* TODO ybrosseau 2011-06-07: Maybe add some error checking 
+                                (ex: check the validity of the arguments pointer) */
+  ltt_event_position(&(tf->event), ep);
+  return 0;
+}
+
+
 /* Seek to a position indicated by an LttEventPosition
  */
 
@@ -1197,8 +1453,6 @@ LttEvent *ltt_tracefile_get_event(LttTracefile *tf)
 {
   return &tf->event;
 }
-
-
 
 /*****************************************************************************
  *Function name
@@ -1426,6 +1680,11 @@ static gint map_block(LttTracefile * tf, guint block_num)
   uint32_t size;
   int ret;
 
+  if(tf->num_blocks == 0) {
+	  errno = ERANGE;
+	  return ERANGE;
+  }
+  
   g_assert(block_num < tf->num_blocks);
 
   if(tf->buffer.head != NULL) {
@@ -1668,8 +1927,8 @@ static int ltt_seek_next_event(LttTracefile *tf)
   pos += (size_t)tf->event.data_size;
   
   tf->event.offset = pos - tf->buffer.head;
-  
-  if(tf->event.offset == tf->buffer.data_size) {
+
+  if(tf->event.offset >= tf->buffer.data_size) {
     ret = ERANGE;
     goto found;
   }
@@ -1911,7 +2170,7 @@ int ltt_get_trace_version(const gchar *pathname, struct LttTraceVersion *version
 
 	while((entry = readdir(dir)) != NULL) {
 		if(entry->d_name[0] == '.') continue;
-		if(g_strcmp0(entry->d_name, "metadata_0") != 0) continue;
+		if(g_str_has_prefix(entry->d_name, "metadata_") != 0) continue;
 
 		strcpy(path, abs_path);
 		strcat(path, "/");
@@ -1930,9 +2189,11 @@ int ltt_get_trace_version(const gchar *pathname, struct LttTraceVersion *version
 
                 version_number->ltt_major_version = header->major_version;
                 version_number->ltt_minor_version = header->minor_version;
+
+		return 1;
 	}
 
-	return 0;
+	return -1;
 
 	open_error:
                 g_free(t);

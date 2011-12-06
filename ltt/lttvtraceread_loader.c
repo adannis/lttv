@@ -27,6 +27,7 @@ struct version_correlation *version_table = NULL;
 struct function_tables {
         void (*Java_org_eclipse_linuxtools_lttng_jni_Jni_1C_1Common_ltt_1printC)(JNIEnv *env, jobject jobj, jstring new_string);
         jlong (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTrace)(JNIEnv *env, jobject jobj, jstring pathname, jboolean show_debug);
+        jlong (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive)(JNIEnv *env, jobject jobj, jstring pathname, jboolean show_debug);
         void (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1closeTrace)(JNIEnv *env, jobject jobj, jlong trace_ptr);
         jstring (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getTracepath)(JNIEnv *env, jobject jobj, jlong trace_ptr);
         jint (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getCpuNumber)(JNIEnv *env, jobject jobj, jlong trace_ptr);
@@ -40,6 +41,7 @@ struct function_tables {
         jlong (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartFreq)(JNIEnv *env, jobject jobj, jlong trace_ptr);
         jlong (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartTimestampCurrentCounter)(JNIEnv *env, jobject jobj, jlong trace_ptr);
         jlong (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartMonotonic)(JNIEnv *env, jobject jobj, jlong trace_ptr);
+        jint (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace)(JNIEnv *env, jobject jobj, jlong trace_ptr);
         void (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTime)(JNIEnv *env, jobject jobj, jlong trace_ptr, jobject time_jobj);
         void (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTimeFromTimestampCurrentCounter)(JNIEnv *env, jobject jobj, jlong trace_ptr, jobject time_jobj);
         void (*Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedAllTracefiles)(JNIEnv *env, jobject jobj, jlong trace_ptr);
@@ -223,6 +225,7 @@ JNIEXPORT jint JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1initi
 
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_Jni_1C_1Common_ltt_1printC = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_Jni_1C_1Common_ltt_1printC");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTrace = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTrace");
+                        version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1closeTrace = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1closeTrace");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getTracepath = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getTracepath");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getCpuNumber = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getCpuNumber");
@@ -236,6 +239,7 @@ JNIEXPORT jint JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1initi
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartFreq = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartFreq");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartTimestampCurrentCounter = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartTimestampCurrentCounter");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartMonotonic = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartMonotonic");
+                        version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTime = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTime");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTimeFromTimestampCurrentCounter = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTimeFromTimestampCurrentCounter");
                         version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedAllTracefiles = dlsym(version_table[lib_id].static_handle, "Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedAllTracefiles");
@@ -319,6 +323,12 @@ JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_Jni_1C_1Common_ltt_
 JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTrace(JNIEnv *env, jobject jobj, jint lib_id, jstring pathname, jboolean show_debug) {
         return (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTrace)(env, jobj, pathname, show_debug);
 }
+JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive(JNIEnv *env, jobject jobj, jint lib_id, jstring pathname, jboolean show_debug) {
+        if (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive == NULL) {
+            return 0;
+        }
+        return (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1openTraceLive)(env, jobj, pathname, show_debug);
+}
 JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1closeTrace(JNIEnv *env, jobject jobj, jint lib_id, jlong trace_ptr) {
         (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1closeTrace)(env, jobj, trace_ptr);
 }
@@ -357,6 +367,12 @@ JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getS
 }
 JNIEXPORT jlong JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartMonotonic(JNIEnv *env, jobject jobj, jint lib_id, jlong trace_ptr) {
         return (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1getStartMonotonic)(env, jobj, trace_ptr);
+}
+JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace(JNIEnv *env, jobject jobj, jint lib_id, jlong trace_ptr) {
+        if (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace == NULL) {
+            return;
+        }
+        (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1updateTrace)(env, jobj, trace_ptr);
 }
 JNIEXPORT void JNICALL Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTime(JNIEnv *env, jobject jobj, jint lib_id, jlong trace_ptr, jobject time_jobj) {
         (version_functions_table[lib_id].Java_org_eclipse_linuxtools_lttng_jni_JniTrace_ltt_1feedStartTime)(env, jobj, trace_ptr, time_jobj);

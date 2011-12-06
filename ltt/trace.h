@@ -45,8 +45,10 @@ struct LttTrace {
   double    offset;
   LttTime   start_time;
   LttTime   start_time_from_tsc;
+	gboolean  is_live; /* Flag indicating that read trace is currently being recorded */
+	LttTime live_safe_timestamp; /* In a live trace, timestamp were all data should be readable */
 
-  GData     *tracefiles;                    //tracefiles groups
+	GData     *tracefiles;                    /*tracefiles groups*/
 };
 
 static inline guint ltt_trace_get_num_cpu(LttTrace *t)
@@ -67,6 +69,10 @@ static inline guint ltt_trace_get_num_cpu(LttTrace *t)
 
 LttTrace *ltt_trace_open(const gchar *pathname);
 
+/* Same as ltt_trace_open but open the trace in live mode */
+LttTrace *ltt_trace_open_live(const gchar *pathname);
+
+
 /* copy reopens a trace 
  *
  * return value NULL if error while opening the trace 
@@ -77,7 +83,8 @@ static inline GQuark ltt_trace_name(const LttTrace *t)
 {
   return t->pathname;
 }
-
+/* Update the informations concerning a trace, normally a live one */
+int ltt_trace_update(LttTrace *trace);
 
 void ltt_trace_close(LttTrace *t); 
 
@@ -140,6 +147,9 @@ static inline guint ltt_tracefile_block_number(LttTracefile *tf)
 /* Seek to the first event of the trace with time larger or equal to time */
 
 int ltt_tracefile_seek_time(LttTracefile *t, LttTime time);
+
+
+int ltt_tracefile_get_current_position(const LttTracefile *tf,  LttEventPosition *ep);
 
 /* Seek to the first event with position equal or larger to ep */
 
