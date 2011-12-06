@@ -24,6 +24,7 @@
 #endif
 
 #include <glib.h>
+#include <unistd.h>
 #include <lttv/lttv.h>
 #include <lttv/attribute.h>
 #include <lttv/hook.h>
@@ -51,12 +52,20 @@ static LttvHooks
 static char *a_trace;
 
 static gboolean a_stats;
+static gboolean a_live;
+static int a_live_update_period;
+
+#define DEFAULT_LIVE_UPDATE_PERIOD 1
 
 void lttv_trace_option(void *hook_data)
 { 
   LttTrace *trace;
-
-  trace = ltt_trace_open(a_trace);
+  
+  if(a_live) {
+    trace = ltt_trace_open_live(a_trace);
+  } else {
+    trace = ltt_trace_open(a_trace);
+  }
   if(trace == NULL) g_critical("cannot open trace %s", a_trace);
   lttv_traceset_add(traceset, lttv_trace_new(trace));
 }
@@ -134,10 +143,19 @@ static gboolean process_traceset(void *hook_data, void *call_data)
   g_info("BatchAnalysis process traceset");
 
   lttv_process_traceset_seek_time(tc, start);
-  lttv_process_traceset_middle(tc,
-                               end,
-                               G_MAXULONG,
-                               NULL);
+  /* Read as long a we do not reach the end (0) */
+  unsigned int count;
+  unsigned int updated_count;
+  do {
+	  count = lttv_process_traceset_middle(tc,
+							  end,
+							  G_MAXULONG,
+							  NULL);
+	  
+	  updated_count = lttv_process_traceset_update(tc); 
+		
+	  sleep(a_live_update_period);
+  } while(count != 0 || updated_count > 0);
 
 
   //lttv_traceset_context_remove_hooks(tc,
@@ -185,6 +203,20 @@ static void init()
       "write the traceset and trace statistics", 
       "", 
       LTTV_OPT_NONE, &a_stats, NULL, NULL);
+
+  a_live = FALSE;
+  lttv_option_add("live", 0,
+      "define if the traceset is receiving live informations",
+      "",
+      LTTV_OPT_NONE, &a_live, NULL, NULL);
+  
+  a_live_update_period = DEFAULT_LIVE_UPDATE_PERIOD;
+  lttv_option_add("live-period", 0,
+		  "period to update a live trace",
+		  "in seconds",
+		  LTTV_OPT_INT,
+		  &a_live_update_period,
+		  NULL, NULL);
 
 
   traceset = lttv_traceset_new();
@@ -251,6 +283,8 @@ static void destroy()
 
   lttv_option_remove("trace");
   lttv_option_remove("stats");
+  lttv_option_remove("live");
+  lttv_option_remove("live-period");
 
   lttv_hooks_destroy(before_traceset);
   lttv_hooks_destroy(after_traceset);

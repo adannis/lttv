@@ -61,6 +61,20 @@ static void free_option(LttvOption *option)
 	g_free(option);
 }
 
+static gboolean compare_short_option(gpointer key,
+				     gpointer value,
+				     gpointer user_data)
+{
+	LttvOption *option = value;
+	const char short_option = *(const char *)user_data;
+
+
+	if(option->char_name == short_option) {
+		return TRUE;
+	} else {
+		return FALSE;
+	}
+}
 
 void lttv_option_add(const char *long_name, const char char_name,
 		const char *description, const char *arg_description,
@@ -71,9 +85,16 @@ void lttv_option_add(const char *long_name, const char char_name,
 
 	g_log(G_LOG_DOMAIN, G_LOG_LEVEL_INFO, "Add option %s", long_name);
 	if(g_hash_table_lookup(options, long_name) != NULL) {
-		g_warning("duplicate option");
+		g_warning("duplicate long-option: %s", long_name);
 		return;
 	}
+	if(char_name && g_hash_table_find(options, compare_short_option, (gpointer)&char_name) != NULL) {
+		g_warning("duplicate short-option: %c for option %s", 
+			  char_name,
+			  long_name);
+		return;		
+	}
+
 
 	option = g_new(LttvOption, 1);
 	option->long_name = g_strdup(long_name);

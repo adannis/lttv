@@ -220,6 +220,8 @@ void lttv_process_traceset_end(LttvTracesetContext *self,
 		LttvHooks *event,
 		LttvHooksByIdChannelArray *event_by_id_channel);
 
+guint lttv_process_traceset_update(LttvTracesetContext *self);
+
 
 void lttv_process_traceset_seek_time(LttvTracesetContext *self, LttTime start);
 

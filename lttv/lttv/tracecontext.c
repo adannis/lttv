@@ -27,6 +27,7 @@
 #include <ltt/trace.h>
 #include <lttv/filter.h>
 #include <errno.h>
+#include <ltt/time.h>
 
 gint compare_tracefile(gconstpointer a, gconstpointer b)
 {
@@ -689,6 +690,8 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 
 	unsigned count = 0;
 
+	gboolean is_live = FALSE; /* set this flag if we detect a live trace */
+
 	guint read_ret;
 
 	//enum read_state last_read_state = LAST_NONE;
@@ -706,7 +709,7 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 		/* End of traceset : tfc is NULL */
 		if(unlikely(tfc == NULL))
 		{
-			return count;
+			break;
 		}
 
 		/* Have we reached :
@@ -716,14 +719,17 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 		 * then the read is finished. We leave the queue in the same state and
 		 * break the loop.
 		 */
-
+		if(tfc->tf->trace->is_live && ltt_time_compare(tfc->timestamp, tfc->tf->trace->live_safe_timestamp) >= 0) {
+		  
+		  break;
+		}
 		if(unlikely(last_ret == TRUE
 				|| ((count >= nb_events) && (nb_events != G_MAXULONG))
 				|| (end_position!=NULL&&lttv_traceset_context_ctx_pos_compare(self,
 						end_position) == 0)
 				|| ltt_time_compare(end, tfc->timestamp) <= 0))
 		{
-			return count;
+			break;
 		}
 
 		/* Get the tracefile with an event for the smallest time found. If two
@@ -765,7 +771,8 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 	 if(unlikely(last_ret == 2)) {
 			/* This is a case where we want to stay at this position and stop read. */
 			g_tree_insert(pqueue, tfc, tfc);
-			return count - 1;
+			count--;
+			break;
 		}
 #endif //0
 		read_ret = ltt_tracefile_read(tfc->tf);
@@ -774,8 +781,15 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 		if(likely(!read_ret)) {
 			//g_debug("An event is ready");
 			tfc->timestamp = ltt_event_time(e);
+
+
 			g_assert(ltt_time_compare(tfc->timestamp, ltt_time_infinite) != 0);
 			g_tree_insert(pqueue, tfc, tfc);
+			if(tfc->tf->trace->is_live && ltt_time_compare(tfc->timestamp, tfc->tf->trace->live_safe_timestamp) >= 0)
+			{
+				is_live |= TRUE;
+				break;
+			}
 #ifdef DEBUG
 			test_time.tv_sec = 0;
 			test_time.tv_nsec = 0;
@@ -793,6 +807,12 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 			} else
 				g_error("Error happened in lttv_process_traceset_middle");
 		}
+	}
+
+	if (unlikely((count == 0) && is_live)) {
+		return -1;
+	} else {
+		return count;
 	}
 }
 
@@ -856,6 +876,82 @@ void lttv_process_trace_seek_time(LttvTraceContext *self, LttTime start)
 #endif //DEBUG
 }
 
+/****************************************************************************
+ * lttv_process_trace_update
+ *
+ * process the changes that occur in the trace. Use a regular file polling to
+ * monitor the tracefile.
+ *
+ * Return the number of tracefile updated
+ ***************************************************************************/
+guint lttv_process_trace_update(LttvTraceContext *self)
+{
+	guint i; 
+	guint nb_tracefile = 0;
+
+	LttTracefile *tf = 0;
+	LttvTracefileContext **tfc;
+
+	/* Skip non live traces */
+	if(self->t->is_live) {
+
+		nb_tracefile = ltt_trace_update(self->t);
+
+		/* Recreate the pqueue following an update*/
+		GTree *pqueue = self->ts_context->pqueue;
+		
+		for(i = 0 ; i < self->tracefiles->len ; i++) {
+			tfc = &g_array_index(self->tracefiles, LttvTracefileContext*, i);
+			tf = (*tfc)->tf;
+			if(g_tree_remove(pqueue, *tfc) == FALSE) {
+				if(tf->buf_index != NULL) {
+
+					if(ltt_tracefile_read(tf) == 0) {
+						
+						(*tfc)->timestamp = ltt_event_time(ltt_tracefile_get_event((*tfc)->tf));
+						g_tree_insert(pqueue, (*tfc), (*tfc));
+						
+					}
+				}
+			} else {
+				g_tree_insert(pqueue, (*tfc), (*tfc));
+
+			}
+
+		
+		}
+		//Update self time span
+		self->time_span.end_time = LTT_TIME_MAX(self->t->live_safe_timestamp, 
+							self->time_span.end_time);
+		//Update self tscontext time span
+		self->ts_context->time_span.end_time = LTT_TIME_MAX(self->time_span.end_time, 
+								self->ts_context->time_span.end_time);
+	}
+	return nb_tracefile;
+	
+}
+
+/****************************************************************************
+ * lttv_process_traceset_update
+ *
+ * process the changes that occur in the traceset.
+ *
+ * Return the number of file presently monitor(open for writting). If 0, the
+ * current traceset probably received all the data.
+ ***************************************************************************/
+guint lttv_process_traceset_update(LttvTracesetContext *self)
+{
+	guint i;
+	guint nb_trace;
+	guint open_counter = 0;
+
+	nb_trace = lttv_traceset_number(self->ts);
+
+	for(i = 0 ; i < nb_trace ; i++) {
+		open_counter += lttv_process_trace_update(self->traces[i]);
+	}
+	return open_counter;
+}
 
 void lttv_process_traceset_seek_time(LttvTracesetContext *self, LttTime start)
 {
