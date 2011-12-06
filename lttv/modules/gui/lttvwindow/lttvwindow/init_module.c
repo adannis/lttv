@@ -88,6 +88,7 @@ static GSList *g_init_trace = NULL;
 
 static char *a_trace;
 //static char g_init_trace[PATH_MAX] = "";
+static gboolean a_live;
 
 
 void lttv_trace_option(void *hook_data)
@@ -124,7 +125,7 @@ static gboolean window_creation_hook(void *hook_data, void *call_data)
   add_pixmap_directory ("../modules/gui/main/pixmaps");
 
   /* First window, use command line trace */
-  create_main_window_with_trace_list(g_init_trace);
+  create_main_window_with_trace_list(g_init_trace, a_live);
 
   gtk_main ();
 
@@ -173,6 +174,12 @@ static void init() {
       "add a trace to the trace set to analyse", 
       "pathname of the directory containing the trace", 
       LTTV_OPT_STRING, &a_trace, lttv_trace_option, NULL);
+
+  a_live = FALSE;
+  lttv_option_add("live", 0,
+      "define if the traceset is receiving live informations",
+      "",
+      LTTV_OPT_NONE, &a_live, NULL, NULL);
 
   retval= lttv_iattribute_find_by_path(attributes, "hooks/main/before",
     LTTV_POINTER, &value);
@@ -243,6 +250,7 @@ static void destroy_walk(gpointer data, gpointer user_data)
 static void destroy() {
 
   lttv_option_remove("trace");
+  lttv_option_remove("live");
 
   lttv_hooks_remove_data(main_hooks, window_creation_hook, NULL);
 

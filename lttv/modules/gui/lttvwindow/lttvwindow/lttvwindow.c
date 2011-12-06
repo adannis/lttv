@@ -468,6 +468,53 @@ __EXPORT void lttvwindow_unregister_time_window_notify(Tab *tab,
 }
 
 /**
+ * Function to register a hook function for a viewer to set/update its
+ * allowed time span.
+ * @param tab viewer's tab 
+ * @param hook hook function of the viewer.
+ * @param hook_data hook data associated with the hook function.
+ */
+__EXPORT void lttvwindow_register_time_span_notify(Tab *tab,
+    LttvHook hook, gpointer hook_data)
+{
+  LttvAttributeValue value;
+  LttvHooks * tmp;
+  gboolean retval;
+
+  retval= lttv_iattribute_find_by_path(tab->attributes,
+    "hooks/updatetimespan", LTTV_POINTER, &value);
+  g_assert(retval);
+  tmp = (LttvHooks*)*(value.v_pointer);
+  if(tmp == NULL){    
+    tmp = lttv_hooks_new();
+    *(value.v_pointer) = tmp;
+  }
+  lttv_hooks_add(tmp, hook,hook_data, LTTV_PRIO_DEFAULT);
+}
+/**
+ * Function to unregister a viewer's hook function which is used to 
+ * set/update the time span allowed for the viewer.
+ * @param tab viewer's tab 
+ * @param hook hook function of the viewer.
+ * @param hook_data hook data associated with the hook function.
+ */
+
+__EXPORT void lttvwindow_unregister_time_span_notify(Tab *tab,
+    LttvHook hook, gpointer hook_data)
+{
+  LttvAttributeValue value;
+  LttvHooks * tmp;
+  gboolean retval;
+
+  retval= lttv_iattribute_find_by_path(tab->attributes,
+    "hooks/updatetimespan", LTTV_POINTER, &value);
+  g_assert(retval);
+  tmp = (LttvHooks*)*(value.v_pointer);
+  if(tmp == NULL) return;
+  lttv_hooks_remove_data(tmp, hook, hook_data);
+}
+
+/**
  * Function to register a hook function for a viewer to set/update its 
  * traceset.
  * @param tab viewer's tab 

@@ -116,6 +116,7 @@ struct _StatisticViewerData{
   GHashTable *statistic_hash;
 
   guint background_info_waiting;
+	guint live_trace_count;
 };
 
 
@@ -290,6 +291,7 @@ gui_statistic(LttvPluginTab *ptab)
   GtkTreeViewColumn *column;
 
   StatisticViewerData* statistic_viewer_data = g_new(StatisticViewerData,1);
+  statistic_viewer_data->live_trace_count = 0;
   Tab *tab = ptab->tab;
   statistic_viewer_data->tab  = tab;
   statistic_viewer_data->ptab  = ptab;
@@ -301,7 +303,6 @@ gui_statistic(LttvPluginTab *ptab)
   lttvwindow_register_traceset_notify(statistic_viewer_data->tab,
                                       statistic_traceset_changed,
                                       statistic_viewer_data);
- 
   statistic_viewer_data->statistic_hash = g_hash_table_new_full(g_str_hash,
                                                   g_str_equal,
                                                   statistic_destroy_hash_key,
@@ -424,6 +425,8 @@ extern FILE *stdout;
 extern FILE *stderr;
 #endif //DEBUG
 
+static const char *live_msg = "Statistics for traceset containing live traces are inaccurate";
+
 void show_traceset_stats(StatisticViewerData * statistic_viewer_data)
 {
   Tab *tab = statistic_viewer_data->tab;
@@ -451,6 +454,21 @@ void show_traceset_stats(StatisticViewerData * statistic_viewer_data)
           -1);  
   path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
   str = gtk_tree_path_to_string (path);
+
+  for(i = 0 ; i < nb ; i++) {
+	  if (LTTV_TRACESET_CONTEXT(tscs)->traces[i]->t->is_live) {
+		  statistic_viewer_data->live_trace_count++;
+	  }
+
+  }
+  if (statistic_viewer_data->live_trace_count) {
+	  LttvAttributeValue value;
+	  value = lttv_attribute_add(tscs->stats,
+				     g_quark_from_static_string("WARNING: Live traceset"),
+				     LTTV_STRING);
+	  *(value.v_string) = live_msg;
+	  
+  }
   g_hash_table_insert(statistic_viewer_data->statistic_hash,
           (gpointer)str, tscs->stats);
   show_tree(statistic_viewer_data, tscs->stats, &iter);
@@ -467,16 +485,30 @@ void show_traceset_stats(StatisticViewerData * statistic_viewer_data)
             start_time.tv_nsec);
 #endif //0
     sprintf(trace_str, "%s", g_quark_to_string(ltt_trace_name(tcs->parent.parent.t)));
-    gtk_tree_store_append (store, &iter, NULL);  
-    gtk_tree_store_set (store, &iter,NAME_COLUMN,trace_str,-1);  
-    path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
-    str = gtk_tree_path_to_string (path);
-    g_hash_table_insert(statistic_viewer_data->statistic_hash,
-      (gpointer)str,tcs->stats);
-    show_tree(statistic_viewer_data, tcs->stats, &iter);
+    /* TODO ybrosseau 2011-01-12: Reenable stats for live trace */
+    if (LTTV_TRACE_CONTEXT(tcs)->t->is_live) {
+	    strcat(trace_str, " [LIVE]");
+	    gtk_tree_store_append (store, &iter, NULL);  
+	    gtk_tree_store_set (store, &iter,NAME_COLUMN,trace_str,-1); 
+
+	    path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
+	    str = gtk_tree_path_to_string (path);
+	    g_hash_table_insert(statistic_viewer_data->statistic_hash,
+			    (gpointer)str,0);
+	    
+    } else {
+    
+	    gtk_tree_store_append (store, &iter, NULL);  
+	    gtk_tree_store_set (store, &iter,NAME_COLUMN,trace_str,-1);  
+	    path = gtk_tree_model_get_path(GTK_TREE_MODEL(store), &iter);
+	    str = gtk_tree_path_to_string (path);
+	    g_hash_table_insert(statistic_viewer_data->statistic_hash,
+			    (gpointer)str,tcs->stats);
+	    show_tree(statistic_viewer_data, tcs->stats, &iter);
 #ifdef DEBUG
-    lttv_attribute_write_xml(tcs->stats, stdout, 3, 4);
+	    lttv_attribute_write_xml(tcs->stats, stdout, 3, 4);
 #endif //DEBUG
+    }
   }
 }
 
@@ -523,7 +555,7 @@ void show_tree(StatisticViewerData * statistic_viewer_data,
 void show_statistic(StatisticViewerData * statistic_viewer_data,
         LttvAttribute* stats, GtkTextBuffer* buf)
 {
-  int i, nb , flag;
+  int i, nb = 0, flag;
   LttvAttributeName name;
   LttvAttributeValue value;
   LttvAttributeType type;
@@ -532,7 +564,9 @@ void show_statistic(StatisticViewerData * statistic_viewer_data,
   GtkTextIter   text_iter;
   
   flag = 0;
-  nb = lttv_attribute_get_number(stats);
+  if(stats) {
+	  nb = lttv_attribute_get_number(stats);
+  }
   for(i = 0 ; i < nb ; i++) {
     type = lttv_attribute_get(stats, i, &name, &value, &is_named);
 		if(is_named)

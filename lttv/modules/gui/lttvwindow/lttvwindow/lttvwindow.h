@@ -361,6 +361,36 @@ void lttvwindow_unregister_time_window_notify(Tab *tab,
                                               LttvHook    hook, 
                                               gpointer    hook_data);
 
+/**
+ * Function to register a hook function that will be called by the main window
+ * when the time span of the traceset is updated.
+ * 
+ * This register function is typically called by the constructor of the viewer.
+ * 
+ * @param tab the tab the viewer belongs to.
+ * @param hook hook that sould be called by the main window when the time
+ *             interval changes. 
+ * @param hook_data hook data associated with the hook function. It will
+ *                  be typically a pointer to the viewer's data structure.
+ */
+void lttvwindow_register_timespan_notify(Tab *tab,
+                                            LttvHook    hook,
+                                            gpointer    hook_data);
+
+/**
+ * Function to unregister the time_span notification hook.
+ * 
+ * This unregister function is typically called by the destructor of the viewer.
+ * 
+ * @param tab the tab the viewer belongs to.
+ * @param hook hook that sould be called by the main window when the time
+ *             interval changes. 
+ * @param hook_data hook data associated with the hook function. It will
+ *                  be typically a pointer to the viewer's data structure.
+ */
+void lttvwindow_unregister_timespan_notify(Tab *tab,
+                                            LttvHook    hook,
+                                            gpointer    hook_data);
 
 /**
  * Function to register a hook function that will be called by the main window

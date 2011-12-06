@@ -1,4 +1,3 @@
-
 /* This file is part of the Linux Trace Toolkit viewer
  * Copyright (C) 2010 Yannick Brosseau
  *

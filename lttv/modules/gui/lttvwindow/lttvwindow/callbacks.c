@@ -101,7 +101,6 @@ enum
 };
 
 
-
 #if 0
 static void on_top_notify(GObject    *gobject,
 		GParamSpec *arg1,
@@ -303,71 +302,8 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
                                             new_time_window.time_width) ;
   }
 
- 
- 
-#if 0
-  /* Set scrollbar */
-  GtkAdjustment *adjustment = gtk_range_get_adjustment(GTK_RANGE(tab->scrollbar));
-  LttTime upper = ltt_time_sub(time_span.end_time, time_span.start_time);
-      
-  g_object_set(G_OBJECT(adjustment),
-               "lower",
-                 0.0, /* lower */
-               "upper",
-               ltt_time_to_double(upper) 
-                 * NANOSECONDS_PER_SECOND, /* upper */
-               "step_increment",
-               ltt_time_to_double(tab->time_window.time_width)
-                             / SCROLL_STEP_PER_PAGE
-                             * NANOSECONDS_PER_SECOND, /* step increment */
-               "page_increment",
-               ltt_time_to_double(tab->time_window.time_width) 
-                 * NANOSECONDS_PER_SECOND, /* page increment */
-               "page_size",
-               ltt_time_to_double(tab->time_window.time_width) 
-                 * NANOSECONDS_PER_SECOND, /* page size */
-               NULL);
-  gtk_adjustment_changed(adjustment);
-
-  g_object_set(G_OBJECT(adjustment),
-               "value",
-               ltt_time_to_double(
-                ltt_time_sub(tab->time_window.start_time, time_span.start_time))
-                   * NANOSECONDS_PER_SECOND, /* value */
-               NULL);
-  gtk_adjustment_value_changed(adjustment);
-
-  /* set the time bar. The value callbacks will change their nsec themself */
-  /* start seconds */
-  gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry1),
-                            (double)time_span.start_time.tv_sec,
-                            (double)time_span.end_time.tv_sec);
-
-  /* end seconds */
-  gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry3),
-                            (double)time_span.start_time.tv_sec,
-                            (double)time_span.end_time.tv_sec);
-
-   /* current seconds */
-  gtk_spin_button_set_range(GTK_SPIN_BUTTON(tab->MEntry5),
-                            (double)time_span.start_time.tv_sec,
-                            (double)time_span.end_time.tv_sec);
-#endif //0
-  
   /* Finally, call the update hooks of the viewers */
-  LttvHooks * tmp;
-  LttvAttributeValue value;
-  gint retval = 0;
- 
-  retval= lttv_iattribute_find_by_path(tab->attributes,
-    "hooks/updatetraceset", LTTV_POINTER, &value);
-  g_assert(retval);
-
-  tmp = (LttvHooks*)*(value.v_pointer);
-  if(tmp == NULL)
-	  retval = 1;
-  else
-	  lttv_hooks_call(tmp,traceset);
+  gint retval = update_traceset(tab,traceset);
 
   time_change_manager(tab, new_time_window);
   current_time_change_manager(tab, new_current_time);
@@ -408,20 +344,48 @@ int SetFilter(Tab * tab, gpointer filter)
  * @param tab viewer's tab 
  */
 
-void update_traceset(Tab *tab)
+int update_traceset(Tab *tab, LttvTraceset *traceset)
 {
   LttvAttributeValue value;
   LttvHooks * tmp;
   gboolean retval;
 
   retval= lttv_iattribute_find_by_path(tab->attributes,
-    "hooks/updatetraceset", LTTV_POINTER, &value);
+				  "hooks/updatetraceset", 
+				  LTTV_POINTER, 
+				  &value);
   g_assert(retval);
   tmp = (LttvHooks*)*(value.v_pointer);
-  if(tmp == NULL) return;
-  lttv_hooks_call(tmp, NULL);
+  if(tmp == NULL) {
+	  retval = 1;
+  } else {
+	  lttv_hooks_call(tmp, traceset);
+  }
+  return retval;
 }
 
+/** 
+    Call hooks register to get update on traceset time span changes
+*/
+int notify_time_span_changed(Tab *tab)
+{
+  LttvAttributeValue value;
+  LttvHooks * tmp;
+  gboolean retval;
+
+  retval= lttv_iattribute_find_by_path(tab->attributes,
+				  "hooks/updatetimespan", 
+				  LTTV_POINTER, 
+				  &value);
+  g_assert(retval);
+  tmp = (LttvHooks*)*(value.v_pointer);
+  if(tmp == NULL) {
+	  retval = 1;
+  } else {
+	  lttv_hooks_call(tmp, NULL);
+  }
+  return retval;
+}
 
 /* get_label function is used to get user input, it displays an input
  * box, which allows user to input a string 
@@ -1506,7 +1470,49 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 }
 
 #undef list_out
+/** 
+    Manage the periodic update of a live trace
+*/
+static gboolean
+live_trace_update_handler(Tab *tab)
+{  
+	unsigned int updated_count;
 
+	LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
+	TimeInterval initial_time_span = tsc->time_span;
+	TimeInterval updated_time_span;
+
+	updated_count = lttv_process_traceset_update(tsc);
+	
+	/* TODO ybrosseau 2011-01-12: Add trace resynchronization  */
+
+	/* Get the changed period bounds */
+	updated_time_span = tsc->time_span;
+
+	if(ltt_time_compare(updated_time_span.start_time, 
+				initial_time_span.start_time) != 0) {
+		/* The initial time should not change on a live update */
+		g_assert(FALSE);
+	}
+
+	/* Notify viewers (only on updates) */
+	if(ltt_time_compare(updated_time_span.end_time, 
+				initial_time_span.end_time) != 0) {
+		
+		notify_time_span_changed(tab);
+		/* TODO ybrosseau 2011-01-12: Change the timebar to register 
+		   to the time_span hook */
+		timebar_set_minmax_time(TIMEBAR(tab->MTimebar),
+					&updated_time_span.start_time,
+					&updated_time_span.end_time );
+		
+		/* To update the min max */
+		time_change_manager(tab, tab->time_window);
+	}
+
+	/* Timer will be recalled as long as there is files to update */
+	return (updated_count > 0);
+}
 
 static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 {
@@ -1561,6 +1567,16 @@ static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 
   //FIXME
   //add_trace_into_traceset_selector(GTK_MULTIVPANED(tab->multivpaned), lttv_trace(trace_v));
+
+
+  if (lttv_trace(trace_v)->is_live) {
+	  /* Add timer for live update */
+	  /* TODO ybrosseau 2011-01-12: Parametrize the hardcoded 1 seconds */
+	  g_timeout_add_seconds (1,
+				 (GSourceFunc) live_trace_update_handler,
+				 tab);
+  }
+
 }
 
 /* add_trace adds a trace into the current traceset. It first displays a 
@@ -1593,6 +1609,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
   }
 
   /* File open dialog management */
+  GtkWidget *extra_live_button; 
   GtkFileChooser * file_chooser = 
 	  GTK_FILE_CHOOSER(
 		  gtk_file_chooser_dialog_new ("Select a trace",
@@ -1601,6 +1618,11 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 					  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 					  GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
 					  NULL));
+
+  /* Button to indicate the opening of a live trace */
+  extra_live_button = gtk_check_button_new_with_mnemonic ("Trace is live (currently being writen)");
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (extra_live_button), FALSE);
+  gtk_file_chooser_set_extra_widget (GTK_FILE_CHOOSER (file_chooser), extra_live_button);
 
   gtk_file_chooser_set_show_hidden (file_chooser, TRUE);
   if(remember_trace_dir[0] != '\0')
@@ -1612,6 +1634,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
     case GTK_RESPONSE_ACCEPT:
     case GTK_RESPONSE_OK:
       dir = gtk_file_chooser_get_filename (file_chooser);
+
       strncpy(remember_trace_dir, dir, PATH_MAX);
       strncat(remember_trace_dir, "/", PATH_MAX);
       if(!dir || strlen(dir) == 0){
@@ -1620,7 +1643,12 @@ void add_trace(GtkWidget * widget, gpointer user_data)
       get_absolute_pathname(dir, abs_path);
       trace_v = lttvwindowtraces_get_trace_by_name(abs_path);
       if(trace_v == NULL) {
-        trace = ltt_trace_open(abs_path);
+	if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (extra_live_button))) {
+	  trace = ltt_trace_open_live(abs_path);
+	} else {
+	  trace = ltt_trace_open(abs_path);
+	}
+	  
         if(trace == NULL) {
           g_warning("cannot open trace %s", abs_path);
 
@@ -3295,7 +3323,6 @@ void current_position_change_manager(Tab *tab,
   set_current_position(tab, pos);
 }
 
-
 static void on_timebar_starttime_changed(Timebar *timebar,
 				gpointer user_data)
 {
@@ -4084,7 +4111,7 @@ gboolean execute_events_requests(Tab *tab)
 }
 
 
-__EXPORT void create_main_window_with_trace_list(GSList *traces)
+__EXPORT void create_main_window_with_trace_list(GSList *traces, gboolean is_live)
 {
   GSList *iter = NULL;
 
@@ -4116,7 +4143,11 @@ __EXPORT void create_main_window_with_trace_list(GSList *traces)
     get_absolute_pathname(path, abs_path);
     trace_v = lttvwindowtraces_get_trace_by_name(abs_path);
     if(trace_v == NULL) {
-      trace = ltt_trace_open(abs_path);
+      if(is_live) {
+	trace = ltt_trace_open_live(abs_path);
+      } else {
+	trace = ltt_trace_open(abs_path);
+      }
       if(trace == NULL) {
         g_warning("cannot open trace %s", abs_path);
 

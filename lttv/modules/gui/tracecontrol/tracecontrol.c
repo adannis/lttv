@@ -1115,7 +1115,8 @@ void stop_clicked (GtkButton *button, gpointer user_data)
   switch(id){
     case GTK_RESPONSE_ACCEPT:
       {
-        create_main_window_with_trace_list(trace_list);
+	       /* TODO ybrosseau: 2011-04-20: Add support for live trace */
+	      create_main_window_with_trace_list(trace_list, FALSE);
       }
       break;
     case GTK_RESPONSE_REJECT:

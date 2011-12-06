@@ -99,6 +99,7 @@ gboolean update_current_time(void * hook_data, void * call_data);
 gboolean update_current_position(void * hook_data, void * call_data);
 //gboolean show_event_detail(void * hook_data, void * call_data);
 gboolean traceset_changed(void * hook_data, void * call_data);
+gboolean timespan_changed(void * hook_data, void * call_data);
 gboolean filter_changed(void * hook_data, void * call_data);
 
 static void request_background_data(EventViewerData *event_viewer_data);
@@ -211,6 +212,8 @@ gui_events(LttvPluginTab *ptab)
                 update_current_position,event_viewer_data);
   lttvwindow_register_traceset_notify(tab, 
                 traceset_changed,event_viewer_data);
+  lttvwindow_register_time_span_notify(tab, 
+                timespan_changed,event_viewer_data);
   lttvwindow_register_filter_notify(tab,
                 filter_changed, event_viewer_data);
   lttvwindow_register_redraw_notify(tab,
@@ -449,12 +452,14 @@ gui_events(LttvPluginTab *ptab)
   g_signal_connect (G_OBJECT (event_viewer_data->vadjust_c), "value-changed",
         G_CALLBACK (v_scroll_cb),
         event_viewer_data);
+  //TODO ybrosseau 2011-01-06: Fix comment
   /* Set the upper bound to the last event number */
   event_viewer_data->previous_value = 0;
   event_viewer_data->vadjust_c->lower = 0.0;
     //event_viewer_data->vadjust_c->upper = event_viewer_data->number_of_events;
   LttTime time = lttvwindow_get_current_time(tab);
   time = ltt_time_sub(time, tsc->time_span.start_time);
+  //TODO ybrosseau 2011-01-06: Which one do we keep?
   event_viewer_data->vadjust_c->value = ltt_time_to_double(time);
   event_viewer_data->vadjust_c->value = 0.0;
   event_viewer_data->vadjust_c->step_increment = 1.0;
@@ -1769,7 +1774,27 @@ gboolean update_current_position(void * hook_data, void * call_data)
   return FALSE;
 }
 
+gboolean timespan_changed(void * hook_data, void * call_data)
+{
+  EventViewerData *event_viewer_data = (EventViewerData*) hook_data;
+  LttvTracesetContext * tsc =
+        lttvwindow_get_traceset_context(event_viewer_data->tab);
+  TimeInterval time_span = tsc->time_span;
+ 
+  LttTime end;
 
+  end = ltt_time_sub(time_span.end_time, time_span.start_time);
+  event_viewer_data->vadjust_c->upper = ltt_time_to_double(end);
+
+  if(event_viewer_data->pos->len < event_viewer_data->num_visible_events ) {
+
+	  
+	  get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+	  
+	  request_background_data(event_viewer_data);
+  }
+  return FALSE;
+}
 
 gboolean traceset_changed(void * hook_data, void * call_data)
 {
@@ -1863,6 +1888,8 @@ void gui_events_free(gpointer data)
     //                    show_event_detail, event_viewer_data);
     lttvwindow_unregister_traceset_notify(tab,
                         traceset_changed, event_viewer_data);
+    lttvwindow_unregister_time_span_notify(tab,
+				    timespan_changed,event_viewer_data);
     lttvwindow_unregister_filter_notify(tab,
                         filter_changed, event_viewer_data);
     lttvwindow_unregister_redraw_notify(tab,
