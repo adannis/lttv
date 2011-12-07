@@ -75,6 +75,8 @@ char * get_selection(MainWindow *mw,
 void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
 		  GtkNotebook * notebook, char * label);
 
+int update_traceset(Tab *tab, LttvTraceset *traceset);
+
 static void insert_viewer(GtkWidget* widget, lttvwindow_viewer_constructor constructor);
 
 LttvPluginTab *create_new_tab(GtkWidget* widget, gpointer user_data);
@@ -303,7 +305,7 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
   }
 
   /* Finally, call the update hooks of the viewers */
-  gint retval = update_traceset(tab,traceset);
+  gint retval = update_traceset(tab, traceset);
 
   time_change_manager(tab, new_time_window);
   current_time_change_manager(tab, new_current_time);

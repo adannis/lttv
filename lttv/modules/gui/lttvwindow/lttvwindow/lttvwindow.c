@@ -474,7 +474,7 @@ __EXPORT void lttvwindow_unregister_time_window_notify(Tab *tab,
  * @param hook hook function of the viewer.
  * @param hook_data hook data associated with the hook function.
  */
-__EXPORT void lttvwindow_register_time_span_notify(Tab *tab,
+__EXPORT void lttvwindow_register_timespan_notify(Tab *tab,
     LttvHook hook, gpointer hook_data)
 {
   LttvAttributeValue value;
@@ -499,7 +499,7 @@ __EXPORT void lttvwindow_register_time_span_notify(Tab *tab,
  * @param hook_data hook data associated with the hook function.
  */
 
-__EXPORT void lttvwindow_unregister_time_span_notify(Tab *tab,
+__EXPORT void lttvwindow_unregister_timespan_notify(Tab *tab,
     LttvHook hook, gpointer hook_data)
 {
   LttvAttributeValue value;

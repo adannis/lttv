@@ -212,7 +212,7 @@ gui_events(LttvPluginTab *ptab)
                 update_current_position,event_viewer_data);
   lttvwindow_register_traceset_notify(tab, 
                 traceset_changed,event_viewer_data);
-  lttvwindow_register_time_span_notify(tab, 
+  lttvwindow_register_timespan_notify(tab, 
                 timespan_changed,event_viewer_data);
   lttvwindow_register_filter_notify(tab,
                 filter_changed, event_viewer_data);
@@ -1888,7 +1888,7 @@ void gui_events_free(gpointer data)
     //                    show_event_detail, event_viewer_data);
     lttvwindow_unregister_traceset_notify(tab,
                         traceset_changed, event_viewer_data);
-    lttvwindow_unregister_time_span_notify(tab,
+    lttvwindow_unregister_timespan_notify(tab,
 				    timespan_changed,event_viewer_data);
     lttvwindow_unregister_filter_notify(tab,
                         filter_changed, event_viewer_data);
