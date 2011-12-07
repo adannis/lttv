@@ -95,7 +95,7 @@ static void initProcessingText(SyncState* const syncState, ...)
 	processingData->testCase= fopen(testCaseName, "r");
 	if (processingData->testCase == NULL)
 	{
-		g_error(strerror(errno));
+		g_error("%s", strerror(errno));
 	}
 	syncState->traceNb= readTraceNb(processingData->testCase);
 
@@ -162,7 +162,7 @@ static AllFactors* finalizeProcessingText(SyncState* const syncState)
 
 		if (retval == -1 && !feof(testCase))
 		{
-			g_error(strerror(errno));
+			g_error("%s", strerror(errno));
 		}
 
 		if (line[retval - 1] == '\n')
@@ -174,7 +174,7 @@ static AllFactors* finalizeProcessingText(SyncState* const syncState)
 			&sendTime, &recvTime, &tmp);
 		if (retval == EOF)
 		{
-			g_error(strerror(errno));
+			g_error("%s", strerror(errno));
 		}
 		else if (retval != 4)
 		{
@@ -311,7 +311,7 @@ static unsigned int readTraceNb(FILE* testCase)
 		}
 		else
 		{
-			g_error(strerror(errno));
+			g_error("%s", strerror(errno));
 		}
 	}
 	if (line[retval - 1] == '\n')
@@ -365,7 +365,7 @@ static void skipCommentLines(FILE* testCase)
 				}
 				else
 				{
-					g_error(strerror(errno));
+					g_error("%s", strerror(errno));
 				}
 			}
 		}

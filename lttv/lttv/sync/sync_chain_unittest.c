@@ -256,7 +256,7 @@ int main(const int argc, char* const argv[])
 
 		if (fclose(syncState->graphsStream) != 0)
 		{
-			g_error(strerror(errno));
+			g_error("%s", strerror(errno));
 		}
 	}
 
