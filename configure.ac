@@ -208,3 +208,23 @@ AC_CONFIG_FILES([Makefile
 
 AC_OUTPUT
 
+# Report on what will be built
+AS_ECHO()
+AS_ECHO("The following components will be built:")
+AS_ECHO("LTT trace reading library: Enabled") # It's always enabled!
+
+AS_ECHO_N("LTTV command line tool:    ")
+AS_IF([test "x$with_lttv" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
+
+AS_ECHO_N("LTTV graphical interface:  ")
+AS_IF([test "x$with_lttv_gui" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
+
+AS_ECHO_N("Trace synchronization:     ")
+AS_IF([test "x$with_trace_sync" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
+
+AS_ECHO_N("Java (JNI) interface:      ")
+AS_IF([test "x$with_jni_interface" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
+
+AS_ECHO()
+AS_ECHO("Type 'make' to build LTTV.")
+
