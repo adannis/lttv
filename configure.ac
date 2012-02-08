@@ -149,9 +149,9 @@ AC_CHECK_FUNCS([select])
 AC_ARG_ENABLE(lttvstatic,
 	AS_HELP_STRING([--enable-lttvstatic],
 	[build a statically linked executable [[default=no]]]),
-	[with_lttvstatic="$withval"],
-	[with_lttvstatic="no"])
-AM_CONDITIONAL([LTTVSTATIC], [ test "x$with_lttvstatic" = "xyes" ] )
+	[lttvstatic="$enableval"],
+	[lttvstatic="no"])
+AM_CONDITIONAL([LTTVSTATIC], [ test "x$lttvstatic" = "xyes" ] )
 
 lttvlibdir="${libdir}/lttv"
 lttvplugindir="${lttvlibdir}/plugins"
@@ -224,6 +224,10 @@ AS_IF([test "x$with_trace_sync" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disable
 
 AS_ECHO_N("Java (JNI) interface:      ")
 AS_IF([test "x$with_jni_interface" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
+
+AS_ECHO()
+AS_ECHO_N("Statically linked executable: ")
+AS_IF([test "x$lttvstatic" = "xyes"],[AS_ECHO("Yes")],[AS_ECHO("No")])
 
 AS_ECHO()
 AS_ECHO("Type 'make' to build LTTV.")
