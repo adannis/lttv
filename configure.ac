@@ -22,40 +22,41 @@
 
 AC_PREREQ(2.57)
 AC_INIT([lttv], [0.12.38-21032011], [yannick.brosseau@gmail.com])
-AM_INIT_AUTOMAKE
+AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_MACRO_DIR([config])
+AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
 AM_SILENT_RULES([yes])
-AM_CONFIG_HEADER(config.h)
-AM_PROG_LIBTOOL
+AC_CONFIG_HEADERS([config.h])
+LT_INIT
 
-# If requested, only build LTT library part
-AC_ARG_WITH(lttv, [  --with-lttv             build whole LTTV system, as opposd to only the trace reading library
-			  [[default=yes]]])
-if test -z "$with_lttv"; then
-        with_lttv=${with_lttv_default-yes}
-else
-	if test "$with_lttv" = "no"; then
-	        # Requesting lib-only turn off the lttv-gui building as well
-        	with_lttv_gui="no"
-	fi
-fi
-AM_CONDITIONAL(BUILD_LIB_ONLY, test "$with_lttv" = "no")
+# If requested, only build the ltt trace reading library
+AC_ARG_WITH(lttv,
+	AS_HELP_STRING([--with-lttv],
+	[build whole LTTV system, as opposd to only the trace reading library [[default=yes]]]),
+	[with_lttv="$withval"],
+	[with_lttv="yes"])
+
+# If we've requested the lib only, turn off the lttv-gui building as well
+AS_IF([test "x$with_lttv" = "xno"], [with_lttv_gui="no"])
+
+AM_CONDITIONAL([BUILD_LIB_ONLY], [ test "x$with_lttv" = "xno" ])
 
 
 # If requested, avoid building LTTV part
-AC_ARG_WITH(lttv-gui, [  --with-lttv-gui         build LTTV gui, as opposed to only build textmode LTTV
-			  [[default=yes]]])
+AC_ARG_WITH(lttv-gui,
+	AS_HELP_STRING([--with-lttv-gui],
+	[build LTTV gui, as opposed to only build textmode LTTV [[default=yes]]]),
+	[with_lttv_gui="$withval"],
+	[with_lttv_gui="yes"])
 
-if test -z "$with_lttv_gui"; then
-        with_lttv_gui=${with_lttv_gui_default-yes}
-fi
-AM_CONDITIONAL(BUILD_LTTV_GUI, test "$with_lttv_gui" = "yes")
+AM_CONDITIONAL([BUILD_LTTV_GUI], [ test "x$with_lttv_gui" = "xyes" ])
 
-AM_PATH_GLIB_2_0(2.4.0, ,AC_MSG_ERROR([glib is required in order to compile LinuxTraceToolkit - download it from ftp://ftp.gtk.org/pub/gtk]) , gmodule)
+AM_PATH_GLIB_2_0(2.4.0, , AC_MSG_ERROR([glib is required in order to compile LTTV]) , gmodule)
 
 # GTK is only needed by the GUI
-if test "$with_lttv_gui" = "yes" ; then
-        AM_PATH_GTK_2_0(2.4.0, ,AC_MSG_ERROR([gtk is required in order to compile GUI - download it from ftp://ftp.gtk.org/pub/gtk]) , gmodule)
-fi
+AS_IF([test "x$with_lttv_gui" = "xyes"],[
+	AM_PATH_GTK_2_0(2.4.0, , AC_MSG_ERROR([GTK 2 is required in order to compile the LTTV GUI]) , gmodule)
+])
 
 AC_PATH_PROGS(BASH, bash)
 
@@ -65,103 +66,90 @@ AC_SYS_LARGEFILE
 AC_PROG_CC
 
 # Checks for libraries.
-AC_CHECK_LIB([popt], [poptGetNextOpt], POPT_LIBS="-lpopt",
-	AC_MSG_ERROR([libpopt is required in order to compile LinuxTraceToolkit]))
-AC_CHECK_LIB([m], [round], M_LIBS="-lm",
-	AC_MSG_ERROR([Mathematical libraries are missing.]))
-AC_CHECK_LIB([util], [forkpty], UTIL_LIBS="-lutil",
-	AC_MSG_ERROR([libutil is required in order to compile LinuxTraceToolkit]))
+AC_CHECK_LIB([popt], [poptGetNextOpt], [],
+	AC_MSG_ERROR([libpopt is required in order to compile LTTV])
+)
+AC_CHECK_LIB([m], [round], [],
+	AC_MSG_ERROR([Mathematical libraries are missing.])
+)
+AC_CHECK_LIB([util], [forkpty], [],
+	AC_MSG_ERROR([libutil is required in order to compile LTTV])
+)
 
-AC_ARG_WITH([glpk],
-	[AS_HELP_STRING([--with-glpk@<:@=DIR@:>@],
-		[support trace synchronization accuracy calculation (needs glpk)
-			@<:@default=check@:>@])],
-	[],
-	[with_glpk=check])
+# Trace synchronization feature, which requires libglpk
+AC_ARG_WITH([trace-sync],
+	AS_HELP_STRING([--with-trace-sync],
+	[support trace synchronization accuracy calculation (needs libglpk) [default=no]]),
+	[with_trace_sync="$withval"],
+	[with_trace_sync="no"])
 
-GLPK_LIBS=
-	AS_IF([test "x$with_glpk" != xno],
-		[if test "x$with_glpk" != xyes -a -d "$with_glpk"; then
-			LDFLAGS="$LDFLAGS -L$with_glpk"
-		fi
-		AC_CHECK_LIB([glpk], [glp_create_prob],
-			[AC_SUBST([GLPK_LIBS], ["-lglpk"])
-			AC_DEFINE([HAVE_LIBGLPK], [1], [Define if you have libglpk])],
-			[if test "x$with_glpk" != xcheck; then
-				AC_MSG_FAILURE(
-					[--with-glpk was given, but test for glpk failed])
-			fi],
-		-lm)])
+AS_IF([test "x$with_trace_sync" = "xyes"],[
+	AC_CHECK_LIB([glpk], [glp_create_prob], [], [
+		AC_MSG_ERROR([The trace synchronization feature requires libglpk, please install it first.])
+	])
+	AC_DEFINE([HAVE_LIBGLPK], [1], [Define if you have libglpk]),
+])
 
-# pthread for gdb with dlopen().
-AC_CHECK_LIB(pthread, pthread_join, [], AC_MSG_ERROR([LinuxThreads is required in order to make sure gdb works fine with lttv-gui]))
 
 # Checks for header files.
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h stdlib.h string.h sys/time.h unistd.h pthread.h])
 
 # Set compile flags to java include files if given
-AC_ARG_WITH(java_jdk, [  --with-java-jdk=DIR     use java jdk from DIR. Ex : $JAVA_HOME.], JAVA_SDK=$withval,)
-if test $JAVA_SDK; then
-        if test -d $JAVA_SDK; then
-                AC_MSG_RESULT([using java include in $JAVA_SDK])
-                SUBDIRS=`find $JAVA_SDK/include -type d`
+AC_ARG_WITH([java-jdk],
+	AS_HELP_STRING([--with-java-jdk=DIR],
+	[use java jdk from DIR. Ex : $JAVA_HOME.]),
+	[JAVA_SDK=$withval],
+	[])
+
+AS_IF([test $JAVA_SDK],[
+	AS_IF([test -d $JAVA_SDK],[
+		AC_MSG_RESULT([using java include in $JAVA_SDK])
+		SUBDIRS=`find $JAVA_SDK/include -type d`
 		CFLAGS+=" "
-                CFLAGS+=`for x in $SUBDIRS; do echo -n "-I$x "; done`
+		CFLAGS+=`for x in $SUBDIRS; do echo -n "-I$x "; done`
 		CFLAGS+=" "
-        else
-                AC_MSG_ERROR(Unable to find java include file in $JAVA_JDK)
-        fi
-fi
+        ],[
+                AC_MSG_ERROR([Unable to find Java include files in $JAVA_JDK])
+        ])
+])
 
 
 # Check for JNI header files if requested
-AC_ARG_WITH(jni-interface, [  --with-jni-interface    build JNI interface between C and java. Need java include files.
-			  [[default=no]]])
+AC_ARG_WITH(jni-interface,
+	AS_HELP_STRING([--with-jni-interface],
+	[build JNI interface between C and Java. Needs JNI header file. [[default=no]]]),
+	[with_jni_interface="$withval"],
+	[with_jni_interface="no"])
 
-if test -z "$with_jni_interface"; then
-        with_jni_interface=${with_jni_interface_default-no}
-fi
-
-if test "$with_jni_interface" = "yes"; then
-        AC_CHECK_HEADERS([jni.h],,AC_MSG_ERROR([
-missing jni.h
+AS_IF([test "x$with_jni_interface" = "xyes"],[
+        AC_CHECK_HEADERS([jni.h], [], AC_MSG_ERROR([missing jni.h
 Make sure Sun Java or OpenJDK or GCJ is installed and that this header file exists in the system path.
-Use --with-java-jdk=DIR flag to point to your java include files or desactivate the JNI interface.]))
-fi
-AM_CONDITIONAL(BUILD_JNI_INTERFACE, test "$with_jni_interface" = "yes")
+Use --with-java-jdk=DIR flag to point to your java include files or deactivate the JNI interface.]))
+])
+AM_CONDITIONAL([BUILD_JNI_INTERFACE], [ test "$with_jni_interface" = "yes" ] )
 
-
-AC_ISC_POSIX
-AC_PROG_CC
-AM_PROG_CC_STDC
-AC_HEADER_STDC
 
 # If we want the gui, we need additionnal flags for GTK
-if test "$with_lttv_gui" = "yes" ; then
-        pkg_modules="gtk+-2.0 >= 2.0.0"
-        PKG_CHECK_MODULES(PACKAGE, [$pkg_modules])
-        PACKAGE_CFLAGS="-Wall -Wformat"
-        AC_SUBST(PACKAGE_CFLAGS)
-        AC_SUBST(PACKAGE_LIBS)
-# Else, we still have a dependency on gmodule
-# We will add flags for gmodule alone
-else
-        pkg_modules="gmodule-2.0 >= 2.0.0"
-        PKG_CHECK_MODULES(GMODULE, [$pkg_modules])
-        PACKAGE_CFLAGS="-Wall -Wformat"
-        AC_SUBST(PACKAGE_CFLAGS)
-        AC_SUBST(PACKAGE_LIBS)
-fi
+AS_IF([test "x$with_lttv_gui" = "xyes"],[
+	pkg_modules="gtk+-2.0 >= 2.0.0"
+	PKG_CHECK_MODULES(PACKAGE, [$pkg_modules])
+],[
+	# Else, we still have a dependency on gmodule
+	# We will add flags for gmodule alone
+	pkg_modules="gmodule-2.0 >= 2.0.0"
+	PKG_CHECK_MODULES(GMODULE, [$pkg_modules])
+])
 
 pkg_modules="gobject-2.0 >= 2.0.0"
 PKG_CHECK_MODULES(GOBJECT, [$pkg_modules])
 
-LIBS="$LIBS $M_LIBS $GTK_LIBS $GOBJECT_LIBS $GMODULE_LIBS"
-PACKAGE_CFLAGS="$GTK_CFLAGS $GOBJECT_CFLAGS $GMODULE_CFLAGS -Wall -Wformat"
+LIBS="$LIBS $GTK_LIBS $GOBJECT_LIBS $GMODULE_LIBS"
+PACKAGE_CFLAGS="$GTK_CFLAGS $GOBJECT_CFLAGS $GMODULE_CFLAGS -Wall -Wformat-security"
 MODULE_CFLAGS="$PACKAGE_CFLAGS -fvisibility=hidden"
 MODULE_LDFLAGS="-module -avoid-version"
 AC_SUBST([PACKAGE_CFLAGS])
+AC_SUBST(PACKAGE_LIBS)
 AC_SUBST([MODULE_CFLAGS])
 AC_SUBST([MODULE_LDFLAGS])
 
@@ -175,18 +163,16 @@ AC_HEADER_TIME
 
 # Checks for library functions.
 AC_FUNC_ERROR_AT_LINE
-#AC_FUNC_MALLOC
 AC_FUNC_SELECT_ARGTYPES
 AC_CHECK_FUNCS([select])
 
-#CPPFLAGS="$CPPFLAGS -I"
-
 AC_ARG_ENABLE(lttvstatic,
-	AC_HELP_STRING( [--enable-lttvstatic],
-		[build a statically linked executable @<:@default=no@:>@]),
-		[with_lttvstatic="yes"],
-		[with_lttvstatic="no"])
-AM_CONDITIONAL(LTTVSTATIC, test "x$with_lttvstatic" = "xyes")
+	AS_HELP_STRING([--enable-lttvstatic],
+	[build a statically linked executable [[default=no]]]),
+	[with_lttvstatic="$withval"],
+	[with_lttvstatic="no"])
+AM_CONDITIONAL([LTTVSTATIC], [ test "x$with_lttvstatic" = "xyes" ] )
+
 lttvlibdir="${libdir}/lttv"
 lttvplugindir="${lttvlibdir}/plugins"
 #lttlibdir="${libdir}/ltt"
@@ -200,8 +186,6 @@ lttvincludedir="${includedir}/lttv"
 lttvwindowincludedir="${includedir}/lttvwindow"
 lttctlincludedir="${includedir}/liblttctl"
 
-AC_SUBST([POPT_LIBS])
-AC_SUBST([UTIL_LIBS])
 AC_SUBST(lttvlibdir)
 AC_SUBST(lttvplugindir)
 #AC_SUBST(lttlibdir)
@@ -213,8 +197,6 @@ AC_SUBST(lttvincludedir)
 AC_SUBST(lttvwindowincludedir)
 AC_SUBST(lttctlincludedir)
 
-		 #lttv/modules/gui/tutorial/Makefile
-		 #lttv/modules/gui/diskperformance/Makefile
 AC_CONFIG_FILES([Makefile
 	lttv/Makefile
 	lttv/lttv/Makefile
@@ -243,4 +225,6 @@ AC_CONFIG_FILES([Makefile
 	doc/user/user_guide/Makefile
 	doc/user/user_guide/docbook/Makefile
 	doc/user/user_guide/html/Makefile])
+
 AC_OUTPUT
+

@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I config
+
 # WARNING : ltt must come before lttv, so that the traceread library is
 # up to date
 
