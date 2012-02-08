@@ -114,12 +114,10 @@ AM_CONDITIONAL([BUILD_JNI_INTERFACE], [ test "$with_jni_interface" = "yes" ] )
 AS_IF([test "x$with_lttv_gui" = "xyes"],[
 	pkg_modules="gtk+-2.0 >= 2.0.0"
 	PKG_CHECK_MODULES(PACKAGE, [$pkg_modules])
-],[
-	# Else, we still have a dependency on gmodule
-	# We will add flags for gmodule alone
-	pkg_modules="gmodule-2.0 >= 2.0.0"
-	PKG_CHECK_MODULES(GMODULE, [$pkg_modules])
 ])
+
+pkg_modules="gmodule-2.0 >= 2.0.0"
+PKG_CHECK_MODULES(GMODULE, [$pkg_modules])
 
 pkg_modules="gobject-2.0 >= 2.0.0"
 PKG_CHECK_MODULES(GOBJECT, [$pkg_modules])
