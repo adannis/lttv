@@ -73,3 +73,9 @@ compile the git repository tree :
 
 If you get the tree from the repository, you will need to use the autogen.sh
 script. It calls all the GNU tools needed to prepare the tree configuration.
+
+
+* Contact
+
+	Maintainer: Yannick Brosseau <yannick.brosseau@gmail.com>
+	Mailing List: lttng-dev@lists.lttng.org
