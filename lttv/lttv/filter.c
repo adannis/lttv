@@ -156,22 +156,22 @@ gboolean lttv_simple_expression_assign_field(GPtrArray* fp,
 	 * as a dynamic field
 	 */
 
-	if(!g_strcasecmp(f->str,"trace") ) {
+	if(!g_ascii_strcasecmp(f->str,"trace") ) {
 		/*
 		 * Possible values:
 		 *	trace.name
 		 */
 		g_string_free(f,TRUE);
 		f=ltt_g_ptr_array_remove_index_slow(fp,0);
-		if(!g_strcasecmp(f->str,"name")) {
+		if(!g_ascii_strcasecmp(f->str,"name")) {
 			se->field = LTTV_FILTER_TRACE_NAME;
 		}
-	} else if(!g_strcasecmp(f->str,"traceset") ) {
+	} else if(!g_ascii_strcasecmp(f->str,"traceset") ) {
 		/*
 		 * FIXME: not yet implemented !
 		 */
-	} else if(!g_strcasecmp(f->str,"tracefile")
-						|| !g_strcasecmp(f->str,"channel") ) {
+	} else if(!g_ascii_strcasecmp(f->str,"tracefile")
+						|| !g_ascii_strcasecmp(f->str,"channel") ) {
 		/*
 		 * Possible values:
 		 *	tracefile.name
@@ -179,10 +179,10 @@ gboolean lttv_simple_expression_assign_field(GPtrArray* fp,
 		 */
 		g_string_free(f,TRUE);
 		f=ltt_g_ptr_array_remove_index_slow(fp,0);
-		if(!g_strcasecmp(f->str,"name")) {
+		if(!g_ascii_strcasecmp(f->str,"name")) {
 			se->field = LTTV_FILTER_TRACEFILE_NAME;
 		}
-	} else if(!g_strcasecmp(f->str,"state") ) {
+	} else if(!g_ascii_strcasecmp(f->str,"state") ) {
 		/*
 		 * Possible values:
 		 *	state.pid
@@ -198,37 +198,37 @@ gboolean lttv_simple_expression_assign_field(GPtrArray* fp,
 		 */
 		g_string_free(f,TRUE);
 		f=ltt_g_ptr_array_remove_index_slow(fp,0);
-		if(!g_strcasecmp(f->str,"pid") ) {
+		if(!g_ascii_strcasecmp(f->str,"pid") ) {
 			se->field = LTTV_FILTER_STATE_PID;
 		}
-		else if(!g_strcasecmp(f->str,"ppid") ) {
+		else if(!g_ascii_strcasecmp(f->str,"ppid") ) {
 			se->field = LTTV_FILTER_STATE_PPID;
 		}
-		else if(!g_strcasecmp(f->str,"creation_time") ) {
+		else if(!g_ascii_strcasecmp(f->str,"creation_time") ) {
 			se->field = LTTV_FILTER_STATE_CT;
 		}
-		else if(!g_strcasecmp(f->str,"insertion_time") ) {
+		else if(!g_ascii_strcasecmp(f->str,"insertion_time") ) {
 			se->field = LTTV_FILTER_STATE_IT;
 		}
-		else if(!g_strcasecmp(f->str,"process_name") ) {
+		else if(!g_ascii_strcasecmp(f->str,"process_name") ) {
 			se->field = LTTV_FILTER_STATE_P_NAME;
 		}
-		else if(!g_strcasecmp(f->str,"thread_brand") ) {
+		else if(!g_ascii_strcasecmp(f->str,"thread_brand") ) {
 			se->field = LTTV_FILTER_STATE_T_BRAND;
 		}
-		else if(!g_strcasecmp(f->str,"execution_mode") ) {
+		else if(!g_ascii_strcasecmp(f->str,"execution_mode") ) {
 			se->field = LTTV_FILTER_STATE_EX_MODE;
 		}
-		else if(!g_strcasecmp(f->str,"execution_submode") ) {
+		else if(!g_ascii_strcasecmp(f->str,"execution_submode") ) {
 			se->field = LTTV_FILTER_STATE_EX_SUBMODE;
 		}
-		else if(!g_strcasecmp(f->str,"process_status") ) {
+		else if(!g_ascii_strcasecmp(f->str,"process_status") ) {
 			se->field = LTTV_FILTER_STATE_P_STATUS;
 		}
-		else if(!g_strcasecmp(f->str,"cpu") ) {
+		else if(!g_ascii_strcasecmp(f->str,"cpu") ) {
 			se->field = LTTV_FILTER_STATE_CPU;
 		}
-	} else if(!g_strcasecmp(f->str,"event") ) {
+	} else if(!g_ascii_strcasecmp(f->str,"event") ) {
 		/*
 		 * Possible values:
 		 *	event.name
@@ -242,28 +242,28 @@ gboolean lttv_simple_expression_assign_field(GPtrArray* fp,
 		g_string_free(f,TRUE);
 		f=ltt_g_ptr_array_remove_index_slow(fp,0);
 
-		if(!g_strcasecmp(f->str,"name") ) {
+		if(!g_ascii_strcasecmp(f->str,"name") ) {
 			se->field = LTTV_FILTER_EVENT_NAME;
 		}
-		else if(!g_strcasecmp(f->str,"subname") ) {
+		else if(!g_ascii_strcasecmp(f->str,"subname") ) {
 			se->field = LTTV_FILTER_EVENT_SUBNAME;
 		}
-		else if(!g_strcasecmp(f->str,"category") ) {
+		else if(!g_ascii_strcasecmp(f->str,"category") ) {
 			/*
 			 * FIXME: Category not yet functional in lttv
 			 */
 			se->field = LTTV_FILTER_EVENT_CATEGORY;
 		}
-		else if(!g_strcasecmp(f->str,"time") ) {
+		else if(!g_ascii_strcasecmp(f->str,"time") ) {
 			se->field = LTTV_FILTER_EVENT_TIME;
 		}
-		else if(!g_strcasecmp(f->str,"tsc") ) {
+		else if(!g_ascii_strcasecmp(f->str,"tsc") ) {
 			se->field = LTTV_FILTER_EVENT_TSC;
 		}
-		else if(!g_strcasecmp(f->str,"target_pid") ) {
+		else if(!g_ascii_strcasecmp(f->str,"target_pid") ) {
 			se->field = LTTV_FILTER_EVENT_TARGET_PID;
 		}
-		else if(!g_strcasecmp(f->str,"field") ) {
+		else if(!g_ascii_strcasecmp(f->str,"field") ) {
 			se->field = LTTV_FILTER_EVENT_FIELD;
 			g_string_free(f,TRUE);
 			f=ltt_g_ptr_array_remove_index_slow(fp,0);
@@ -736,7 +736,7 @@ gboolean lttv_apply_op_eq_double(const gpointer v1, LttvFieldValue v2)
 gboolean lttv_apply_op_eq_string(const gpointer v1, LttvFieldValue v2)
 {
 	char* r = (char*) v1;
-	return (!g_strcasecmp(r,v2.v_string));
+	return (!g_ascii_strcasecmp(r,v2.v_string));
 }
 
 /**
@@ -876,7 +876,7 @@ gboolean lttv_apply_op_ne_double(const gpointer v1, LttvFieldValue v2)
 gboolean lttv_apply_op_ne_string(const gpointer v1, LttvFieldValue v2)
 {
 	char* r = (char*) v1;
-	return (g_strcasecmp(r,v2.v_string));
+	return (g_ascii_strcasecmp(r,v2.v_string));
 }
 
 /**
