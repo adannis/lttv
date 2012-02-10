@@ -22,14 +22,12 @@
 /INSTALL
 /aclocal.m4
 /autom4te.cache/*
-/config.guess
+/config/
 /config.h
 /config.h.in
 /config.log
 /config.status
-/config.sub
 /configure
-/configure.lineno
 /depcomp
 /install-sh
 /libtool
