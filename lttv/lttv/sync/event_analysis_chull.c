@@ -1677,14 +1677,14 @@ static AllFactors* finalizeAnalysisCHullLP(SyncState* const syncState)
 
 				if ((fp= fopen(fileName, "w")) == NULL)
 				{
-					g_error(strerror(errno));
+					g_error("%s", strerror(errno));
 				}
 				fprintf(fp, "#%-24s %-25s %-25s %-25s\n", "x", "middle", "min", "max");
 
 				retval= chdir(cwd);
 				if (retval == -1)
 				{
-					g_error(strerror(errno));
+					g_error("%s", strerror(errno));
 				}
 				free(cwd);
 
