@@ -122,8 +122,12 @@ PKG_CHECK_MODULES(GMODULE, [$pkg_modules])
 pkg_modules="gobject-2.0 >= 2.0.0"
 PKG_CHECK_MODULES(GOBJECT, [$pkg_modules])
 
-LIBS="$LIBS $GTK_LIBS $GOBJECT_LIBS $GMODULE_LIBS"
+# Todo add test for babeltrace pkg-config
+BABELTRACE_LIBS="-lbabeltrace -lbabeltrace-ctf"
+
+LIBS="$LIBS $GTK_LIBS $GOBJECT_LIBS $GMODULE_LIBS $BABELTRACE_LIBS"
 PACKAGE_CFLAGS="$GTK_CFLAGS $GOBJECT_CFLAGS $GMODULE_CFLAGS -Wall -Wformat-security"
+
 MODULE_CFLAGS="$PACKAGE_CFLAGS -fvisibility=hidden"
 MODULE_LDFLAGS="-module -avoid-version"
 AC_SUBST([PACKAGE_CFLAGS])
