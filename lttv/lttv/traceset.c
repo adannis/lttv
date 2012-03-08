@@ -23,6 +23,7 @@
 #include <lttv/traceset.h>
 #include <lttv/iattribute.h>
 #include <stdio.h>
+#include <babeltrace/context.h>
 
 /* A trace is a sequence of events gathered in the same tracing session. The
    events may be stored in several tracefiles in the same directory. 
@@ -33,6 +34,7 @@
 struct _LttvTraceset {
 	char * filename;
 	GPtrArray *traces;
+	struct bt_context *context;
 	LttvAttribute *a;
 };
 
@@ -51,6 +53,7 @@ LttvTraceset *lttv_traceset_new()
 	s = g_new(LttvTraceset, 1);
 	s->filename = NULL;
 	s->traces = g_ptr_array_new();
+	s->context = bt_context_create();
 	s->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
 	return s;
 }
@@ -88,6 +91,8 @@ LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig)
 
 		g_ptr_array_add(s->traces, trace);
 	}
+	s->context = s_orig->context;
+	bt_context_get(s->context);
 	s->a = LTTV_ATTRIBUTE(lttv_iattribute_deep_copy(LTTV_IATTRIBUTE(s_orig->a)));
 	return s;
 }
@@ -130,6 +135,7 @@ void lttv_traceset_destroy(LttvTraceset *s)
 			lttv_trace_destroy(trace);
 	}
 	g_ptr_array_free(s->traces, TRUE);
+	bt_context_put(s->context);
 	g_object_unref(s->a);
 	g_free(s);
 }
