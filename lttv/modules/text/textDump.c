@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include <babeltrace/ctf/events.h>
+
 static gboolean
   a_noevent,
   a_no_field_names,
@@ -309,6 +311,8 @@ static int write_event_content(void *hook_data, void *call_data)
 
   LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
   
+  struct bt_ctf_event *event = (struct bt_ctf_event *)call_data;
+#ifdef BABEL_CLEANUP  
   LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
 
   LttvTracefileState *tfs = (LttvTracefileState *)call_data;
@@ -340,17 +344,25 @@ static int write_event_content(void *hook_data, void *call_data)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
                                tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
-  
+#endif  
+#ifdef BABEL_CLEANUP
   lttv_event_to_string(e, a_string, TRUE, !a_no_field_names, tfs);
-
+#endif
+  g_string_set_size(a_string,0);
+  g_string_append_printf(a_string, " %s %llu", 
+			 bt_ctf_event_name(event),
+			 bt_ctf_get_timestamp_raw(event));
+#ifdef BABEL_CLEANUP
   if(a_state) {
     g_string_append_printf(a_string, " %s ",
         g_quark_to_string(process->state->s));
   }
+#endif
 
   g_string_append_printf(a_string,"\n");
 
   fputs(a_string->str, a_file);
+
   return FALSE;
 }
 

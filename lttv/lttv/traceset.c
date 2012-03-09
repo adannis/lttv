@@ -140,6 +140,11 @@ void lttv_traceset_destroy(LttvTraceset *s)
 	g_free(s);
 }
 
+struct bt_context *lttv_traceset_get_context(LttvTraceset *s)
+{
+	return s->context;
+}
+
 void lttv_trace_destroy(LttvTrace *t) 
 {
 	g_object_unref(t->a);

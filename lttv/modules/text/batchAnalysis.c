@@ -37,6 +37,8 @@
 #include <ltt/trace.h>
 #include <lttv/sync/sync_chain_lttv.h>
 
+#include <babeltrace/context.h>
+
 static LttvTraceset *traceset;
 
 static LttvHooks
@@ -59,15 +61,26 @@ static int a_live_update_period;
 
 void lttv_trace_option(void *hook_data)
 { 
-  LttTrace *trace;
-  
+  //LttTrace *trace;
+  //trace_collection *trace;  
+  //format *fmt = bt_lookup_format(g_quark_from_static_string("ctf"));
+  /*
   if(a_live) {
-    trace = ltt_trace_open_live(a_trace);
+    //trace = ltt_trace_open_live(a_trace);
   } else {
-    trace = ltt_trace_open(a_trace);
+    bt_create_context();
+    //trace = bt_add_trace(a_trace,"ctf");
   }
   if(trace == NULL) g_critical("cannot open trace %s", a_trace);
-  lttv_traceset_add(traceset, lttv_trace_new(trace));
+  lttv_traceset_add(traceset, lttv_trace_new(trace));*/
+  if(bt_context_add_trace(lttv_traceset_get_context(traceset),
+		       a_trace,
+		       "ctf",
+		       NULL,
+		       NULL,
+			  NULL) < 0) {
+    printf("Cannot add trace %s", a_trace);
+    }
 }
 
 
@@ -141,7 +154,7 @@ static gboolean process_traceset(void *hook_data, void *call_data)
   end.tv_nsec = G_MAXULONG;
 
   g_info("BatchAnalysis process traceset");
-
+ 
   lttv_process_traceset_seek_time(tc, start);
   /* Read as long a we do not reach the end (0) */
   unsigned int count;

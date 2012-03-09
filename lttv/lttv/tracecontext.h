@@ -100,6 +100,9 @@ struct _LttvTracesetContext {
 	LttvAttribute *ts_a;
 	TimeInterval time_span;
 	GTree *pqueue;
+	struct bt_ctf_iter *iter;
+	/* TODO ybrosseau: Added for babeltrace proto */
+	LttvHooks *event_hooks;
 
 	LttvTracesetContextPosition *sync_position;   /* position at which to sync the
 	                                                 trace context */

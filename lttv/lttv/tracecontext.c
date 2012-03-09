@@ -29,6 +29,12 @@
 #include <errno.h>
 #include <ltt/time.h>
 
+#include <babeltrace/context.h>
+#include <babeltrace/iterator.h>
+
+#include <babeltrace/ctf/events.h>
+#include <babeltrace/ctf/iterator.h>
+
 gint compare_tracefile(gconstpointer a, gconstpointer b)
 {
 	gint comparison = 0;
@@ -180,12 +186,22 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 	GData **tracefiles_groups;
 
 	struct compute_tracefile_group_args args;
+	
+	struct bt_iter_pos begin_pos;
 
 	nb_trace = lttv_traceset_number(ts);
 	self->ts = ts;
 	self->traces = g_new(LttvTraceContext *, nb_trace);
 	self->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
 	self->ts_a = lttv_traceset_attribute(ts);
+	
+	begin_pos.type = BT_SEEK_BEGIN;
+
+	self->iter = bt_ctf_iter_create(lttv_traceset_get_context(ts),
+					&begin_pos,
+					NULL);
+	self->event_hooks = lttv_hooks_new();
+#ifdef BABEL_CLEANUP
 	for(i = 0 ; i < nb_trace ; i++) {
 		tc = LTTV_TRACESET_CONTEXT_GET_CLASS(self)->new_trace_context(self);
 		self->traces[i] = tc;
@@ -209,34 +225,9 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 					&args);
 		}
 
-#if 0
-		nb_control = ltt_trace_control_tracefile_number(tc->t);
-		nb_per_cpu = ltt_trace_per_cpu_tracefile_number(tc->t);
-		nb_tracefile = nb_control + nb_per_cpu;
-		tc->tracefiles = g_new(LttvTracefileContext *, nb_tracefile);
-
-		for(j = 0 ; j < nb_tracefile ; j++) {
-			tfc = LTTV_TRACESET_CONTEXT_GET_CLASS(self)->new_tracefile_context(self);
-			tc->tracefiles[j] = tfc;
-			tfc->index = j;
-
-			if(j < nb_control) {
-				tfc->control = TRUE;
-				tfc->tf = ltt_trace_control_tracefile_get(tc->t, j);
-			} else {
-				tfc->control = FALSE;
-				tfc->tf = ltt_trace_per_cpu_tracefile_get(tc->t, j - nb_control);
-			}
-
-			tfc->t_context = tc;
-			tfc->e = ltt_event_new();
-			tfc->event = lttv_hooks_new();
-			tfc->event_by_id = lttv_hooks_by_id_new();
-			tfc->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
-		}
-#endif //0
 
 	}
+#endif
 	self->sync_position = lttv_traceset_context_position_new(self);
 	self->pqueue = g_tree_new(compare_tracefile);
 	lttv_process_traceset_seek_time(self, ltt_time_zero);
@@ -296,6 +287,8 @@ void lttv_traceset_context_add_hooks(LttvTracesetContext *self,
 	LttvTraceContext *tc;
 
 	lttv_hooks_call(before_traceset, self);
+	
+	lttv_hooks_add_list(self->event_hooks, event);
 
 	nb_trace = lttv_traceset_number(ts);
 
@@ -682,6 +675,40 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 		gulong nb_events,
 		const LttvTracesetContextPosition *end_position)
 {
+	
+	unsigned count = 0;
+		
+	struct bt_ctf_event *event;
+	
+	while(TRUE) {
+
+		if((count >= nb_events) && (nb_events != G_MAXULONG)) {
+			break;
+		}
+
+		if((event = bt_ctf_iter_read_event(self->iter)) != NULL) {
+			
+			count++;
+
+			/* TODO ybrosseau: encapsulate the event into something */
+			lttv_hooks_call(self->event_hooks, event);
+
+			if(bt_iter_next(bt_ctf_get_iter(self->iter)) < 0) {
+				printf("ERROR NEXT\n");
+				break;
+			}
+		} else {
+			/* READ FAILED */
+			
+			break;
+		
+		}
+	}
+	
+
+
+	return count;
+#ifdef BABEL_CLEANUP
 	GTree *pqueue = self->pqueue;
 
 	LttvTracefileContext *tfc;
@@ -814,6 +841,8 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 	} else {
 		return count;
 	}
+
+#endif /* BABEL_CLEANUP */
 }
 
 
@@ -842,6 +871,9 @@ void lttv_process_traceset_end(LttvTracesetContext *self,
  */
 void lttv_process_trace_seek_time(LttvTraceContext *self, LttTime start)
 {
+
+
+#ifdef BABEL_CLEANUP
 	guint i, nb_tracefile;
 
 	gint ret;
@@ -874,6 +906,7 @@ void lttv_process_trace_seek_time(LttvTraceContext *self, LttTime start)
 	g_debug("test tree after seek_time");
 	g_tree_foreach(pqueue, test_tree, NULL);
 #endif //DEBUG
+#endif
 }
 
 /****************************************************************************
@@ -954,8 +987,24 @@ guint lttv_process_traceset_update(LttvTracesetContext *self)
 }
 
 void lttv_process_traceset_seek_time(LttvTracesetContext *self, LttTime start)
-{
+{	
+#ifdef WAIT_FOR_BABELTRACE_FIX_SEEK_ZERO
+	struct bt_iter_pos seekpos;
+	int ret;
+	seekpos.type = BT_SEEK_TIME;
+	seekpos.u.seek_time = ltt_time_to_uint64(start);
+	ret = bt_iter_set_pos(bt_ctf_get_iter(self->iter), &seekpos);
+	if(ret < 0) {
+		printf("Seek by time error: %s,\n",strerror(-ret));
+	}
+#else
+#warning Seek time disabled because of babeltrace bugs
+#endif
+	
+#ifdef BABEL_CLEANUP
 	guint i, nb_trace;
+
+
 
 	LttvTraceContext *tc;
 
@@ -967,6 +1016,7 @@ void lttv_process_traceset_seek_time(LttvTracesetContext *self, LttTime start)
 		tc = self->traces[i];
 		lttv_process_trace_seek_time(tc, start);
 	}
+#endif
 }
 
 

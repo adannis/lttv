@@ -29,6 +29,8 @@ typedef struct _LttvTraceset LttvTraceset;
 
 typedef struct _LttvTrace LttvTrace;
 
+struct bt_context;
+
 /* Tracesets may be added to, removed from and their content listed. */
 
 LttvTraceset *lttv_traceset_new();
@@ -40,6 +42,9 @@ LttvTrace *lttv_trace_new(LttTrace *t);
 LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig);
 
 LttvTraceset *lttv_traceset_load(const gchar *filename);
+
+struct bt_context *lttv_traceset_get_context(LttvTraceset *s);
+
 
 gint lttv_traceset_save(LttvTraceset *s);
 
