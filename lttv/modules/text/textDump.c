@@ -304,7 +304,6 @@ static gboolean write_trace_header(void *hook_data, void *call_data)
   return FALSE;
 }
 
-
 static int write_event_content(void *hook_data, void *call_data)
 {
   gboolean result;
@@ -348,10 +347,10 @@ static int write_event_content(void *hook_data, void *call_data)
 #ifdef BABEL_CLEANUP
   lttv_event_to_string(e, a_string, TRUE, !a_no_field_names, tfs);
 #endif
-  g_string_set_size(a_string,0);
-  g_string_append_printf(a_string, " %s %llu", 
-			 bt_ctf_event_name(event),
-			 bt_ctf_get_timestamp_raw(event));
+
+  /* TODO 2012-03-12 Add state info */
+  lttv_event_to_string(event, a_string, !a_no_field_names);
+
 #ifdef BABEL_CLEANUP
   if(a_state) {
     g_string_append_printf(a_string, " %s ",

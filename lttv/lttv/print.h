@@ -24,11 +24,13 @@
  * Use these functions to print textually event fields. 
  */
 
-
+struct bt_ctf_event;
 
 void lttv_print_field(LttEvent *e, struct marker_field *f, GString *s,
 		gboolean field_names, LttvTracefileState *tfs);
-
+#ifdef BABEL_CLEANUP
 void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
 		gboolean field_names, LttvTracefileState *tfs);
+#endif
+void lttv_event_to_string(struct bt_ctf_event *event, GString *a_string, gboolean field_names);
 

@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <ltt/ltt-private.h>
+#include <babeltrace/ctf/events.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -258,6 +259,210 @@ void lttv_print_field(LttEvent *e, struct marker_field *f, GString *s,
 	}
 }
 
+int getProcessInfosFromEvent(struct bt_ctf_event *ctf_event, GString* processInfos)
+{
+	int pid, tid, ppid;
+	char *procname;
+	struct definition *scope;
+	unsigned long timestamp;
+
+	int ret = 0;
+
+	gboolean noError = TRUE;
+
+	timestamp = bt_ctf_get_timestamp(ctf_event);
+	if (timestamp == -1ULL) {
+		noError = FALSE;
+	}
+	if (noError) {
+		scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_EVENT_CONTEXT);
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+	}
+	if (noError) {
+		pid = bt_ctf_get_int64(bt_ctf_get_field(ctf_event, scope, "_pid"));
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+	}
+	if (noError) {
+		tid = bt_ctf_get_int64(bt_ctf_get_field(ctf_event, scope, "_tid"));
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+	}
+	if (noError) {
+		ppid = bt_ctf_get_int64(bt_ctf_get_field(ctf_event, scope, "_ppid"));
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+	}
+	if (noError) {
+		procname = bt_ctf_get_char_array(bt_ctf_get_field(ctf_event, scope, "_procname"));
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+	}
+
+	if (noError) {
+		g_string_append_printf(processInfos, "%u, %u, %s, %u", pid, tid, procname, ppid);
+	}
+	else {
+		ret = -1;
+	}
+
+	return ret;
+}
+
+
+int getCPUIdFromEvent(struct bt_ctf_event *ctf_event, GString* cpuId_str)
+{
+	struct definition *scope;
+	unsigned long timestamp;
+	unsigned int cpu_id;
+	int ret = 0;
+
+	gboolean noError = TRUE;
+
+	timestamp = bt_ctf_get_timestamp(ctf_event);
+	if (timestamp == -1ULL) {
+		noError = FALSE;
+	}
+	if (noError) {
+		scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+	}
+	if (noError) {
+		cpu_id = bt_ctf_get_uint64(bt_ctf_get_field(ctf_event, scope, "cpu_id"));
+		if (bt_ctf_field_get_error()) {
+			noError = FALSE;
+		}
+		else {
+			g_string_append_printf(cpuId_str, "%u", cpu_id);
+		}
+	}
+
+	if (!noError) {
+		ret = -1;
+	}
+
+	return ret;
+}
+
+int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, GString* fieldsStr)
+{
+	enum ctf_type_id fieldType = bt_ctf_field_type(fields);
+	int ret = 0, isSigned = -1, len = 0, i = 0;
+	struct definition *index_def;
+	switch (fieldType) {
+	case CTF_TYPE_INTEGER:
+		isSigned = bt_ctf_get_int_signedness(fields);
+		if (isSigned == 1) {
+			g_string_append_printf(fieldsStr, "%lu", bt_ctf_get_int64(fields));
+		}
+		else if (isSigned == 0) {
+			g_string_append_printf(fieldsStr, "%llu", bt_ctf_get_uint64(fields));
+		}
+		break;
+	case CTF_TYPE_STRING:
+		g_string_append_printf(fieldsStr, "%s", bt_ctf_get_string(fields));
+		break;
+
+	case CTF_TYPE_ARRAY:
+		g_string_append_printf(fieldsStr, "[ ");
+		len = bt_ctf_get_array_len(fields);
+		if (index_def = bt_ctf_get_index(ctf_event, fields, i)) {
+			for (i = 0; i < len; i++) {
+				if (i > 0) {
+					g_string_append_printf(fieldsStr, ", ");
+				}
+				bt_ctf_field_type(bt_ctf_get_index(ctf_event, fields, i));
+				g_string_append_printf(fieldsStr, " ");
+				g_string_append_printf(fieldsStr, "[%d] = ");
+				getFields(ctf_event, bt_ctf_get_index(ctf_event, fields, i), fieldsStr);
+			}
+		}
+		else {
+			g_string_append_printf(fieldsStr, "%s", bt_ctf_get_char_array(fields));
+		}
+		g_string_append_printf(fieldsStr, " ]");
+
+		break;
+	case CTF_TYPE_UNKNOWN:
+	default:
+		break;
+	}
+	return ret;
+}
+
+int getFieldsFromEvent(struct bt_ctf_event *ctf_event, GString* fields, gboolean field_names)
+{
+	struct definition const * const *list = NULL;
+	unsigned int count;
+	int i = 0, j = 0, ret = 0;
+	gboolean noError = TRUE;
+	struct definition *scope;
+	scope = bt_ctf_get_top_level_scope(ctf_event, BT_EVENT_FIELDS);
+
+	if (!scope) {
+		noError = FALSE;
+	}
+	if (noError) {
+		ret = bt_ctf_get_field_list(ctf_event, scope, &list, &count);
+		if (ret < 0) {
+			noError = TRUE;
+		}
+		else {
+			for (i = 0; i < count; i++) {
+				if (i > 0) {
+					g_string_append_printf(fields, ", ");
+				}
+				const char *name = bt_ctf_field_name(list[i]);
+				if (field_names) {
+					g_string_append_printf(fields, "%s = ", name);
+				}
+				getFields(ctf_event, list[i] ,fields);
+				if (bt_ctf_field_get_error()) {
+					continue;
+				}
+			}
+		}
+	}
+	if (!noError) {
+			ret = -1;
+	}
+	return ret;
+}
+
+void lttv_event_to_string(struct bt_ctf_event *event, GString *a_string, gboolean field_names)
+{
+	GString* processInfos = g_string_new("");
+	GString* fields = g_string_new("");
+	GString* cpuId_str = g_string_new("");
+
+	getProcessInfosFromEvent(event, processInfos);
+	getFieldsFromEvent(event, fields, field_names);
+	getCPUIdFromEvent(event, cpuId_str);
+
+	g_string_set_size(a_string,0);
+
+	g_string_append_printf(a_string, "%llu %s: { %s }", bt_ctf_get_timestamp(event), bt_ctf_event_name(event), cpuId_str->str);
+	if (strcmp("", processInfos->str) < 0) {
+		g_string_append_printf(a_string, ", { %s }", processInfos->str);
+	}
+	if (strcmp("", fields->str) < 0) {
+		g_string_append_printf(a_string, ", { %s }", fields->str);
+	}
+
+	g_string_free(fields, TRUE);
+	g_string_free(processInfos, TRUE);
+	g_string_free(cpuId_str, TRUE);
+}
+
+#ifdef BABEL_CLEANUP
 void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
 		gboolean field_names, LttvTracefileState *tfs)
 { 
@@ -305,6 +510,7 @@ void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
 	}
 	g_string_append_printf(s, " }");
 } 
+#endif /* BABEL_CLEANUP */
 
 static void init()
 {
