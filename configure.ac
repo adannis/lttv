@@ -48,6 +48,9 @@ AC_ARG_WITH(lttv-gui,
 	[build LTTV gui, as opposed to only build textmode LTTV [[default=yes]]]),
 	[with_lttv_gui="$withval"],
 	[with_lttv_gui="yes"])
+#TODO ybrosseau 2012-03-13: Remove this when babeltrace port is complete
+#Force GUI disabling while we port babeltrace
+with_lttv_gui="no"
 
 AM_CONDITIONAL([BUILD_LTTV_GUI], [ test "x$with_lttv_gui" = "xyes" ])
 
