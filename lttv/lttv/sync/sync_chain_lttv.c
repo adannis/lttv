@@ -217,7 +217,6 @@ bool syncTraceset(LttvTracesetContext* const traceSetContext)
 	GArray* factors;
 	double minOffset, minDrift;
 	unsigned int refFreqTrace;
-	int retval;
 
 	if (!optionSync.present)
 	{
@@ -430,7 +429,7 @@ bool syncTraceset(LttvTracesetContext* const traceSetContext)
 	if (optionSyncStats.present)
 	{
 		gettimeofday(&endTime, 0);
-		retval= getrusage(RUSAGE_SELF, &endUsage);
+		getrusage(RUSAGE_SELF, &endUsage);
 
 		timeDiff(&endTime, &startTime);
 		timeDiff(&endUsage.ru_utime, &startUsage.ru_utime);

@@ -516,11 +516,9 @@ int before_schedchange_hook(void *hook_data, void *call_data)
 
   guint pid_out;
   guint pid_in;
-  guint state_out;
   {
     pid_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
     pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
-    state_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 2));
   }
   
   tfc->target_pid = pid_out;
@@ -920,8 +918,6 @@ int after_schedchange_hook(void *hook_data, void *call_data)
   
   guint pid_in;
   {
-    guint pid_out;
-    pid_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
     pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
   }
 

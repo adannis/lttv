@@ -169,10 +169,6 @@ static void initProcessingLTTVStandard(SyncState* const syncState, ...)
  */
 static AllFactors* finalizeProcessingLTTVStandard(SyncState* const syncState)
 {
-	ProcessingDataLTTVStandard* processingData;
-
-	processingData= (ProcessingDataLTTVStandard*) syncState->processingData;
-
 	partialDestroyProcessingLTTVStandard(syncState);
 
 	return syncState->matchingModule->finalizeMatching(syncState);

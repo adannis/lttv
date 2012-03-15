@@ -1326,20 +1326,7 @@ void drawing_remove_square(Drawing_t *drawing,
 
 void drawing_update_ruler(Drawing_t *drawing, TimeWindow *time_window)
 {
-  GtkRequisition req;
-  GdkRectangle rect;
-  
-  req.width = drawing->ruler->allocation.width;
-  req.height = drawing->ruler->allocation.height;
-
- 
-  rect.x = 0;
-  rect.y = 0;
-  rect.width = req.width;
-  rect.height = req.height;
-
   gtk_widget_queue_draw(drawing->ruler);
-  //gtk_widget_draw( drawing->ruler, &rect);
 }
 
 /* Redraw the ruler */

@@ -341,7 +341,6 @@ void teardownSyncChain(LttvTracesetContext* const traceSetContext)
 	SyncState* syncState;
 	struct timeval endTime;
 	struct rusage endUsage;
-	int retval;
 
 	tracesetChainState= g_hash_table_lookup(tracesetChainStates, traceSetContext);
 	syncState= tracesetChainState->syncState;
@@ -379,7 +378,7 @@ void teardownSyncChain(LttvTracesetContext* const traceSetContext)
 	free(syncState);
 
 	gettimeofday(&endTime, 0);
-	retval= getrusage(RUSAGE_SELF, &endUsage);
+	getrusage(RUSAGE_SELF, &endUsage);
 
 	timeDiff(&endTime, &tracesetChainState->startTime);
 	timeDiff(&endUsage.ru_utime, &tracesetChainState->startUsage.ru_utime);

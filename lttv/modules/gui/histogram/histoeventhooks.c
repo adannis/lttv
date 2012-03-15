@@ -146,8 +146,6 @@ void histo_request_event( HistoControlFlowData *histocontrol_flow_data, guint x,
   TimeWindow time_window = lttvwindow_get_time_window( tab );
   LttTime time_start, time_end;
 
-  LttvTraceState *ts;
-  
   //find the tracehooks 
   LttvTracesetContext *tsc = lttvwindow_get_traceset_context(tab);
   
@@ -200,7 +198,6 @@ void histo_request_event( HistoControlFlowData *histocontrol_flow_data, guint x,
                      histo_after_chunk,
                      histo_events_request,
                      LTTV_PRIO_DEFAULT);
-  	ts = (LttvTraceState *)tsc->traces[i];
       // Fill the events request
   	histo_events_request->owner       	    = histocontrol_flow_data; 
   	histo_events_request->viewer_data	    = histocontrol_flow_data; 
@@ -324,7 +321,7 @@ int histo_after_trace(void *hook_data, void *call_data){
   
    return 0;
 }
-
+/* TODO ybrosseau 2012-03-15: Cleanup line_src */
 void histogram_show(HistoControlFlowData *histocontrol_flow_data,guint draw_begin,
 		    guint draw_end)
 {
@@ -346,7 +343,7 @@ void histogram_show(HistoControlFlowData *histocontrol_flow_data,guint draw_begi
      
   guint val, h_val;
   
-  guint i, line_src;
+  guint i/*, line_src*/;
   guint end_chunk=MIN(draw_end,(histocontrol_flow_data->number_of_process)->len);
   
   for (i=draw_begin/*0*/;i<end_chunk/* (histocontrol_flow_data->number_of_process)->len*/;i++){
@@ -359,7 +356,7 @@ void histogram_show(HistoControlFlowData *histocontrol_flow_data,guint draw_begi
   	histo_convert_pixels_to_time(width, i+1,
         	time_window,
         	&t2);
-	line_src=i;
+	/* line_src=i; */
 	
 //check if zoom in is used and more than 1 pixel correspond to each 1nsec
 //used for drawing point (not line) on the screen.

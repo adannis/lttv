@@ -893,16 +893,15 @@ void lttvwindowtraces_set_in_progress(LttvAttributeName module_name,
                                       LttvTrace *trace)
 {
   LttvAttribute *attribute = lttv_trace_attribute(trace);
-  LttvAttributeValue value;
 
   attribute = 
       LTTV_ATTRIBUTE(lttv_iattribute_find_subdir(LTTV_IATTRIBUTE(attribute),
                                 module_name));
   g_assert(attribute);
  
-  value = lttv_iattribute_add(LTTV_IATTRIBUTE(attribute),
-                              LTTV_IN_PROGRESS,
-                              LTTV_INT);
+  lttv_iattribute_add(LTTV_IATTRIBUTE(attribute),
+		      LTTV_IN_PROGRESS,
+		      LTTV_INT);
   /* the value is left unset. The only presence of the attribute is necessary.
    */
 }
@@ -947,16 +946,15 @@ void lttvwindowtraces_set_ready(LttvAttributeName module_name,
                                 LttvTrace *trace)
 {
   LttvAttribute *attribute = lttv_trace_attribute(trace);
-  LttvAttributeValue value;
 
   attribute = 
       LTTV_ATTRIBUTE(lttv_iattribute_find_subdir(LTTV_IATTRIBUTE(attribute),
                                 module_name));
   g_assert(attribute);
  
-  value = lttv_iattribute_add(LTTV_IATTRIBUTE(attribute),
-                              LTTV_READY,
-                              LTTV_INT);
+  lttv_iattribute_add(LTTV_IATTRIBUTE(attribute),
+		      LTTV_READY,
+		      LTTV_INT);
   /* the value is left unset. The only presence of the attribute is necessary.
    */
 }

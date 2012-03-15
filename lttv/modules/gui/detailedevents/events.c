@@ -1411,15 +1411,14 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
   /* Get the beginning position of the read (with seek backward or seek forward)
    */
     if(relative_position > 0) {
-      guint count;
-      count = lttv_process_traceset_seek_n_forward(tsc, relative_position,
+
+      lttv_process_traceset_seek_n_forward(tsc, relative_position,
           events_check_handler,
           &event_viewer_data->tab->stop_foreground,
           event_viewer_data->main_win_filter,
           event_viewer_data->filter, NULL, event_viewer_data);
     } else if(relative_position < 0) {
-      guint count;
-      
+
       /* Get an idea of currently shown event dispersion */
       LttTime first_event_time =
         lttv_traceset_context_position_get_time(event_viewer_data->first_event);
@@ -1429,7 +1428,7 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
       if(ltt_time_compare(time_diff, ltt_time_zero) == 0)
         time_diff = seek_back_default_offset;
 
-      count = lttv_process_traceset_seek_n_backward(tsc,
+      lttv_process_traceset_seek_n_backward(tsc,
           abs(relative_position),
           time_diff,
           (seek_time_fct)lttv_state_traceset_seek_time_closest,

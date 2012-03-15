@@ -466,7 +466,9 @@ void show_traceset_stats(StatisticViewerData * statistic_viewer_data)
 	  value = lttv_attribute_add(tscs->stats,
 				     g_quark_from_static_string("WARNING: Live traceset"),
 				     LTTV_STRING);
-	  *(value.v_string) = live_msg;
+	  /* TODO ybrosseau 2012-03-15: add cast to silent discard const 
+	                                warning... find a better way */
+	  *(value.v_string) = (char *)live_msg;
 	  
   }
   g_hash_table_insert(statistic_viewer_data->statistic_hash,

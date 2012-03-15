@@ -389,9 +389,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
    */
 
   guint pid_out;
-  guint pid_in;
   pid_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
-  pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
 // TODO: can't we reenable this? pmf
 //  if(pid_in != 0 && pid_out != 0) {
 //    /* not a transition to/from idle */
@@ -551,19 +549,10 @@ int after_schedchange_hook(void *hook_data, void *call_data)
 
   /* Add process to process list (if not present) */
   LttvProcessState *process_in;
-  LttTime birth;
   HashedResourceData *hashed_process_data_in = NULL;
 
   ProcessList *process_list = resourceview_data->process_list;
   
-  guint pid_in;
-  {
-    guint pid_out;
-    pid_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
-    pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
-  }
-
-
   /* Find process pid_in in the list... */
   //process_in = lttv_state_find_process(ts, ANY_CPU, pid_in);
   //process_in = tfs->process;
@@ -574,7 +563,6 @@ int after_schedchange_hook(void *hook_data, void *call_data)
 #ifdef EXTRA_CHECK
   g_assert(process_in != NULL);
 #endif //EXTRA_CHECK
-  birth = process_in->creation_time;
 
   //hashed_process_data_in = processlist_get_process_data(process_list, cpuq, trace_num);
   hashed_process_data_in = resourcelist_obtain_cpu(resourceview_data, trace_num, cpu);

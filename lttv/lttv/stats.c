@@ -657,18 +657,6 @@ static gboolean before_schedchange(void *hook_data, void *call_data)
 {
 	LttvTracefileStats *tfcs = (LttvTracefileStats *)call_data;
 
-	LttEvent *e = ltt_tracefile_get_event(tfcs->parent.parent.tf);
-
-	LttvTraceHook *th = (LttvTraceHook *)hook_data;
-
-	guint pid_in, pid_out;
-
-	gint64 state_out;
-
-	pid_out = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 0));
-	pid_in = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 1));
-	state_out = ltt_event_get_long_int(e, lttv_trace_get_hook_field(th, 2));
-
 	/* compute the time for the process to schedule out */
 	mode_change(tfcs);
 
@@ -681,19 +669,7 @@ static gboolean after_schedchange(void *hook_data, void *call_data)
 
 	LttvTraceState *ts = (LttvTraceState*)tfcs->parent.parent.t_context;
 
-	LttEvent *e = ltt_tracefile_get_event(tfcs->parent.parent.tf);
-
-	LttvTraceHook *th = (LttvTraceHook *)hook_data;
-
-	guint pid_in, pid_out;
-
-	gint64 state_out;
-
 	LttvProcessState *process;
-
-	pid_out = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 0));
-	pid_in = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 1));
-	state_out = ltt_event_get_long_int(e, lttv_trace_get_hook_field(th, 2));
 
 	/* get the information for the process scheduled in */
 	guint cpu = tfcs->parent.cpu;
@@ -855,8 +831,6 @@ void lttv_stats_sum_trace(LttvTraceStats *self, LttvAttribute *ts_stats,
 {
 	LttvAttribute *sum_container = self->stats;
 
-	LttvAttributeType type;
-
 	LttvAttributeValue value;
 
 	LttvAttributeName name;
@@ -897,14 +871,14 @@ void lttv_stats_sum_trace(LttvTraceStats *self, LttvAttribute *ts_stats,
 	nb_process = lttv_attribute_get_number(processes_tree);
 
 	for(i = 0 ; i < nb_process ; i++) {
-		type = lttv_attribute_get(processes_tree, i, &name, &value, &is_named);
+		lttv_attribute_get(processes_tree, i, &name, &value, &is_named);
 		process_tree = LTTV_ATTRIBUTE(*(value.v_gobject));
 
 		cpus_tree = lttv_attribute_find_subdir(process_tree, LTTV_STATS_CPU);
 		nb_cpu = lttv_attribute_get_number(cpus_tree);
 
 		for(j = 0 ; j < nb_cpu ; j++) {
-			type = lttv_attribute_get(cpus_tree, j, &name, &value, &is_named);
+			lttv_attribute_get(cpus_tree, j, &name, &value, &is_named);
 			cpu_tree = LTTV_ATTRIBUTE(*(value.v_gobject));
 
 			trace_cpu_tree = lttv_attribute_find_subdir(main_tree,
@@ -915,14 +889,14 @@ void lttv_stats_sum_trace(LttvTraceStats *self, LttvAttribute *ts_stats,
 			nb_functions = lttv_attribute_get_number(cpu_functions_tree);
 
 			for(nf=0; nf < nb_functions; nf++) {
-				type = lttv_attribute_get(cpu_functions_tree, nf, &name, &value,
+				lttv_attribute_get(cpu_functions_tree, nf, &name, &value,
 						&is_named);
 				function_tree = LTTV_ATTRIBUTE(*(value.v_gobject));
 				function_mode_types_tree = lttv_attribute_find_subdir(function_tree,
 						LTTV_STATS_MODE_TYPES);
 				nb_mode_type = lttv_attribute_get_number(function_mode_types_tree);
 				for(k = 0 ; k < nb_mode_type ; k++) {
-					type = lttv_attribute_get(function_mode_types_tree, k, &name,
+					lttv_attribute_get(function_mode_types_tree, k, &name,
 							&value, &is_named);
 					mode_tree = LTTV_ATTRIBUTE(*(value.v_gobject));
 
@@ -936,7 +910,7 @@ void lttv_stats_sum_trace(LttvTraceStats *self, LttvAttribute *ts_stats,
 					nb_submode = lttv_attribute_get_number(submodes_tree);
 
 					for(l = 0 ; l < nb_submode ; l++) {
-						type = lttv_attribute_get(submodes_tree, l, &name, &value,
+						lttv_attribute_get(submodes_tree, l, &name, &value,
 								&is_named);
 						submode_tree = LTTV_ATTRIBUTE(*(value.v_gobject));
 
@@ -946,7 +920,7 @@ void lttv_stats_sum_trace(LttvTraceStats *self, LttvAttribute *ts_stats,
 
 						sum = 0;
 						for(m = 0 ; m < nb_event_type ; m++) {
-							type = lttv_attribute_get(event_types_tree, m, &name,
+							lttv_attribute_get(event_types_tree, m, &name,
 									&value, &is_named);
 							sum += *(value.v_uint);
 						}
@@ -954,7 +928,7 @@ void lttv_stats_sum_trace(LttvTraceStats *self, LttvAttribute *ts_stats,
 								LTTV_UINT, &value);
 						*(value.v_uint) = sum;
 
-						type = lttv_attribute_get(submodes_tree, l, &name, &value,
+						lttv_attribute_get(submodes_tree, l, &name, &value,
 								&is_named);
 						submode_tree = LTTV_ATTRIBUTE(*(value.v_gobject));
 						if(!trace_is_summed) {

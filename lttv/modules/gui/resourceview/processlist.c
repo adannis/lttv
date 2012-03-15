@@ -766,11 +766,10 @@ HashedResourceData *resourcelist_obtain_generic(ControlFlowData *resourceview_da
 
     /* Determine if we should add it hidden or not */
     {
-      gboolean result;
       GtkTreeModel *model = gtk_tree_view_get_model(GTK_TREE_VIEW(resourceview_data->process_list->process_list_widget));
       GtkTreeIter parent_iter;
 
-      result = gtk_tree_model_iter_parent(model, &parent_iter, &data->y_iter);
+      gtk_tree_model_iter_parent(model, &parent_iter, &data->y_iter);
       GtkTreePath *path = gtk_tree_model_get_path(model, &parent_iter);
       data->hidden = gtk_tree_view_row_expanded(GTK_TREE_VIEW(resourceview_data->process_list->process_list_widget), path)?0:1;
       gtk_tree_path_free(path);

@@ -921,20 +921,7 @@ void drawing_remove_square(histoDrawing_t *drawing,
 
 void histo_drawing_update_ruler(histoDrawing_t *drawing, TimeWindow *time_window)
 {
-  GtkRequisition req;
-  GdkRectangle rect;
-  
-  req.width = drawing->ruler->allocation.width;
-  req.height = drawing->ruler->allocation.height;
-
- 
-  rect.x = 0;
-  rect.y = 0;
-  rect.width = req.width;
-  rect.height = req.height;
-
   gtk_widget_queue_draw(drawing->ruler);
-  //gtk_widget_draw( drawing->ruler, &rect);
 }
 
 /* Redraw the ruler */
@@ -1052,19 +1039,7 @@ histo_expose_ruler( GtkWidget *widget, GdkEventExpose *event, gpointer user_data
 
  void histo_drawing_update_vertical_ruler(histoDrawing_t *drawing)//, TimeWindow *time_window)
 {
-  GtkRequisition req;
-  GdkRectangle rect;
-  
-  req.width = drawing->vertical_ruler->allocation.width;
-  req.height = drawing->vertical_ruler->allocation.height;
- 
-  rect.x = 0;
-  rect.y = 0;
-  rect.width = req.width;
-  rect.height = req.height;
-
   gtk_widget_queue_draw(drawing->vertical_ruler);
-  //gtk_widget_draw( drawing->ruler, &rect);
 }
 
 /* notify mouse on ruler */

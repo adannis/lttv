@@ -163,8 +163,6 @@ static int for_each_event(void *hook_data, void *call_data)
 
   LttvTracefileState *tfs = (LttvTracefileState *)call_data;
 
-  LttEvent *e;
-
   /* Only save at LTTV_STATE_SAVE_INTERVAL */
   if(likely((*event_count)++ < LTTV_STATE_SAVE_INTERVAL))
     return FALSE;
@@ -172,8 +170,6 @@ static int for_each_event(void *hook_data, void *call_data)
     *event_count = 0;
 
   LttvTraceState *ts = (LttvTraceState*)tfc->t_context;
-
-  e = ltt_tracefile_get_event(tfc->tf);
 
   if(a_raw) {
     lttv_state_write_raw(ts, tfs->parent.timestamp, a_file);

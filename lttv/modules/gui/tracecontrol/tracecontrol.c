@@ -476,9 +476,6 @@ static int execute_command(const gchar *command, const gchar *username,
     int status;
     ssize_t count;
     /* discuss with su */
-    struct timeval timeout;
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
 
     struct pollfd pollfd;
     int num_rdy;

@@ -20,7 +20,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-
+ 
 #include <glib.h>
 #include <lttv/lttv.h>
 #include <lttv/module.h>
@@ -1839,8 +1839,6 @@ static void state_saved_free(LttvTraceState *self, LttvAttribute *container)
 {
 	guint i, nb_tracefile, nb_cpus, nb_irqs, nb_soft_irqs;
 
-	LttvTracefileState *tfcs;
-
 	LttvAttribute *tracefiles_tree, *tracefile_tree;
 
 	guint *running_process;
@@ -1900,9 +1898,7 @@ static void state_saved_free(LttvTraceState *self, LttvAttribute *container)
 	nb_tracefile = self->parent.tracefiles->len;
 
 	for(i = 0 ; i < nb_tracefile ; i++) {
-		tfcs =
-				LTTV_TRACEFILE_STATE(g_array_index(self->parent.tracefiles,
-						LttvTracefileContext*, i));
+	
 		type = lttv_attribute_get(tracefiles_tree, i, &name, &value, &is_named);
 		g_assert(type == LTTV_GOBJECT);
 		tracefile_tree = *((LttvAttribute **)(value.v_gobject));
@@ -2695,13 +2691,10 @@ static gboolean soft_irq_raise(void *hook_data, void *call_data)
 	//guint8 ev_id = ltt_event_eventtype_id(e);
 	LttvTraceHook *th = (LttvTraceHook *)hook_data;
 	struct marker_field *f = lttv_trace_get_hook_field(th, 0);
-	LttvNameTables *nt = ((LttvTraceState *)(s->parent.t_context))->name_tables;
-	LttvExecutionSubmode submode;
+
 	guint64 softirq = ltt_event_get_long_unsigned(e, f);
 
 	expand_soft_irq_table(ts, softirq);
-
-	submode = nt->soft_irq_names[softirq];
 
 	/* update softirq status */
 	/* a soft irq raises are not cumulative */
@@ -2896,11 +2889,9 @@ static gboolean dump_syscall(void *hook_data, void *call_data)
 	LttEvent *e = ltt_tracefile_get_event(s->parent.tf);
 	LttvTraceHook *th = (LttvTraceHook *)hook_data;
 	guint id;
-	guint64 address;
 	char *symbol;
 
 	id = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 0));
-	address = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
 	symbol = ltt_event_get_string(e, lttv_trace_get_hook_field(th, 2));
 
 	expand_syscall_table(ts, id);
@@ -2934,11 +2925,9 @@ static gboolean dump_softirq(void *hook_data, void *call_data)
 	LttEvent *e = ltt_tracefile_get_event(s->parent.tf);
 	LttvTraceHook *th = (LttvTraceHook *)hook_data;
 	guint id;
-	guint64 address;
 	char *symbol;
 
 	id = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 0));
-	address = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
 	symbol = ltt_event_get_string(e, lttv_trace_get_hook_field(th, 2));
 
 	expand_soft_irq_table(ts, id);
@@ -3073,7 +3062,6 @@ static gboolean process_fork(void *hook_data, void *call_data)
 	LttvTracefileState *s = (LttvTracefileState *)call_data;
 	LttEvent *e = ltt_tracefile_get_event(s->parent.tf);
 	LttvTraceHook *th = (LttvTraceHook *)hook_data;
-	guint parent_pid;
 	guint child_pid;   /* In the Linux Kernel, there is one PID per thread. */
 	guint child_tgid;  /* tgid in the Linux kernel is the "real" POSIX PID. */
 	//LttvProcessState *zombie_process;
@@ -3083,8 +3071,7 @@ static gboolean process_fork(void *hook_data, void *call_data)
 	LttvProcessState *child_process;
 	struct marker_field *f;
 
-	/* Parent PID */
-	parent_pid = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 0));
+	/* Skip Parent PID param */
 
 	/* Child PID */
 	child_pid = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 1));
@@ -3440,7 +3427,7 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 	LttvProcessState *process = ts->running_process[cpu];
 	LttvProcessState *parent_process;
 	struct marker_field *f;
-	GQuark type, mode, submode, status;
+	GQuark type;
 	LttvExecutionState *es;
 	guint i, nb_cpus;
 
@@ -3460,17 +3447,11 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 
 	//FIXME: type is rarely used, enum must match possible types.
 
-	/* mode */
-	f = lttv_trace_get_hook_field(th, 4);
-	mode = ltt_enum_string_get(f,ltt_event_get_unsigned(e, f));
+	/* Skip mode 4th param */
 
-	/* submode */
-	f = lttv_trace_get_hook_field(th, 5);
-	submode = ltt_enum_string_get(f, ltt_event_get_unsigned(e, f));
+	/* Skip submode 5th param */
 
-	/* status */
-	f = lttv_trace_get_hook_field(th, 6);
-	status = ltt_enum_string_get(f, ltt_event_get_unsigned(e, f));
+	/* Skip status 6th param */
 
 	/* TGID */
 	f = lttv_trace_get_hook_field(th, 7);

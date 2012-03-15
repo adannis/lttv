@@ -628,7 +628,8 @@ void delete_viewer(GtkWidget * widget, gpointer user_data)
   g_object_set_data(G_OBJECT(tab->viewer_container), "focused_viewer", NULL);
 }
 
-
+#if UNFINISHED_FEATURE
+/* TODO ybrosseau 2012-03-15: Function is half implemented. Should be removed */
 /* open_traceset will open a traceset saved in a file
  * Right now, it is not finished yet, (not working)
  * FIXME
@@ -665,7 +666,7 @@ void open_traceset(GtkWidget * widget, gpointer user_data)
   }
 
 }
-
+#endif
 /* lttvwindow_process_pending_requests
  *
  * Process requests for parts of the trace from viewers.
@@ -908,7 +909,9 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
         tfc = lttv_traceset_context_get_current_tfc(tsc);
         g_assert(g_slist_length(list_in)>0);
         EventsRequest *events_request = g_slist_nth_data(list_in, 0);
+#ifdef DEBUG
         guint seek_count;
+#endif
 
         /* 1.2.1 If first request in list_in is a time request */
         if(events_request->start_position == NULL) {
@@ -923,7 +926,9 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
                                                   events_request->start_time);
 
             /* Process the traceset with only state hooks */
+#ifdef DEBUG
             seek_count =
+#endif //DEBUG
                lttv_process_traceset_middle(tsc,
                                             events_request->start_time,
                                             G_MAXUINT, NULL);
@@ -967,7 +972,9 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
                                                   pos_time);
 
             /* Process the traceset with only state hooks */
+#ifdef DEBUG
             seek_count =
+#endif
                lttv_process_traceset_middle(tsc,
                                             ltt_time_infinite,
                                             G_MAXUINT,
@@ -2232,7 +2239,9 @@ void
 on_open_activate                       (GtkMenuItem     *menuitem,
                                         gpointer         user_data)
 {
+#ifdef UNFINISHED_FEATURE
   open_traceset((GtkWidget*)menuitem, user_data);
+#endif
 }
 
 
@@ -3022,7 +3031,9 @@ void
 on_button_open_clicked                 (GtkButton       *button,
                                         gpointer         user_data)
 {
+#ifdef UNFINISHED_FEATURE
   open_traceset((GtkWidget*)button, user_data);
+#endif
 }
 
 
@@ -3710,8 +3721,7 @@ MainWindow *construct_main_window(MainWindow * parent)
   LttvIAttribute *attributes =
 	  LTTV_IATTRIBUTE(g_object_new(LTTV_ATTRIBUTE_TYPE, NULL));
   LttvAttributeValue value;
-  Tab *new_tab;
-         
+
   new_m_window = g_new(MainWindow, 1);
 
   // Add the object's information to the module's array 
@@ -3772,7 +3782,6 @@ MainWindow *construct_main_window(MainWindow * parent)
            "Tab_Plugin",
            ptab,
 	   (GDestroyNotify)tab_destructor);
-    new_tab = ptab->tab;
   } else {
     LttvPluginTab *ptab = g_object_new(LTTV_TYPE_PLUGIN_TAB, NULL);
     init_tab(ptab->tab, new_m_window, NULL, notebook, "Traceset");
@@ -3782,7 +3791,6 @@ MainWindow *construct_main_window(MainWindow * parent)
            "Tab_Plugin",
            ptab,
 	   (GDestroyNotify)tab_destructor);
-    new_tab = ptab->tab;
   }
 
   /* Insert default viewers */

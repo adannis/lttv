@@ -52,7 +52,6 @@ HistoControlFlowData *
 guihistocontrolflow(LttvPluginTab *ptab)
 {
   GtkWidget *button_widget, *drawing_widget, *drawing_area;
-  GtkWidget *buttonP,*buttonM;
   histoDrawing_t *drawing;
   HistoControlFlowData* histo_control_flow_data = g_new(HistoControlFlowData,1) ;
   
@@ -84,8 +83,6 @@ guihistocontrolflow(LttvPluginTab *ptab)
   histo_control_flow_data->buttonwidget = histo_buttonwidget_construct(histo_control_flow_data);
   
   button_widget = histo_buttonwidget_get_widget( histo_control_flow_data-> buttonwidget);
-  buttonP =histo_control_flow_data-> buttonwidget->buttonP;
-  buttonM =histo_control_flow_data-> buttonwidget->buttonM;
 
   //set the size of ruler fix
   gtk_widget_set_size_request(histo_control_flow_data->drawing->ruler, -1, 25);

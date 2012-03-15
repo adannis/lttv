@@ -152,7 +152,7 @@ static void destroyAnalysisLinReg(SyncState* const syncState)
 static void analyzeExchangeLinReg(SyncState* const syncState, Exchange* const exchange)
 {
 	unsigned int ni, nj;
-	double dji, eji;
+	double dji;
 	double timoy;
 	Fit* fit;
 	Message* ackedMessage;
@@ -170,9 +170,6 @@ static void analyzeExchangeLinReg(SyncState* const syncState, Exchange* const ex
 	dji= ((double) ackedMessage->inE->cpuTime - (double) ackedMessage->outE->cpuTime
 		+ (double) exchange->message->outE->cpuTime - (double)
 		exchange->message->inE->cpuTime) / 2;
-	eji= fabs((double) ackedMessage->inE->cpuTime - (double)
-		ackedMessage->outE->cpuTime - (double) exchange->message->outE->cpuTime +
-		(double) exchange->message->inE->cpuTime) / 2;
 	timoy= ((double) ackedMessage->outE->cpuTime + (double)
 		exchange->message->inE->cpuTime) / 2;
 	ni= ackedMessage->outE->traceNum;
