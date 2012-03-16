@@ -28,6 +28,7 @@
 #include <lttv/filter.h>
 #include <errno.h>
 #include <ltt/time.h>
+#include <lttv/event.h>
 
 #include <babeltrace/context.h>
 #include <babeltrace/iterator.h>
@@ -678,20 +679,26 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 	
 	unsigned count = 0;
 		
-	struct bt_ctf_event *event;
+	struct bt_ctf_event *bt_event;
 	
+	LttvEvent event;
+	/* TODO ybrosseau 2012-03-16: Put in really in the traceset */
+	LttvTraceState state;
+
 	while(TRUE) {
 
 		if((count >= nb_events) && (nb_events != G_MAXULONG)) {
 			break;
 		}
 
-		if((event = bt_ctf_iter_read_event(self->iter)) != NULL) {
+		if((bt_event = bt_ctf_iter_read_event(self->iter)) != NULL) {
 			
 			count++;
 
-			/* TODO ybrosseau: encapsulate the event into something */
-			lttv_hooks_call(self->event_hooks, event);
+			event.bt_event = bt_event;
+			event.state = &state;
+
+			lttv_hooks_call(self->event_hooks, &event);
 
 			if(bt_iter_next(bt_ctf_get_iter(self->iter)) < 0) {
 				printf("ERROR NEXT\n");

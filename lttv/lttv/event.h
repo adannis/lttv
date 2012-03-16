@@ -1,6 +1,5 @@
 /* This file is part of the Linux Trace Toolkit viewer
- * Copyright (C) 2003-2004 Michel Dagenais
- *               2005 Mathieu Desnoyers
+ * Copyright (C) 2012 Yannick Brosseau
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License Version 2 as
@@ -16,21 +15,18 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, 
  * MA 02111-1307, USA.
  */
+#ifndef LTTV_EVENT_H
+#define LTTV_EVENT_H
 
-/* print.c
- *
- * Event printing routines header.
- *
- * Use these functions to print textually event fields. 
- */
+/* Forward declaration */
+struct bt_ctf_event;
+/* 
+   Basic event container used through LTTV
+*/
+typedef struct
+{
+  struct bt_ctf_event *bt_event;
+  LttvTraceState *state;
+} LttvEvent;
 
-#include <lttv/event.h>
-
-void lttv_print_field(LttEvent *e, struct marker_field *f, GString *s,
-		gboolean field_names, LttvTracefileState *tfs);
-#ifdef BABEL_CLEANUP
-void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
-		gboolean field_names, LttvTracefileState *tfs);
-#endif
-void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_names);
-
+#endif /* LTTV_EVENT_H */

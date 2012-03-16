@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <inttypes.h>
 
-#include <babeltrace/ctf/events.h>
+#include <lttv/event.h>
 
 static gboolean
   a_noevent,
@@ -310,7 +310,7 @@ static int write_event_content(void *hook_data, void *call_data)
 
   LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
   
-  struct bt_ctf_event *event = (struct bt_ctf_event *)call_data;
+  LttvEvent *event = (struct bt_ctf_event *)call_data;
 #ifdef BABEL_CLEANUP  
   LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
 

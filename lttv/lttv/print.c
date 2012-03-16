@@ -44,6 +44,7 @@
 #include <babeltrace/ctf/events.h>
 #include <string.h>
 #include <inttypes.h>
+#include <lttv/event.h>
 
 static inline void print_enum_events(LttEvent *e, struct marker_field *f,
 		guint64 value, GString *s, LttvTracefileState *tfs)
@@ -437,19 +438,19 @@ int getFieldsFromEvent(struct bt_ctf_event *ctf_event, GString* fields, gboolean
 	return ret;
 }
 
-void lttv_event_to_string(struct bt_ctf_event *event, GString *a_string, gboolean field_names)
+void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_names)
 {
 	GString* processInfos = g_string_new("");
 	GString* fields = g_string_new("");
 	GString* cpuId_str = g_string_new("");
 
-	getProcessInfosFromEvent(event, processInfos);
-	getFieldsFromEvent(event, fields, field_names);
-	getCPUIdFromEvent(event, cpuId_str);
+	getProcessInfosFromEvent(event->bt_event, processInfos);
+	getFieldsFromEvent(event->bt_event, fields, field_names);
+	getCPUIdFromEvent(event->bt_event, cpuId_str);
 
 	g_string_set_size(a_string,0);
 
-	g_string_append_printf(a_string, "%llu %s: { %s }", bt_ctf_get_timestamp(event), bt_ctf_event_name(event), cpuId_str->str);
+	g_string_append_printf(a_string, "%llu %s: { %s }", bt_ctf_get_timestamp(event->bt_event), bt_ctf_event_name(event->bt_event), cpuId_str->str);
 	if (strcmp("", processInfos->str) < 0) {
 		g_string_append_printf(a_string, ", { %s }", processInfos->str);
 	}
