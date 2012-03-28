@@ -660,6 +660,8 @@ static void init(LttvTracesetState *self, LttvTraceset *ts)
 			init((LttvTracesetContext *)self, ts);
 
 	nb_trace = lttv_traceset_number(ts);
+
+#ifdef BABEL_CLEANUP
 	for(i = 0 ; i < nb_trace ; i++) {
 		tc = self->parent.traces[i];
 		tcs = LTTV_TRACE_STATE(tc);
@@ -738,10 +740,12 @@ static void init(LttvTracesetState *self, LttvTraceset *ts)
 		/* See if the trace has saved states */
 		state_load_saved_states(tcs);
 	}
+#endif
 }
 
 static void fini(LttvTracesetState *self)
 {
+#ifdef BABEL_CLEANUP
 	guint i, nb_trace;
 
 	LttvTraceState *tcs;
@@ -771,6 +775,7 @@ static void fini(LttvTracesetState *self)
 		tcs->processes = NULL;
 		tcs->usertraces = NULL;
 	}
+#endif
 	LTTV_TRACESET_CONTEXT_CLASS(g_type_class_peek(LTTV_TRACESET_CONTEXT_TYPE))->
 			fini((LttvTracesetContext *)self);
 }

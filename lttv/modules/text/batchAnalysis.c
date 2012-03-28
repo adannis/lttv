@@ -51,7 +51,7 @@ static LttvHooks
   *event_hook,
   *main_hooks;
 
-static char *a_trace;
+static char *trace_path;
 
 static gboolean a_stats;
 static gboolean a_live;
@@ -73,14 +73,10 @@ void lttv_trace_option(void *hook_data)
   }
   if(trace == NULL) g_critical("cannot open trace %s", a_trace);
   lttv_traceset_add(traceset, lttv_trace_new(trace));*/
-  if(bt_context_add_trace(lttv_traceset_get_context(traceset),
-		       a_trace,
-		       "ctf",
-		       NULL,
-		       NULL,
-			  NULL) < 0) {
-    printf("Cannot add trace %s", a_trace);
-    }
+
+  if(lttv_traceset_add_path(traceset, trace_path) < 0) {
+    printf("Cannot add trace %s", trace_path);
+  }
 }
 
 
@@ -113,10 +109,12 @@ static gboolean process_traceset(void *hook_data, void *call_data)
 
   lttv_context_init(tc, traceset);
 
+#ifdef BABEL_CLEANUP
   syncTraceset(tc);
 
   lttv_state_add_event_hooks(tss);
   if(a_stats) lttv_stats_add_event_hooks(tscs);
+#endif
 
   retval= lttv_iattribute_find_by_path(attributes, "filter/expression",
     LTTV_POINTER, &value_expression);
@@ -165,10 +163,16 @@ static gboolean process_traceset(void *hook_data, void *call_data)
 							  G_MAXULONG,
 							  NULL);
 	  
-	  updated_count = lttv_process_traceset_update(tc); 
+#ifdef BABEL_CLEANUP
+	  updated_count = lttv_process_traceset_update(tc);
+#endif
 		
 	  sleep(a_live_update_period);
-  } while(count != 0 || updated_count > 0);
+  } while(count != 0
+#ifdef BABEL_CLEANUP
+      || updated_count > 0
+#endif
+      );
 
 
   //lttv_traceset_context_remove_hooks(tc,
@@ -184,8 +188,10 @@ static gboolean process_traceset(void *hook_data, void *call_data)
   g_info("BatchAnalysis destroy context");
 
   lttv_filter_destroy(*(value_filter.v_pointer));
+#ifdef BABEL_CLEANUP
   lttv_state_remove_event_hooks(tss);
   if(a_stats) lttv_stats_remove_event_hooks(tscs);
+#endif
   lttv_context_fini(tc);
   if (a_stats)
     g_object_unref(tscs);
@@ -209,7 +215,7 @@ static void init()
   lttv_option_add("trace", 't', 
       "add a trace to the trace set to analyse", 
       "pathname of the directory containing the trace", 
-      LTTV_OPT_STRING, &a_trace, lttv_trace_option, NULL);
+      LTTV_OPT_STRING, &trace_path, lttv_trace_option, NULL);
 
   a_stats = FALSE;
   lttv_option_add("stats", 's', 
@@ -288,9 +294,11 @@ static void init()
 
 static void destroy()
 {
+#ifdef BABEL_CLEANUP
   guint i, nb;
 
   LttvTrace *trace;
+#endif
 
   g_info("Destroy batchAnalysis.c");
 
@@ -310,14 +318,14 @@ static void destroy()
   lttv_hooks_destroy(event_hook);
   lttv_hooks_remove_data(main_hooks, process_traceset, NULL);
 
+#ifdef BABEL_CLEANUP
   nb = lttv_traceset_number(traceset);
   for(i = 0 ; i < nb ; i++) {
     trace = lttv_traceset_get(traceset, i);
     ltt_trace_close(lttv_trace(trace));
-    /* This will be done by lttv_traceset_destroy */
-    //lttv_trace_destroy(trace);
+    lttv_trace_destroy(trace);
   }
-
+#endif
   lttv_traceset_destroy(traceset); 
 }
 

@@ -98,6 +98,7 @@ typedef struct _save_state {
 
 static void lttv_trace_option(void __UNUSED__ *hook_data)
 { 
+#ifdef BABEL_CLEANUP
 	LttTrace *trace;
 
 	trace = ltt_trace_open(a_trace);
@@ -105,6 +106,11 @@ static void lttv_trace_option(void __UNUSED__ *hook_data)
 		g_critical("cannot open trace %s", a_trace);
 	} else {
 		lttv_traceset_add(traceset, lttv_trace_new(trace));
+	}
+#endif
+
+	if(lttv_traceset_add_path(traceset, a_trace) < 0) {
+			g_critical("cannot open trace %s", a_trace);
 	}
 }
 
@@ -390,6 +396,7 @@ close:
 	fclose(fp);
 }
 
+// TODO mdenis: adapt to babeltrace
 static gboolean process_traceset(void __UNUSED__ *hook_data, 
 				void __UNUSED__ *call_data)
 {
@@ -408,9 +415,10 @@ static gboolean process_traceset(void __UNUSED__ *hook_data,
 	//guint i, j, count, nb_control, nb_tracefile, nb_block, nb_event, nb_equal;
 	guint i, j, count;
 
-	LttTrace *trace;
-
 	LttTime max_time = { G_MAXULONG, G_MAXULONG };
+
+#ifdef BABEL_CLEANUP
+	LttTrace *trace;
 
 	a_event_position = ltt_event_position_new();
 
@@ -431,6 +439,7 @@ static gboolean process_traceset(void __UNUSED__ *hook_data,
 
 		}
 	}
+#endif
 
 	tscs = g_object_new(LTTV_TRACESET_STATS_TYPE, NULL);
 	ts = &tscs->parent;
@@ -998,8 +1007,10 @@ static void destroy()
 	for(i = 0 ; i < nb ; i++) {
 		trace = lttv_traceset_get(traceset, i);
 		lttv_traceset_remove(traceset,i);
+#ifdef BABEL_CLEANUP
 		ltt_trace_close(lttv_trace(trace));
 		lttv_trace_destroy(trace);
+#endif
 	}
 
 	lttv_traceset_destroy(traceset);

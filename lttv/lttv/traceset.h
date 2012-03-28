@@ -37,7 +37,9 @@ LttvTraceset *lttv_traceset_new();
 
 char * lttv_traceset_name(LttvTraceset * s);
 
+#ifdef BABEL_CLEANUP
 LttvTrace *lttv_trace_new(LttTrace *t);
+#endif
 
 LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig);
 
@@ -54,6 +56,20 @@ void lttv_trace_destroy(LttvTrace *t);
 
 void lttv_traceset_add(LttvTraceset *s, LttvTrace *t);
 
+/*
+ * lttv_traceset_add_path : Add all traces recursively to a traceset
+ *
+ * ts is the traceset in which will be contained the traces
+ *
+ * path is a path to a trace(s). It cannot be NULL and it is not parse
+ * recursively.
+ * todo mdenis: implement algorithm to go through all folders recursively to
+ * find all traces in the path
+ *
+ * @return 0 on success, -1 on failure
+ */
+int lttv_traceset_add_path(LttvTraceset *ts, const char *path);
+
 unsigned lttv_traceset_number(LttvTraceset *s);
 
 LttvTrace *lttv_traceset_get(LttvTraceset *s, unsigned i);
@@ -66,7 +82,9 @@ LttvAttribute *lttv_traceset_attribute(LttvTraceset *s);
 
 LttvAttribute *lttv_trace_attribute(LttvTrace *t);
 
+#ifdef BABEL_CLEANUP
 LttTrace *lttv_trace(LttvTrace *t);
+#endif
 
 guint lttv_trace_get_ref_number(LttvTrace * t);
 

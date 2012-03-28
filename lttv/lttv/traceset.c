@@ -40,11 +40,11 @@ struct _LttvTraceset {
 
 
 struct _LttvTrace {
-	LttTrace *t;
+  // Trace id for babeltrace
+	gint id;
 	LttvAttribute *a;
 	guint ref_count;
 };
-
 
 LttvTraceset *lttv_traceset_new() 
 {
@@ -63,17 +63,70 @@ char * lttv_traceset_name(LttvTraceset * s)
 	return s->filename;
 }
 
-LttvTrace *lttv_trace_new(LttTrace *t) 
+#ifdef BABEL_CLEANUP
+LttvTrace *lttv_trace_new(LttTrace *t)
 {
 	LttvTrace *new_trace;
 
 	new_trace = g_new(LttvTrace, 1);
 	new_trace->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
-	new_trace->t = t;
+	new_trace->id = t;
 	new_trace->ref_count = 0;
 	return new_trace;
 }
+#endif
 
+/*
+ * lttv_trace_create : Create a trace from a path
+ *
+ * ts is the traceset in which will be contained the trace
+ *
+ * path is the path where to find a trace. It is not recursive.
+ *
+ * This function is static since a trace should always be contained in a
+ * traceset.
+ *
+ * return the created trace or NULL on failure
+ */
+static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
+{
+  int id = bt_context_add_trace(lttv_traceset_get_context(ts),
+            path,
+            "ctf",
+            NULL,
+            NULL,
+            NULL);
+  if (id < 0) {
+    return NULL;
+  }
+  // Create the trace and save the trace handle id returned by babeltrace
+  LttvTrace *new_trace;
+
+  new_trace = g_new(LttvTrace, 1);
+  new_trace->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
+  new_trace->id = id;
+  new_trace->ref_count = 0;
+  return new_trace;
+}
+
+/*
+ * lttv_trace_create : Create and add a single trace to a traceset
+ *
+ * ts is the traceset in which will be contained the trace
+ *
+ * path is the path where to find a trace. It is not recursive.
+ *
+ * return a positive integer (>=0)on success or -1 on failure
+ */
+static int lttv_traceset_create_trace(LttvTraceset *ts, const char *path)
+{
+  LttvTrace *trace = lttv_trace_create(ts, path);
+  if (trace == NULL) {
+    return -1;
+  }
+  lttv_traceset_add(ts, trace);
+  return 0;
+}
 
 LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig) 
 {
@@ -131,6 +184,8 @@ void lttv_traceset_destroy(LttvTraceset *s)
 	for(i=0;i<s->traces->len;i++) {
 		LttvTrace *trace = g_ptr_array_index(s->traces, i);
 		lttv_trace_unref(trace);
+		// todo mdenis 2012-03-27: uncomment when babeltrace gets fixed
+		//bt_context_remove_trace(lttv_traceset_get_context(s), trace->id);
 		if(lttv_trace_get_ref_number(trace) == 0)
 			lttv_trace_destroy(trace);
 	}
@@ -158,6 +213,12 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t)
 	g_ptr_array_add(s->traces, t);
 }
 
+int lttv_traceset_add_path(LttvTraceset *ts, const char *trace_path)
+{
+  // todo mdenis 2012-03-27: add trace recursively and update comment
+  int ret = lttv_traceset_create_trace(ts, trace_path);
+  return ret;
+}
 
 unsigned lttv_traceset_number(LttvTraceset *s) 
 {
@@ -178,6 +239,7 @@ void lttv_traceset_remove(LttvTraceset *s, unsigned i)
 	g_assert(s->traces->len > i);
 	t = (LttvTrace *)s->traces->pdata[i];
 	t->ref_count--;
+	bt_context_remove_trace(lttv_traceset_get_context(s), t->id);
 	g_ptr_array_remove_index(s->traces, i);
 }
 
@@ -196,14 +258,21 @@ LttvAttribute *lttv_trace_attribute(LttvTrace *t)
 	return t->a;
 }
 
-
+#ifdef BABEL_CLEANUP
 LttTrace *lttv_trace(LttvTrace *t)
 {
 	return t->t;
 }
+#endif
+
+gint lttv_trace_get_id(LttvTrace *t)
+{
+  return t->id;
+}
 
 guint lttv_trace_get_ref_number(LttvTrace * t)
 {
+	// todo mdenis: adapt to babeltrace
 	return t->ref_count;
 }
 

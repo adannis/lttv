@@ -120,6 +120,8 @@ lttv_context_new_tracefile_context(LttvTracesetContext *self)
 void lttv_traceset_context_compute_time_span(LttvTracesetContext *self,
 	TimeInterval *time_span)
 {
+	//todo mdenis: adapt to babeltrace
+#ifdef BABEL_CLEANUP
 	LttvTraceset * traceset = self->ts;
 	int numTraces = lttv_traceset_number(traceset);
 	int i;
@@ -134,6 +136,7 @@ void lttv_traceset_context_compute_time_span(LttvTracesetContext *self,
 
 	for(i=0; i<numTraces;i++){
 		tc = self->traces[i];
+
 		trace = tc->t;
 
 		ltt_trace_time_span_get(trace, &s, &e);
@@ -154,6 +157,7 @@ void lttv_traceset_context_compute_time_span(LttvTracesetContext *self,
 				time_span->end_time = e;
 		}
 	}
+#endif
 }
 
 static void init_tracefile_context(LttTracefile *tracefile,
@@ -202,7 +206,6 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 					&begin_pos,
 					NULL);
 	self->event_hooks = lttv_hooks_new();
-#ifdef BABEL_CLEANUP
 	for(i = 0 ; i < nb_trace ; i++) {
 		tc = LTTV_TRACESET_CONTEXT_GET_CLASS(self)->new_trace_context(self);
 		self->traces[i] = tc;
@@ -210,12 +213,15 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 		tc->ts_context = self;
 		tc->index = i;
 		tc->vt = lttv_traceset_get(ts, i);
+#ifdef BABEL_CLEANUP
 		tc->t = lttv_trace(tc->vt);
+#endif
 		tc->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
 		tc->t_a = lttv_trace_attribute(tc->vt);
 		tc->tracefiles = g_array_sized_new(FALSE, TRUE,
 				sizeof(LttvTracefileContext*), 10);
 
+#ifdef BABEL_CLEANUP
 		tracefiles_groups = ltt_trace_get_tracefiles_groups(tc->t);
 		if(tracefiles_groups != NULL) {
 			args.func = (ForEachTraceFileFunc)init_tracefile_context;
@@ -225,10 +231,10 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 					(GDataForeachFunc)compute_tracefile_group,
 					&args);
 		}
+#endif
 
 
 	}
-#endif
 	self->sync_position = lttv_traceset_context_position_new(self);
 	self->pqueue = g_tree_new(compare_tracefile);
 	lttv_process_traceset_seek_time(self, ltt_time_zero);
@@ -878,9 +884,6 @@ void lttv_process_traceset_end(LttvTracesetContext *self,
  */
 void lttv_process_trace_seek_time(LttvTraceContext *self, LttTime start)
 {
-
-
-#ifdef BABEL_CLEANUP
 	guint i, nb_tracefile;
 
 	gint ret;
@@ -913,7 +916,6 @@ void lttv_process_trace_seek_time(LttvTraceContext *self, LttTime start)
 	g_debug("test tree after seek_time");
 	g_tree_foreach(pqueue, test_tree, NULL);
 #endif //DEBUG
-#endif
 }
 
 /****************************************************************************
