@@ -29,19 +29,6 @@ AM_SILENT_RULES([yes])
 AC_CONFIG_HEADERS([config.h])
 LT_INIT
 
-# If requested, only build the ltt trace reading library
-AC_ARG_WITH(lttv,
-	AS_HELP_STRING([--with-lttv],
-	[build whole LTTV system, as opposd to only the trace reading library [[default=yes]]]),
-	[with_lttv="$withval"],
-	[with_lttv="yes"])
-
-# If we've requested the lib only, turn off the lttv-gui building as well
-AS_IF([test "x$with_lttv" = "xno"], [with_lttv_gui="no"])
-
-AM_CONDITIONAL([BUILD_LIB_ONLY], [ test "x$with_lttv" = "xno" ])
-
-
 # If requested, avoid building LTTV part
 AC_ARG_WITH(lttv-gui,
 	AS_HELP_STRING([--with-lttv-gui],
@@ -182,6 +169,8 @@ AC_SUBST(lttvincludedir)
 AC_SUBST(lttvwindowincludedir)
 AC_SUBST(lttctlincludedir)
 
+#	ltt/Makefile
+
 AC_CONFIG_FILES([Makefile
 	lttv/Makefile
 	lttv/lttv/Makefile
@@ -200,7 +189,6 @@ AC_CONFIG_FILES([Makefile
 	lttv/modules/gui/filter/Makefile
 	lttv/modules/gui/tracecontrol/Makefile
 	lttv/modules/gui/resourceview/Makefile
-	ltt/Makefile
 	doc/Makefile
 	doc/developer/Makefile
 	doc/developer/developer_guide/Makefile
