@@ -206,6 +206,8 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 					&begin_pos,
 					NULL);
 	self->event_hooks = lttv_hooks_new();
+	self->tmpState = g_new(LttvTraceState *, 1);
+
 	for(i = 0 ; i < nb_trace ; i++) {
 		tc = LTTV_TRACESET_CONTEXT_GET_CLASS(self)->new_trace_context(self);
 		self->traces[i] = tc;
@@ -688,8 +690,6 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 	struct bt_ctf_event *bt_event;
 	
 	LttvEvent event;
-	/* TODO ybrosseau 2012-03-16: Put in really in the traceset */
-	LttvTraceState state;
 
 	while(TRUE) {
 
@@ -702,8 +702,10 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 			count++;
 
 			event.bt_event = bt_event;
-			event.state = &state;
-
+			/* TODO ybrosseau 2012-04-01: use bt_ctf_get_trace_handle 
+			   to retrieve the right state container */
+			event.state = self->tmpState;
+			
 			lttv_hooks_call(self->event_hooks, &event);
 
 			if(bt_iter_next(bt_ctf_get_iter(self->iter)) < 0) {

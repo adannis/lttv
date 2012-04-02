@@ -84,6 +84,9 @@ typedef struct _LttvFilter LttvFilter;
 #define LTTVFILTER_TYPE_DEFINED
 #endif
 
+typedef struct _LttvTraceState LttvTraceState;
+
+
 #define LTTV_TRACESET_CONTEXT_TYPE  (lttv_traceset_context_get_type ())
 #define LTTV_TRACESET_CONTEXT(obj)  (G_TYPE_CHECK_INSTANCE_CAST ((obj), LTTV_TRACESET_CONTEXT_TYPE, LttvTracesetContext))
 #define LTTV_TRACESET_CONTEXT_CLASS(vtable)  (G_TYPE_CHECK_CLASS_CAST ((vtable), LTTV_TRACESET_CONTEXT_TYPE, LttvTracesetContextClass))
@@ -103,6 +106,7 @@ struct _LttvTracesetContext {
 	struct bt_ctf_iter *iter;
 	/* TODO ybrosseau: Added for babeltrace proto */
 	LttvHooks *event_hooks;
+	LttvTraceState *tmpState; /* Remove when we have the state in LttvTrace */
 
 	LttvTracesetContextPosition *sync_position;   /* position at which to sync the
 	                                                 trace context */
