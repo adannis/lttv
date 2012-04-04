@@ -78,7 +78,7 @@ void lttv_trace_option(void *hook_data)
   lttv_traceset_add(traceset, lttv_trace_new(trace));*/
 
   if(lttv_traceset_add_path(traceset, trace_path) < 0) {
-    printf("Cannot add trace %s", trace_path);
+    g_error("Cannot add trace %s", trace_path);
   }
 }
 

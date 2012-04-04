@@ -28,6 +28,11 @@
 #include <babeltrace/context.h>
 #include <babeltrace/iterator.h>
 #include <babeltrace/ctf/events.h>
+
+/* To traverse a tree recursively */
+#include <fcntl.h>
+#include <fts.h>
+
 /* A trace is a sequence of events gathered in the same tracing session. The
    events may be stored in several tracefiles in the same directory. 
    A trace set is defined when several traces are to be analyzed together,
@@ -232,11 +237,73 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t)
 	g_ptr_array_add(s->traces, t);
 }
 
-int lttv_traceset_add_path(LttvTraceset *ts, const char *trace_path)
+int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 {
-  // todo mdenis 2012-03-27: add trace recursively and update comment
-  int ret = lttv_traceset_create_trace(ts, trace_path);
-  return ret;
+	FTS *tree;
+	FTSENT *node;
+	char * const paths[2] = { trace_path, NULL };
+	int ret = -1;
+
+	tree = fts_open(paths, FTS_NOCHDIR | FTS_LOGICAL, 0);
+	if (tree == NULL) {
+		g_warning("Cannot traverse \"%s\" for reading.\n",
+				trace_path);
+		return ret;
+	}
+
+	int dirfd, metafd;
+	while ((node = fts_read(tree))) {
+
+		if (!(node->fts_info & FTS_D))
+			continue;
+
+		dirfd = open(node->fts_accpath, 0);
+		if (dirfd < 0) {
+			g_warning("Unable to open trace "
+					"directory file descriptor : %s.", node->fts_accpath);
+			ret = dirfd;
+			goto error;
+		}
+
+		// Check if a metadata file exists in the current directory
+		metafd = openat(dirfd, "metadata", O_RDONLY);
+		if (metafd < 0) {
+			ret = close(dirfd);
+			if (ret < 0) {
+				g_warning("Unable to open metadata "
+						"file descriptor : %s.", node->fts_accpath);
+				goto error;
+			}
+		} else {
+			ret = close(metafd);
+			if (ret < 0) {
+				g_warning("Unable to close metadata "
+						"file descriptor : %s.", node->fts_accpath);
+				goto error;
+			}
+			ret = close(dirfd);
+			if (ret < 0) {
+				g_warning("Unable to close trace "
+						"directory file descriptor : %s.", node->fts_accpath);
+				goto error;
+			}
+
+			ret = lttv_traceset_create_trace(ts, node->fts_accpath);
+			if (ret < 0) {
+				g_warning("Opening trace \"%s\" from %s "
+						"for reading.", node->fts_accpath, trace_path);
+				goto error;
+			}
+		}
+	}
+
+error:
+	ret = fts_close(tree);
+	if (ret < 0) {
+		g_warning("Unable to close tree  "
+				"file descriptor : %s.", trace_path);
+	}
+	return ret;
 }
 
 unsigned lttv_traceset_number(LttvTraceset *s) 
