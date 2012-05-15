@@ -106,7 +106,6 @@ create_MWindow (void)
   //  GtkWidget *OptMenuSeparator;
   //  GtkWidget *OpenFilter;
   //  GtkWidget *SaveConfiguration;
-  GtkWidget *MenuHelp;
   GtkWidget *HelpMenuTitle;
   GtkWidget *HelpMenu;
   GtkWidget *Content;
@@ -379,13 +378,10 @@ create_MWindow (void)
   gtk_widget_show (SaveConfiguration);
   gtk_container_add (GTK_CONTAINER (OptionMenuTitle_menu), SaveConfiguration);
 */
-  MenuHelp = gtk_menu_bar_new ();
-  gtk_widget_show (MenuHelp);
-  gtk_box_pack_end (GTK_BOX (MMenuBox), MenuHelp, FALSE, FALSE, 0);
 
   HelpMenuTitle = gtk_menu_item_new_with_mnemonic ("_Help");
   gtk_widget_show (HelpMenuTitle);
-  gtk_container_add (GTK_CONTAINER (MenuHelp), HelpMenuTitle);
+  gtk_container_add (GTK_CONTAINER (MenuMain), HelpMenuTitle);
 
   HelpMenu = gtk_menu_new ();
   gtk_menu_item_set_submenu (GTK_MENU_ITEM (HelpMenuTitle), HelpMenu);
@@ -897,7 +893,6 @@ create_MWindow (void)
   //  GLADE_HOOKUP_OBJECT (MWindow, OptMenuSeparator, "OptMenuSeparator");
   //  GLADE_HOOKUP_OBJECT (MWindow, OpenFilter, "OpenFilter");
   //  GLADE_HOOKUP_OBJECT (MWindow, SaveConfiguration, "SaveConfiguration");
-  GLADE_HOOKUP_OBJECT (MWindow, MenuHelp, "MenuHelp");
   GLADE_HOOKUP_OBJECT (MWindow, HelpMenuTitle, "HelpMenuTitle");
   GLADE_HOOKUP_OBJECT (MWindow, HelpMenu, "HelpMenu");
   GLADE_HOOKUP_OBJECT (MWindow, Content, "Content");
