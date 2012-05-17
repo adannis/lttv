@@ -80,7 +80,6 @@ create_MWindow (void)
   GtkWidget *ZoomIn;
   GtkWidget *ZoomOut;
   GtkWidget *ZoomExtended;
-  GtkWidget *ViewMenuSeparator;
   //  GtkWidget *GoToTime;
   //  GtkWidget *ShowTimeFrame;
   GtkWidget *ToolMenuTitle;
@@ -275,10 +274,6 @@ create_MWindow (void)
   gtk_widget_show (ZoomExtended);
   gtk_container_add (GTK_CONTAINER (ViewMenuTitle_menu), ZoomExtended);
 
-  ViewMenuSeparator = gtk_menu_item_new ();
-  gtk_widget_show (ViewMenuSeparator);
-  gtk_container_add (GTK_CONTAINER (ViewMenuTitle_menu), ViewMenuSeparator);
-  gtk_widget_set_sensitive (ViewMenuSeparator, FALSE);
 /*
   GoToTime = gtk_menu_item_new_with_mnemonic ("Go to time");
   gtk_widget_show (GoToTime);
@@ -876,7 +871,6 @@ create_MWindow (void)
   GLADE_HOOKUP_OBJECT (MWindow, ZoomIn, "ZoomIn");
   GLADE_HOOKUP_OBJECT (MWindow, ZoomOut, "ZoomOut");
   GLADE_HOOKUP_OBJECT (MWindow, ZoomExtended, "ZoomExtended");
-  GLADE_HOOKUP_OBJECT (MWindow, ViewMenuSeparator, "ViewMenuSeparator");
   //  GLADE_HOOKUP_OBJECT (MWindow, GoToTime, "GoToTime");
   //  GLADE_HOOKUP_OBJECT (MWindow, ShowTimeFrame, "ShowTimeFrame");
   GLADE_HOOKUP_OBJECT (MWindow, ToolMenuTitle, "ToolMenuTitle");
