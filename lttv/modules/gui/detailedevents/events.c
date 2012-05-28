@@ -184,6 +184,11 @@ h_gui_events(LttvPlugin *plugin)
 EventViewerData *
 gui_events(LttvPluginTab *ptab)
 {
+  /*To disable the error bell when we reach the end(or the top) of the list of
+	 event. Since we overload the management of the list*/
+  GtkSettings* gtk_settings = gtk_settings_get_default();
+  g_object_set(gtk_settings, "gtk-error-bell", FALSE, NULL);
+
   LttTime end;
   GtkTreeViewColumn *column;
   GtkCellRenderer *renderer;
