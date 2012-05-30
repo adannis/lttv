@@ -23,7 +23,7 @@
 
 
 #include <glib-object.h>
-#include <ltt/time.h>
+#include <lttv/time.h>
 
 /* The content of a data structure may be seen as an array of pairs of
  * attribute name and value. This simple model allows generic navigation

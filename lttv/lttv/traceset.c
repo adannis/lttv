@@ -22,39 +22,43 @@
 
 #include <lttv/traceset.h>
 #include <lttv/iattribute.h>
+#include <lttv/state.h>
+#include <lttv/hook.h>
 #include <stdio.h>
 #include <babeltrace/context.h>
-
+#include <babeltrace/iterator.h>
+#include <babeltrace/ctf/events.h>
 /* A trace is a sequence of events gathered in the same tracing session. The
    events may be stored in several tracefiles in the same directory. 
    A trace set is defined when several traces are to be analyzed together,
    possibly to study the interactions between events in the different traces. 
 */
 
-struct _LttvTraceset {
-	char * filename;
-	GPtrArray *traces;
-	struct bt_context *context;
-	LttvAttribute *a;
-};
 
-
-struct _LttvTrace {
-  // Trace id for babeltrace
-	gint id;
-	LttvAttribute *a;
-	guint ref_count;
-};
-
-LttvTraceset *lttv_traceset_new() 
+LttvTraceset *lttv_traceset_new(void)
 {
 	LttvTraceset *s;
+        struct bt_iter_pos begin_pos;
 
 	s = g_new(LttvTraceset, 1);
 	s->filename = NULL;
 	s->traces = g_ptr_array_new();
 	s->context = bt_context_create();
 	s->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
+	//TODO remove this when we have really mecanism
+	//s->tmpState = g_new(LttvTraceState *, 1);
+	//lttv_trace_state_init(s->tmpState,0);
+	begin_pos.type = BT_SEEK_BEGIN;
+
+        //s->iter = bt_ctf_iter_create(lttv_traceset_get_context(s),
+        //                                &begin_pos,
+        //                                NULL);
+	s->iter = 0;
+        s->event_hooks = lttv_hooks_new();
+
+
+
+
 	return s;
 }
 
@@ -106,6 +110,10 @@ static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
   new_trace->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
   new_trace->id = id;
   new_trace->ref_count = 0;
+  new_trace->traceset = ts;
+  new_trace->state = g_new(LttvTraceState,1);
+  lttv_trace_state_init(new_trace->state,new_trace);
+  ts->tmpState = new_trace->state;
   return new_trace;
 }
 
@@ -142,6 +150,7 @@ LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig)
 		trace = g_ptr_array_index(s_orig->traces, i);
 		trace->ref_count++;
 
+		/* WARNING: this is an alias, not a copy. */
 		g_ptr_array_add(s->traces, trace);
 	}
 	s->context = s_orig->context;
@@ -198,6 +207,16 @@ void lttv_traceset_destroy(LttvTraceset *s)
 struct bt_context *lttv_traceset_get_context(LttvTraceset *s)
 {
 	return s->context;
+}
+
+LttvTraceset *lttv_trace_get_traceset(LttvTrace *trace)
+{
+	return trace->traceset;
+}
+
+LttvHooks *lttv_traceset_get_hooks(LttvTraceset *s)
+{
+	return s->event_hooks;
 }
 
 void lttv_trace_destroy(LttvTrace *t) 
@@ -291,3 +310,53 @@ guint lttv_trace_unref(LttvTrace * t)
 	return t->ref_count;
 }
 
+guint lttv_trace_get_num_cpu(LttvTrace *t)
+{
+#warning "TODO - Set the right number of CPU"
+	return 24;
+}
+
+LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset)
+{
+#warning "TODO"
+	return NULL;
+}
+
+void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos)
+{
+#warning "TODO"
+	return NULL;
+}
+
+void lttv_traceset_seek_to_position(LttvTracesetPosition *traceset_pos)
+{
+#warning "TODO"
+}
+
+guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
+{
+	struct definition *scope;
+	unsigned long timestamp;
+	unsigned int cpu_id;
+	
+	struct bt_ctf_event *ctf_event = event->bt_event;
+	timestamp = bt_ctf_get_timestamp(ctf_event);
+	if (timestamp == -1ULL) {
+		return 0;
+	}
+	scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
+	if (bt_ctf_field_get_error()) {
+		return 0;
+	}
+	cpu_id = bt_ctf_get_uint64(bt_ctf_get_field(ctf_event, scope, "cpu_id"));
+	if (bt_ctf_field_get_error()) {
+		return 0;
+	} else {
+		return cpu_id;
+	}
+}
+
+const char *lttv_traceset_get_name_from_event(LttvEvent *event)
+{
+  	return bt_ctf_event_name(event->bt_event);
+}

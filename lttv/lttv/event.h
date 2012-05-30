@@ -18,8 +18,11 @@
 #ifndef LTTV_EVENT_H
 #define LTTV_EVENT_H
 
+#include <lttv/time.h>
+#include <lttv/state.h>
 /* Forward declaration */
 struct bt_ctf_event;
+//struct LttvTraceState;
 /* 
    Basic event container used through LTTV
 */
@@ -28,5 +31,15 @@ typedef struct
   struct bt_ctf_event *bt_event;
   LttvTraceState *state;
 } LttvEvent;
+
+LttTime lttv_event_get_timestamp(LttvEvent *event);
+unsigned long lttv_event_get_long_unsigned(LttvEvent *event, const char* field);
+long lttv_event_get_long(LttvEvent *event, const char* field);
+/*unsigned int lttv_event_get_int_unsigned(LttvEvent *event, const char* field);
+int lttv_event_get_int(LttvEvent *event, const char* field);
+*/
+
+char* lttv_event_get_string(LttvEvent *event, const char* field);
+
 
 #endif /* LTTV_EVENT_H */

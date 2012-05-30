@@ -2213,6 +2213,7 @@ gboolean lttv_filter_tree_parse_branch(
 			return se->op((gpointer)&count,v);
 		}
 		break;
+#if BABEL_CLEANUP
 	case LTTV_FILTER_EVENT_TARGET_PID:
 		if(context == NULL) return TRUE;
 		else {
@@ -2221,6 +2222,7 @@ gboolean lttv_filter_tree_parse_branch(
 			return se->op((gpointer)&target_pid,v);
 		}
 		break;
+#endif
 	case LTTV_FILTER_EVENT_FIELD:
 		/*
 		 * TODO: Use the offset to

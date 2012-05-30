@@ -22,7 +22,7 @@
 #define HOOK_H
 
 #include <glib.h>
-#include <ltt/compiler.h>
+#include <lttv/compiler.h>
 
 /* A hook is a function to call with the supplied hook data, and with 
    call site specific data (e.g., hooks for events are called with a 
@@ -120,6 +120,8 @@ gboolean lttv_hooks_call_merge(LttvHooks *h1, void *call_data1,
 gboolean lttv_hooks_call_check_merge(LttvHooks *h1, void *call_data1,
 		LttvHooks *h2, void *call_data2);
 
+#ifdef BABEL_CLEANUP
+
 /* Sometimes different hooks need to be called based on the case. The
    case is represented by an unsigned integer id */
 
@@ -183,5 +185,7 @@ void lttv_hooks_by_id_channel_destroy(LttvHooksByIdChannelArray *h);
 
 LttvHooks *lttv_hooks_by_id_channel_find(LttvHooksByIdChannelArray *h,
 		GQuark channel, guint16 id);
+
+#endif /* BABEL_CLEANUP */
 
 #endif // HOOK_H

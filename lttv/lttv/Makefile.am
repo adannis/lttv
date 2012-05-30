@@ -1,7 +1,7 @@
 SUBDIRS= sync
 
 AM_CFLAGS= $(PACKAGE_CFLAGS)
-LDADD = $(POPT_LIBS) $(M_LIBS) $(GLPK_LIBS) ${top_builddir}/ltt/liblttvtraceread.la
+LDADD = $(POPT_LIBS) $(M_LIBS) $(GLPK_LIBS)
 
 bin_PROGRAMS = lttv.real
 
@@ -41,8 +41,11 @@ libdir = ${lttvplugindir}
 #noinst_HEADERS = \
 #	filter.h
 
+#disabled for babeltrace port	batchtest.c stats.c 	tracecontext.c 	filter.c
+
+
+
 lttv_real_SOURCES = \
-	batchtest.c\
 	main.c\
 	module.c\
 	option.c\
@@ -50,12 +53,13 @@ lttv_real_SOURCES = \
 	attribute.c\
 	iattribute.c\
 	state.c\
-	stats.c\
-	tracecontext.c\
 	traceset.c\
-	filter.c\
+	traceset-process.c\
 	print.c\
-	sync/sync_chain.c\
+	compiler.h\
+	event.c\
+	time.h
+#	sync/sync_chain.c\
 	sync/sync_chain.h\
 	sync/sync_chain_lttv.c\
 	sync/sync_chain_lttv.h\
@@ -98,7 +102,7 @@ lttvinclude_HEADERS = \
 	option.h\
 	state.h\
 	stats.h\
-	tracecontext.h\
+	traceset-process.h\
 	traceset.h\
 	filter.h\
 	print.h\

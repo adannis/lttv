@@ -1,5 +1,5 @@
 ACLOCAL_AMFLAGS = -I config
 
-SUBDIRS = ltt lttv doc
+SUBDIRS =  lttv doc
 
 EXTRA_DIST = LTTngManual.html

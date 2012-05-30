@@ -30,13 +30,16 @@
 #include <lttv/hook.h>
 #include <lttv/option.h>
 #include <lttv/module.h>
-#include <lttv/tracecontext.h>
+#include <lttv/traceset-process.h>
 #include <lttv/state.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
 #include <lttv/filter.h>
+#endif
 #include <ltt/trace.h>
+#ifdef BABEL_CLEANUP_SYNC
 #include <lttv/sync/sync_chain_lttv.h>
-
+#endif
 #include <babeltrace/context.h>
 
 static LttvTraceset *traceset;
@@ -86,17 +89,18 @@ static gboolean process_traceset(void *hook_data, void *call_data)
 
   LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
 
+#ifdef BABEL_CLEANUP
   LttvTracesetStats *tscs = NULL;
 
   LttvTracesetState *tss;
 
   LttvTracesetContext *tc;
-
+#endif
   LttTime start, end;
   gboolean retval;
 
   g_info("BatchAnalysis begin process traceset");
-
+#ifdef BABEL_CLEANUP
   if (a_stats) {
     tscs = g_object_new(LTTV_TRACESET_STATS_TYPE, NULL);
     tss = &tscs->parent;
@@ -109,12 +113,12 @@ static gboolean process_traceset(void *hook_data, void *call_data)
 
   lttv_context_init(tc, traceset);
 
-#ifdef BABEL_CLEANUP
+
   syncTraceset(tc);
 
   lttv_state_add_event_hooks(tss);
   if(a_stats) lttv_stats_add_event_hooks(tscs);
-#endif
+
 
   retval= lttv_iattribute_find_by_path(attributes, "filter/expression",
     LTTV_POINTER, &value_expression);
@@ -135,16 +139,16 @@ static gboolean process_traceset(void *hook_data, void *call_data)
   //g_debug("Filter string: %s",((GString*)*(value_expression.v_pointer))->str);
 
   lttv_filter_append_expression(*(value_filter.v_pointer),((GString*)*(value_expression.v_pointer))->str);
-  
+#endif  
   //lttv_traceset_context_add_hooks(tc,
   //before_traceset, after_traceset, NULL, before_trace, after_trace,
   //NULL, before_tracefile, after_tracefile, NULL, before_event, after_event);
-  lttv_process_traceset_begin(tc,
+
+  lttv_state_add_event_hooks(traceset);
+  lttv_process_traceset_begin(traceset,
                               before_traceset,
                               before_trace,
-                              before_tracefile,
-                              event_hook,
-                              NULL);
+                              event_hook);
 
   start.tv_sec = 0;
   start.tv_nsec = 0;
@@ -153,12 +157,12 @@ static gboolean process_traceset(void *hook_data, void *call_data)
 
   g_info("BatchAnalysis process traceset");
  
-  lttv_process_traceset_seek_time(tc, start);
+  lttv_process_traceset_seek_time(traceset, start);
   /* Read as long a we do not reach the end (0) */
   unsigned int count;
   unsigned int updated_count;
   do {
-	  count = lttv_process_traceset_middle(tc,
+	  count = lttv_process_traceset_middle(traceset,
 							  end,
 							  G_MAXULONG,
 							  NULL);
@@ -178,26 +182,24 @@ static gboolean process_traceset(void *hook_data, void *call_data)
   //lttv_traceset_context_remove_hooks(tc,
   //before_traceset, after_traceset, NULL, before_trace, after_trace,
   //NULL, before_tracefile, after_tracefile, NULL, before_event, after_event);
-  lttv_process_traceset_end(tc,
+  lttv_process_traceset_end(traceset,
                             after_traceset,
                             after_trace,
-                            after_tracefile,
-                            event_hook,
-                            NULL);
+                            event_hook);
 
   g_info("BatchAnalysis destroy context");
-
-  lttv_filter_destroy(*(value_filter.v_pointer));
 #ifdef BABEL_CLEANUP
+  lttv_filter_destroy(*(value_filter.v_pointer));
+
   lttv_state_remove_event_hooks(tss);
   if(a_stats) lttv_stats_remove_event_hooks(tscs);
-#endif
+
   lttv_context_fini(tc);
   if (a_stats)
     g_object_unref(tscs);
   else
     g_object_unref(tss);
-
+#endif
   g_info("BatchAnalysis end process traceset");
   return FALSE;
 }
@@ -331,4 +333,5 @@ static void destroy()
 
 LTTV_MODULE("batchAnalysis", "Batch processing of a trace", \
     "Run through a trace calling all the registered hooks", \
-    init, destroy, "state", "stats", "option","textFilter", "sync")
+    init, destroy, "state", "option")
+//TODO ybrosseau 2012-05-15 reenable textFilter, stats, sync

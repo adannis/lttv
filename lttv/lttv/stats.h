@@ -19,6 +19,8 @@
 #ifndef STATS_H
 #define STATS_H
 
+#error "stats not supported."
+
 #include <glib.h>
 #include <lttv/state.h>
 

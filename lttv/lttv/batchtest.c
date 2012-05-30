@@ -31,11 +31,9 @@
 #include <lttv/hook.h>
 #include <lttv/option.h>
 #include <lttv/module.h>
-#include <lttv/tracecontext.h>
 #include <lttv/state.h>
-#include <lttv/stats.h>
-#include <ltt/trace.h>
-#include <ltt/event.h>
+#include <lttv/traceset.h>
+#include <lttv/traceset-process.h>
 
 #define __UNUSED__ __attribute__((__unused__))
 

@@ -278,7 +278,10 @@ void lttv_debug(void *hook_data)
 
 void lttv_event_debug(void *hook_data)
 {
+	#warning lttv_event_debug does nothing
+#ifdef BABEL_CLEANUP
 	ltt_event_debug(1);
+#endif
 	g_info("Output event detailed debug");
 }
 

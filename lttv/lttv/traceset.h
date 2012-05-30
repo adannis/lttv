@@ -21,19 +21,47 @@
 
 #include <lttv/attribute.h>
 #include <lttv/hook.h>
+#include <lttv/event.h>
 #include <ltt/ltt.h>
-
+#include <lttv/trace.h>
 /* A traceset is a set of traces to be analyzed together. */
 
 typedef struct _LttvTraceset LttvTraceset;
 
-typedef struct _LttvTrace LttvTrace;
+typedef struct _LttvTracesetPosition LttvTracesetPosition;
 
 struct bt_context;
 
+
+//TODO ybrosseau 2012-05-15 put these struct in the .c to make them opaque
+struct _LttvTraceset {
+	char * filename;
+	GPtrArray *traces;		/* Array of pointers to LttvTrace */
+	struct bt_context *context;
+	LttvAttribute *a;
+	LttvHooks *event_hooks;
+	struct bt_ctf_iter *iter;
+  LttvTraceState *tmpState;
+
+};
+
+struct _LttvTrace {
+	// Trace id for babeltrace
+	LttvTraceset *traceset;		/* container traceset */
+	gint id;
+	LttvAttribute *a;
+	guint ref_count;
+	LttvTraceState *state;
+};
+
+/* In babeltrace, the position concept is an iterator. */
+struct _LttvTracesetPosition {
+	struct bt_ctf_iter *iter;
+};
+
 /* Tracesets may be added to, removed from and their content listed. */
 
-LttvTraceset *lttv_traceset_new();
+LttvTraceset *lttv_traceset_new(void);
 
 char * lttv_traceset_name(LttvTraceset * s);
 
@@ -48,11 +76,11 @@ LttvTraceset *lttv_traceset_load(const gchar *filename);
 struct bt_context *lttv_traceset_get_context(LttvTraceset *s);
 
 
+
 gint lttv_traceset_save(LttvTraceset *s);
 
 void lttv_traceset_destroy(LttvTraceset *s);
 
-void lttv_trace_destroy(LttvTrace *t);
 
 void lttv_traceset_add(LttvTraceset *s, LttvTrace *t);
 
@@ -80,17 +108,21 @@ void lttv_traceset_remove(LttvTraceset *s, unsigned i);
 
 LttvAttribute *lttv_traceset_attribute(LttvTraceset *s);
 
-LttvAttribute *lttv_trace_attribute(LttvTrace *t);
 
 #ifdef BABEL_CLEANUP
 LttTrace *lttv_trace(LttvTrace *t);
 #endif
 
-guint lttv_trace_get_ref_number(LttvTrace * t);
+/* Take a position snapshot */
+LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset);
 
-guint lttv_trace_ref(LttvTrace * t);
+/* Destroy position snapshot */
+void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos);
 
-guint lttv_trace_unref(LttvTrace * t);
+void lttv_traceset_seek_to_position(LttvTracesetPosition *traceset_pos);
+
+guint lttv_traceset_get_cpuid_from_event(LttvEvent *event);
+
+const char *lttv_traceset_get_name_from_event(LttvEvent *event);
 
 #endif // TRACESET_H
-

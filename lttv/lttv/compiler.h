@@ -19,8 +19,6 @@
 #ifndef COMPILER_H
 #define COMPILER_H
 
-#error "Using old ltt/"
-
 /* Fast prediction if likely branches */
 #define likely(x) __builtin_expect(!!(x), 1)
 #define unlikely(x) __builtin_expect(!!(x), 0)
@@ -51,5 +49,13 @@
 #define guint32_before_eq(a,b)  guint32_after_eq(b,a)
 
 #define __EXPORT __attribute__ ((visibility ("default")))
+
+#ifndef max
+#define max(a,b) ((a)>(b)?(a):(b))
+#endif
+
+#ifndef min
+#define min(a,b) ((a)<(b)?(a):(b))
+#endif
 
 #endif //COMPILER_H

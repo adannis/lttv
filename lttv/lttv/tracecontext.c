@@ -22,10 +22,12 @@
 
 #include <string.h>
 #include <lttv/lttv.h>
-#include <lttv/tracecontext.h>
+#include <lttv/traceset-process.h>
 #include <ltt/event.h>
 #include <ltt/trace.h>
+#ifdef BABEL_NOFILTER
 #include <lttv/filter.h>
+#endif
 #include <errno.h>
 #include <ltt/time.h>
 #include <lttv/event.h>
@@ -36,6 +38,8 @@
 #include <babeltrace/ctf/events.h>
 #include <babeltrace/ctf/iterator.h>
 
+
+#ifdef BABEL_CLEANUP
 gint compare_tracefile(gconstpointer a, gconstpointer b)
 {
 	gint comparison = 0;
@@ -71,7 +75,7 @@ struct _LttvTracesetContextPosition {
 	                                * set, else, a position is set (may be end
 	                                * of trace, with ep->len == 0) */
 };
-
+#endif
 void lttv_context_init(LttvTracesetContext *self, LttvTraceset *ts)
 {
 	LTTV_TRACESET_CONTEXT_GET_CLASS(self)->init(self, ts);
@@ -238,7 +242,9 @@ init(LttvTracesetContext *self, LttvTraceset *ts)
 
 	}
 	self->sync_position = lttv_traceset_context_position_new(self);
+#ifdef BABEL_CLEANUP	
 	self->pqueue = g_tree_new(compare_tracefile);
+#endif
 	lttv_process_traceset_seek_time(self, ltt_time_zero);
 	lttv_traceset_context_compute_time_span(self, &self->time_span);
 

@@ -47,7 +47,7 @@
 
 
 #include <lttv/traceset.h>
-#include <lttv/tracecontext.h>
+#include <lttv/traceset-process.h>
 #include <lttv/state.h>
 #include <lttv/module.h>
 #include <ltt/ltt.h>

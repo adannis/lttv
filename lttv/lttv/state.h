@@ -20,9 +20,9 @@
 #define STATE_H
 
 #include <glib.h>
-#include <lttv/tracecontext.h>
 #include <stdio.h>
-
+#include <babeltrace/context.h>
+#include <lttv/attribute.h>
 /* The operating system state, kept during the trace analysis,
    contains a subset of the real operating system state, 
    sufficient for the analysis, and possibly organized quite differently.
@@ -47,6 +47,14 @@
    file name, pid, ppid and creation time are stored. Each process state also
    contains an execution mode stack (e.g. irq within system call, called
    from user mode). */
+
+typedef struct _LttvTraceset LttvTraceset;
+
+typedef struct _LttvTrace LttvTrace;
+
+typedef struct _LttvTracesetPosition LttvTracesetPosition;
+
+struct bt_context;
 
 /* Priority of state hooks */
 #define LTTV_PRIO_STATE 25
@@ -109,8 +117,8 @@ extern GQuark
 	LTT_EVENT_EXEC,
 	LTT_EVENT_PROCESS_STATE,
 	LTT_EVENT_STATEDUMP_END,
-	LTT_EVENT_FUNCTION_ENTRY,
-	LTT_EVENT_FUNCTION_EXIT,
+	//LTT_EVENT_FUNCTION_ENTRY,
+	//LTT_EVENT_FUNCTION_EXIT,
 	LTT_EVENT_THREAD_BRAND,
 	LTT_EVENT_REQUEST_ISSUE,
 	LTT_EVENT_REQUEST_COMPLETE,
@@ -157,30 +165,17 @@ extern GQuark
 	LTT_FIELD_STATE,
 	LTT_FIELD_CPU_ID;
 
-typedef struct _LttvTracesetState LttvTracesetState;
-typedef struct _LttvTracesetStateClass LttvTracesetStateClass;
-
 typedef struct _LttvTraceState LttvTraceState;
 typedef struct _LttvTraceStateClass LttvTraceStateClass;
 
 typedef struct _LttvTracefileState LttvTracefileState;
 typedef struct _LttvTracefileStateClass LttvTracefileStateClass;
 
-gint lttv_state_hook_add_event_hooks(void *hook_data, void *call_data);
-void lttv_state_add_event_hooks(LttvTracesetState *self);
+void lttv_traceset_add_state_event_hooks(LttvTraceset *traceset);
 
-gint lttv_state_hook_remove_event_hooks(void *hook_data, void *call_data);
-void lttv_state_remove_event_hooks(LttvTracesetState *self);
+void lttv_traceset_remove_state_event_hooks(LttvTraceset *traceset);
 
-void lttv_state_save_add_event_hooks(LttvTracesetState *self);
-// Hook wrapper. call_data is a trace context.
-gint lttv_state_save_hook_add_event_hooks(void *hook_data, void *call_data);
-
-void lttv_state_save_remove_event_hooks(LttvTracesetState *self);
-// Hook wrapper. call_data is a trace context.
-gint lttv_state_save_hook_remove_event_hooks(void *hook_data, void *call_data);
-
-void lttv_state_traceset_seek_time_closest(LttvTracesetState *self, LttTime t);
+void lttv_traceset_seek_time_closest_prior_state(LttvTraceset *traceset, LttTime t);
 
 /* The LttvProcessState structure defines the current state for each process.
    A process can make system calls (in some rare cases nested) and receive
@@ -298,12 +293,8 @@ typedef struct _LttvProcessState {
 	guint cpu;                /* CPU where process is scheduled (being either in
 	                             the active or inactive runqueue)*/
 //	guint last_tracefile_index;    /* index in the trace for cpu tracefile */
-	LttvTracefileState *usertrace;    /* Associated usertrace */
 	/* opened file descriptors, address map?... */
-	GArray *user_stack;          /* User space function call stack */
-	guint64 current_function;
 	LttvProcessType type;        /* kernel thread or user space ? */
-	guint target_pid; /* target PID of the current event. */
 	guint free_events; /* 0 : none, 1 : free or exit dead, 2 : should delete */
 	GHashTable *fds; /* hash table of int (file descriptor) -> GQuark (file name) */
 } LttvProcessState;
@@ -321,36 +312,8 @@ LttvProcessState *lttv_state_create_process(LttvTraceState *tcs,
 		LttvProcessState *parent, guint cpu, guint pid,
 		guint tgid, GQuark name, const LttTime *timestamp);
 
-void lttv_state_write(LttvTraceState *self, LttTime t, FILE *fp);
-void lttv_state_write_raw(LttvTraceState *self, LttTime t, FILE *fp);
-
-/* The LttvTracesetState, LttvTraceState and LttvTracefileState types
-   inherit from the corresponding Context objects defined in processTrace. */
-
-#define LTTV_TRACESET_STATE_TYPE  (lttv_traceset_state_get_type ())
-#define LTTV_TRACESET_STATE(obj)  (G_TYPE_CHECK_INSTANCE_CAST ((obj), LTTV_TRACESET_STATE_TYPE, LttvTracesetState))
-#define LTTV_TRACESET_STATE_CLASS(vtable)  (G_TYPE_CHECK_CLASS_CAST ((vtable), LTTV_TRACESET_STATE_TYPE, LttvTracesetStateClass))
-#define LTTV_IS_TRACESET_STATE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), LTTV_TRACESET_STATE_TYPE))
-#define LTTV_IS_TRACESET_STATE_CLASS(vtable) (G_TYPE_CHECK_CLASS_TYPE ((vtable), LTTV_TRACESET_STATE_TYPE))
-#define LTTV_TRACESET_STATE_GET_CLASS(inst)  (G_TYPE_INSTANCE_GET_CLASS ((inst), LTTV_TRACESET_STATE_TYPE, LttvTracesetStateClass))
-
-struct _LttvTracesetState {
-	LttvTracesetContext parent;
-};
-
-struct _LttvTracesetStateClass {
-	LttvTracesetContextClass parent;
-};
-
-GType lttv_traceset_state_get_type (void);
-
-
-#define LTTV_TRACE_STATE_TYPE  (lttv_trace_state_get_type ())
-#define LTTV_TRACE_STATE(obj)  (G_TYPE_CHECK_INSTANCE_CAST ((obj), LTTV_TRACE_STATE_TYPE, LttvTraceState))
-#define LTTV_TRACE_STATE_CLASS(vtable)  (G_TYPE_CHECK_CLASS_CAST ((vtable), LTTV_TRACE_STATE_TYPE, LttvTraceStateClass))
-#define LTTV_IS_TRACE_STATE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), LTTV_TRACE_STATE_TYPE))
-#define LTTV_IS_TRACE_STATE_CLASS(vtable) (G_TYPE_CHECK_CLASS_TYPE ((vtable), LTTV_TRACE_STATE_TYPE))
-#define LTTV_TRACE_STATE_GET_CLASS(inst)  (G_TYPE_INSTANCE_GET_CLASS ((inst), LTTV_TRACE_STATE_TYPE, LttvTraceStateClass))
+//void lttv_state_write(LttvTraceState *trace_state, LttTime t, FILE *fp);
+//void lttv_state_write_raw(LttvTraceState *trace_state, LttTime t, FILE *fp);
 
 typedef struct _LttvCPUState {
 	GArray *mode_stack;
@@ -389,12 +352,9 @@ typedef struct _LttvNameTables {
 } LttvNameTables;
 
 struct _LttvTraceState {
-	LttvTraceContext parent;
-
+	LttvTrace *trace;	/* LttvTrace this state belongs to */
 	GHashTable *processes;  /* LttvProcessState objects indexed by pid and
 	                           last_cpu */
-	GHashTable *usertraces;  /* GPtrArray objects indexed by pid, containing
-	                           pointers to LttvTracefileState objects. */
 	guint nb_event, save_interval;
 	/* Block/char devices, locks, memory pages... */
 	GQuark *eventtype_names;
@@ -415,62 +375,22 @@ struct _LttvTraceState {
 	GHashTable *bdev_states; /* state of the block devices */
 };
 
-struct _LttvTraceStateClass {
-	LttvTraceContextClass parent;
-
-	void (*state_save) (LttvTraceState *self, LttvAttribute *container);
-	void (*state_restore) (LttvTraceState *self, LttvAttribute *container);
-	void (*state_saved_free) (LttvTraceState *self, LttvAttribute *container);
-};
-
-GType lttv_trace_state_get_type (void);
+void lttv_trace_state_init(LttvTraceState *self, LttvTrace *trace);
+void lttv_trace_state_fini(LttvTraceState *self);
 
 void lttv_state_save(LttvTraceState *self, LttvAttribute *container);
-
 void lttv_state_restore(LttvTraceState *self, LttvAttribute *container);
+LttvTracesetPosition *lttv_trace_state_get_position(LttvAttribute *container);
+void lttv_state_saved_free(LttvTraceState *self, LttvAttribute *container);
 
-void lttv_state_state_saved_free(LttvTraceState *self, 
-		LttvAttribute *container);
-
-int lttv_state_pop_state_cleanup(LttvProcessState *process,
-		LttvTracefileState *tfs);
-
-#define LTTV_TRACEFILE_STATE_TYPE  (lttv_tracefile_state_get_type ())
-#define LTTV_TRACEFILE_STATE(obj)  (G_TYPE_CHECK_INSTANCE_CAST ((obj), LTTV_TRACEFILE_STATE_TYPE, LttvTracefileState))
-#define LTTV_TRACEFILE_STATE_CLASS(vtable)  (G_TYPE_CHECK_CLASS_CAST ((vtable), LTTV_TRACEFILE_STATE_TYPE, LttvTracefileStateClass))
-#define LTTV_IS_TRACEFILE_STATE(obj) (G_TYPE_CHECK_INSTANCE_TYPE ((obj), LTTV_TRACEFILE_STATE_TYPE))
-#define LTTV_IS_TRACEFILE_STATE_CLASS(vtable) (G_TYPE_CHECK_CLASS_TYPE ((vtable), LTTV_TRACEFILE_STATE_TYPE))
-#define LTTV_TRACEFILE_STATE_GET_CLASS(inst)  (G_TYPE_INSTANCE_GET_CLASS ((inst), LTTV_TRACEFILE_STATE_TYPE, LttvTracefileStateClass))
-
-struct _LttvTracefileState {
-	LttvTracefileContext parent;
-
-	GQuark tracefile_name;
-	guint cpu;  /* Current cpu of the tracefile */ /* perhaps merge in cpu_state */
-	LttvCPUState *cpu_state; /* cpu resource state */
-};
-
-struct _LttvTracefileStateClass {
-	LttvTracefileContextClass parent;
-};
-
-GType lttv_tracefile_state_get_type (void);
-
-static inline guint lttv_state_get_target_pid(LttvTracefileState *tfs)
-{
-	LttvTraceState *ts = (LttvTraceState*)tfs->parent.t_context;
-	guint cpu = tfs->cpu;
-	LttvProcessState *process = ts->running_process[cpu];
-
-	if(tfs->parent.target_pid >= 0) return tfs->parent.target_pid;
-	else return process->pid;
-}
-
+//TODO ybrosseau Need to export that cleanly
+//int lttv_state_pop_state_cleanup(LttvProcessState *process,
+//				 LttvEvent *event);
 
 #define HDR_PROCESS 0
 #define HDR_ES 1
 #define HDR_USER_STACK 2
-#define HDR_USERTRACE 3
+//#define HDR_USERTRACE 3
 #define HDR_PROCESS_STATE 4
 #define HDR_CPU 5
 #define HDR_TRACEFILE 6

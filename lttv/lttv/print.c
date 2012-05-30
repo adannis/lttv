@@ -32,8 +32,10 @@
 #include <lttv/hook.h>
 #include <lttv/attribute.h>
 #include <lttv/iattribute.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
 #include <lttv/filter.h>
+#endif
 #include <lttv/print.h>
 #include <ltt/ltt.h>
 #include <ltt/event.h>
@@ -45,12 +47,11 @@
 #include <string.h>
 #include <inttypes.h>
 #include <lttv/event.h>
-
+#include <lttv/traceset.h>
+#ifdef BABEL_CLEANUP
 static inline void print_enum_events(LttEvent *e, struct marker_field *f,
 		guint64 value, GString *s, LttvTracefileState *tfs)
 {
-	LttTracefile *tf = tfs->parent.tf;
-	struct marker_info *info = marker_get_info_from_id(tf->mdata, e->event_id);
 	LttvTraceState *ts = (LttvTraceState*)(tfs->parent.t_context);
 	LttvNameTables *nt = ts->name_tables;
 
@@ -259,10 +260,10 @@ void lttv_print_field(LttEvent *e, struct marker_field *f, GString *s,
 			break;
 	}
 }
-
-int getProcessInfosFromEvent(struct bt_ctf_event *ctf_event, GString* processInfos)
+#endif
+int getProcessInfosFromEvent(LttvEvent *event, GString* processInfos)
 {
-	int pid, tid, ppid;
+	int pid=0, tid=0, ppid=0;
 	char *procname;
 	struct definition *scope;
 	unsigned long timestamp;
@@ -271,10 +272,25 @@ int getProcessInfosFromEvent(struct bt_ctf_event *ctf_event, GString* processInf
 
 	gboolean noError = TRUE;
 
+	guint cpu;
+	LttvTraceState *state = event->state;
+	LttvProcessState *process;
+	struct bt_ctf_event *ctf_event = event->bt_event;
+
+	cpu = lttv_traceset_get_cpuid_from_event(event);
+
+	process = state->running_process[cpu];
+
 	timestamp = bt_ctf_get_timestamp(ctf_event);
+
+	pid = process->pid;
+	tid = process->tgid;
+	ppid = process->ppid;
+	procname = g_quark_to_string(process->name);
 	if (timestamp == -1ULL) {
 		noError = FALSE;
 	}
+#if 0
 	if (noError) {
 		scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_EVENT_CONTEXT);
 		if (bt_ctf_field_get_error()) {
@@ -305,8 +321,8 @@ int getProcessInfosFromEvent(struct bt_ctf_event *ctf_event, GString* processInf
 			noError = FALSE;
 		}
 	}
-
-	if (noError) {
+#endif
+	if (noError||1) {
 		g_string_append_printf(processInfos, "%u, %u, %s, %u", pid, tid, procname, ppid);
 	}
 	else {
@@ -316,41 +332,17 @@ int getProcessInfosFromEvent(struct bt_ctf_event *ctf_event, GString* processInf
 	return ret;
 }
 
-
-int getCPUIdFromEvent(struct bt_ctf_event *ctf_event, GString* cpuId_str)
+static
+int getCPUIdFromEvent(LttvEvent *event, GString* cpuId_str)
 {
-	struct definition *scope;
-	unsigned long timestamp;
-	unsigned int cpu_id;
-	int ret = 0;
+	gint cpuid;
 
-	gboolean noError = TRUE;
-
-	timestamp = bt_ctf_get_timestamp(ctf_event);
-	if (timestamp == -1ULL) {
-		noError = FALSE;
+	cpuid = lttv_traceset_get_cpuid_from_event(event);
+	if (cpuid < 0) {
+		return -1;
 	}
-	if (noError) {
-		scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
-		if (bt_ctf_field_get_error()) {
-			noError = FALSE;
-		}
-	}
-	if (noError) {
-		cpu_id = bt_ctf_get_uint64(bt_ctf_get_field(ctf_event, scope, "cpu_id"));
-		if (bt_ctf_field_get_error()) {
-			noError = FALSE;
-		}
-		else {
-			g_string_append_printf(cpuId_str, "%u", cpu_id);
-		}
-	}
-
-	if (!noError) {
-		ret = -1;
-	}
-
-	return ret;
+	g_string_append_printf(cpuId_str, "%u", cpuid);
+	return 0;
 }
 
 int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, GString* fieldsStr)
@@ -444,9 +436,9 @@ void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_na
 	GString* fields = g_string_new("");
 	GString* cpuId_str = g_string_new("");
 
-	getProcessInfosFromEvent(event->bt_event, processInfos);
+	getProcessInfosFromEvent(event, processInfos);
 	getFieldsFromEvent(event->bt_event, fields, field_names);
-	getCPUIdFromEvent(event->bt_event, cpuId_str);
+	getCPUIdFromEvent(event, cpuId_str);
 
 	g_string_set_size(a_string,0);
 

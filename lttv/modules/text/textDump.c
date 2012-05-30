@@ -31,8 +31,10 @@
 #include <lttv/hook.h>
 #include <lttv/attribute.h>
 #include <lttv/iattribute.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
 #include <lttv/filter.h>
+#endif
 #include <lttv/print.h>
 #include <ltt/ltt.h>
 #include <ltt/event.h>
@@ -197,7 +199,7 @@ print_tree(FILE *fp, GString *indent, LttvAttribute *tree)
     }
   }
 }
-
+#ifdef BABEL_CLEANUP
 static void
 print_stats(FILE *fp, LttvTracesetStats *tscs)
 {
@@ -244,7 +246,7 @@ print_stats(FILE *fp, LttvTracesetStats *tscs)
   }
   g_string_free(indent, TRUE);
 }
-
+#endif
 /* Insert the hooks before and after each trace and tracefile, and for each
    event. Print a global header. */
 
@@ -254,7 +256,7 @@ static GString *a_string;
 
 static gboolean write_traceset_header(void *hook_data, void *call_data)
 {
-  LttvTracesetContext *tc = (LttvTracesetContext *)call_data;
+  LttvTraceset *traceset = (LttvTraceset *)call_data;
 
   g_info("TextDump traceset header");
 
@@ -265,7 +267,7 @@ static gboolean write_traceset_header(void *hook_data, void *call_data)
 
   /* Print the trace set header */
   fprintf(a_file,"Trace set contains %d traces\n\n", 
-      lttv_traceset_number(tc->ts));
+      lttv_traceset_number(traceset));
 
   return FALSE;
 }
@@ -273,17 +275,17 @@ static gboolean write_traceset_header(void *hook_data, void *call_data)
 
 static gboolean write_traceset_footer(void *hook_data, void *call_data)
 {
-  LttvTracesetContext *tc = (LttvTracesetContext *)call_data;
+  LttvTraceset *traceset = (LttvTraceset *)call_data;
 
   g_info("TextDump traceset footer");
 
   fprintf(a_file,"End trace set\n\n");
-
+#ifdef BABEL_CLEANUP
   if(LTTV_IS_TRACESET_STATS(tc)) {
     lttv_stats_sum_traceset((LttvTracesetStats *)tc, ltt_time_infinite);
     print_stats(a_file, (LttvTracesetStats *)tc);
   }
-
+#endif
   if(a_file_name != NULL) fclose(a_file);
 
   return FALSE;
@@ -310,7 +312,7 @@ static int write_event_content(void *hook_data, void *call_data)
 
   LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
   
-  LttvEvent *event = (struct bt_ctf_event *)call_data;
+  LttvEvent *event = (LttvEvent *)call_data;
 #ifdef BABEL_CLEANUP  
   LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
 
@@ -483,5 +485,5 @@ static void destroy()
 
 LTTV_MODULE("textDump", "Print events in a file", \
 	    "Produce a detailed text printout of a trace", \
-	    init, destroy, "stats", "batchAnalysis", "option", "print")
+	    init, destroy, "batchAnalysis", "option", "print")
 

@@ -1,6 +1,5 @@
 /* This file is part of the Linux Trace Toolkit viewer
- * Copyright (C) 2003-2004 Michel Dagenais
- *               2005 Mathieu Desnoyers
+ * Copyright (C) 2012 Yannick Brosseau
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License Version 2 as
@@ -16,21 +15,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, 
  * MA 02111-1307, USA.
  */
+#ifndef LTTV_TRACE_H
+#define LTTV_TRACE_H
 
-/* print.c
- *
- * Event printing routines header.
- *
- * Use these functions to print textually event fields. 
- */
+#include <lttv/traceset.h>
+typedef struct _LttvTrace LttvTrace;
+//typedef struct _LttvTraceset LttvTraceset;
 
-#include <lttv/event.h>
-#ifdef BABEL_CLEANUP
-void lttv_print_field(LttEvent *e, struct marker_field *f, GString *s,
-		gboolean field_names, LttvTracefileState *tfs);
+LttvTraceset *lttv_trace_get_traceset(LttvTrace *trace);
 
-void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
-		gboolean field_names, LttvTracefileState *tfs);
-#endif
-void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_names);
+void lttv_trace_destroy(LttvTrace *t);
 
+guint lttv_trace_get_ref_number(LttvTrace * t);
+
+guint lttv_trace_ref(LttvTrace * t);
+
+guint lttv_trace_unref(LttvTrace * t);
+
+guint lttv_trace_get_num_cpu(LttvTrace *t);
+
+/* An attributes table is attached to the set and to each trace in the set. */
+
+LttvAttribute *lttv_trace_attribute(LttvTrace *t);
+
+#endif //LTTV_TRACE_H
