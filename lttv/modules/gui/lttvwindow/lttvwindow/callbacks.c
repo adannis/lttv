@@ -2917,6 +2917,18 @@ void
 on_content_activate                    (GtkMenuItem     *menuitem,
                                         gpointer         user_data)
 {
+  char* filename = NULL,
+		   *path;
+  GdkScreen *screen;
+  const char* relativePath = "doc/user/user_guide/html/index.html";
+  filename = g_build_filename (g_get_current_dir(), relativePath, NULL);
+  path = g_strdup_printf ("ghelp://%s", filename);
+
+  screen = gdk_screen_get_default();
+  gtk_show_uri (screen, path, gtk_get_current_event_time(), NULL);
+
+  g_free(filename);
+  g_free(path);
   g_info("Content\n");
 }
 
@@ -2938,7 +2950,6 @@ on_about_activate                      (GtkMenuItem     *menuitem,
   GtkWidget *window_widget = main_window->mwindow;
   GtkWidget *about_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
   GtkWindow *about_window = GTK_WINDOW(about_widget);
-  gint window_width, window_height;
   
   gtk_window_set_title(about_window, "About Linux Trace Toolkit");
 
@@ -2948,16 +2959,12 @@ on_about_activate                      (GtkMenuItem     *menuitem,
   gtk_window_set_modal(about_window, FALSE);
 
   /* Put the about window at the center of the screen */
-  gtk_window_get_size(about_window, &window_width, &window_height);
-  gtk_window_move (about_window,
-                   (gdk_screen_width() - window_width)/2,
-                   (gdk_screen_height() - window_height)/2);
- 
+  gtk_window_set_position(about_window, GTK_WIN_POS_CENTER_ALWAYS);
+
   GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
 
   gtk_container_add(GTK_CONTAINER(about_widget), vbox);
 
-    
   /* Text to show */
   GtkWidget *label1 = gtk_label_new("");
   gtk_misc_set_padding(GTK_MISC(label1), 10, 20);
