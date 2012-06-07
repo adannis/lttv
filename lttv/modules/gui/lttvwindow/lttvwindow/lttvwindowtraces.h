@@ -186,7 +186,7 @@ void lttvwindowtraces_background_notify_queue
  (gpointer                     owner,
   LttvTrace                   *trace,
   LttTime                      notify_time,
-  const LttvTracesetContextPosition *notify_position,
+  const LttvTracesetPosition *notify_position,
   const LttvHooks                   *notify);
 
 /**
@@ -204,7 +204,7 @@ void lttvwindowtraces_background_notify_current
  (gpointer                     owner,
   LttvTrace                   *trace,
   LttTime                      notify_time,
-  const LttvTracesetContextPosition *notify_position,
+  const LttvTracesetPosition *notify_position,
   const LttvHooks                   *notify);
 
 /**
@@ -263,7 +263,6 @@ void lttvwindowtraces_register_computation_hooks(LttvAttributeName module_name,
                                           LttvHooks *before_request,
                                           LttvHooks *after_request,
                                           LttvHooks *event_hook,
-                                          LttvHooksById *event_hook_by_id,
                                           LttvHooks *hook_adder,
                                           LttvHooks *hook_remover);
 /**

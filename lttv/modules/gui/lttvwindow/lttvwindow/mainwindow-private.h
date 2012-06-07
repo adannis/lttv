@@ -24,9 +24,12 @@
 #include <ltt/ltt.h>
 #include <lttv/attribute.h>
 #include <lttv/traceset.h>
-#include <lttv/tracecontext.h>
+
 #include <lttv/hook.h>
+#ifdef BABEL_CLEANUP
+#include <lttv/tracecontext.h>
 #include <lttv/stats.h>
+#endif /* BABEL_CLEANUP */
 #include <lttv/filter.h>
 //#include <lttvwindow/gtkmultivpaned.h>
 #include <lttvwindow/mainwindow.h>
@@ -34,8 +37,7 @@
 #define SCROLL_STEP_PER_PAGE 10.0
 
 struct _TracesetInfo {
-  //FIXME? TracesetContext and stats in same or different variable ?
-  LttvTracesetStats * traceset_context;
+  //FIXME? Traceset is the unique member of tracesetinfo
   LttvTraceset * traceset;
 };
 

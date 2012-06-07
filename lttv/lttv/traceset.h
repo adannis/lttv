@@ -69,6 +69,8 @@ char * lttv_traceset_name(LttvTraceset * s);
 LttvTrace *lttv_trace_new(LttTrace *t);
 #endif
 
+void get_absolute_pathname(const gchar *pathname, gchar * abs_pathname);
+
 LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig);
 
 LttvTraceset *lttv_traceset_load(const gchar *filename);
@@ -87,6 +89,7 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t);
 /*
  * lttv_trace_create : Add all traces recursively to a traceset from a path
  *
+ * 
  * ts is the traceset in which will be contained the traces
  *
  * trace_path is the path where to find a set of trace.
@@ -106,11 +109,6 @@ void lttv_traceset_remove(LttvTraceset *s, unsigned i);
 
 LttvAttribute *lttv_traceset_attribute(LttvTraceset *s);
 
-
-#ifdef BABEL_CLEANUP
-LttTrace *lttv_trace(LttvTrace *t);
-#endif
-
 /* Take a position snapshot */
 LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset);
 
@@ -120,6 +118,10 @@ void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos);
 void lttv_traceset_seek_to_position(LttvTracesetPosition *traceset_pos);
 
 guint lttv_traceset_get_cpuid_from_event(LttvEvent *event);
+/* Returns the minimum timestamp of the traces in the traceset */
+guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset);
+/* Returns the maximum timestamp of the traces in the traceset */
+guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset);
 
 const char *lttv_traceset_get_name_from_event(LttvEvent *event);
 

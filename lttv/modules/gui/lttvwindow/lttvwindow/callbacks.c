@@ -37,9 +37,12 @@
 #include <lttv/lttv.h>
 #include <lttv/module.h>
 #include <lttv/iattribute.h>
+#include <lttv/traceset.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
-#include <lttv/filter.h>
 #include <lttv/sync/sync_chain_lttv.h>
+#endif /* BABEL_CLEANUP */
+#include <lttv/filter.h>
 #include <lttvwindow/mainwindow.h>
 #include <lttvwindow/mainwindow-private.h>
 #include <lttvwindow/menu.h>
@@ -48,6 +51,10 @@
 #include <lttvwindow/lttvwindow.h>
 #include <lttvwindow/lttvwindowtraces.h>
 #include <lttvwindow/lttv_plugin_tab.h>
+
+#include <babeltrace/babeltrace.h>
+#include <babeltrace/ctf/events.h>
+#include <babeltrace/ctf/iterator.h>
 
 static LttTime lttvwindow_default_time_width = { 1, 0 };
 #define CLIP_BUF 256 // size of clipboard buffer
@@ -218,13 +225,13 @@ void insert_viewer(GtkWidget* widget, lttvwindow_viewer_constructor constructor)
 
 int SetTraceset(Tab * tab, LttvTraceset *traceset)
 {
+  
   guint i;
   TimeInterval time_span;
   TimeWindow new_time_window;
   LttTime new_current_time;
-  LttvTracesetContext *tsc =
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
 
+#ifdef BABEL_CLEANUP
   // Perform time synchronization on the traces
   if (syncTraceset(tsc))
   {
@@ -274,11 +281,17 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
 
     tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
   }
+#endif /*BABEL_CLEANUP*/
 
-  time_span = tsc->time_span;
+
+  time_span.start_time =ltt_time_from_uint64( lttv_traceset_get_timestamp_begin(traceset));
+  time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(traceset));
+  
+  tab->traceset_info->traceset = traceset;
+  
   new_time_window = tab->time_window;
-  new_current_time = tab->current_time;
-
+  new_current_time = tab->current_time;	
+ 
   /* Set the tab's time window and current time if
    * out of bounds */
   if(ltt_time_compare(tab->time_window.start_time, time_span.start_time) < 0
@@ -311,6 +324,7 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
   current_time_change_manager(tab, new_current_time);
 
   return retval;
+  
 }
 
 /**
@@ -698,6 +712,7 @@ void open_traceset(GtkWidget * widget, gpointer user_data)
 
 gboolean lttvwindow_process_pending_requests(Tab *tab)
 {
+  #ifdef BABEL_CLEANUP
   LttvTracesetContext *tsc;
   LttvTracefileContext *tfc;
   GSList *list_in = NULL;
@@ -1476,6 +1491,8 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
                   NULL);
   return FALSE;
   */
+  
+  #endif /* BABEL_CLEANUP */
 }
 
 #undef list_out
@@ -1486,7 +1503,7 @@ static gboolean
 live_trace_update_handler(Tab *tab)
 {  
 	unsigned int updated_count;
-
+#ifdef BABEL_CLEANUP
 	LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
 	TimeInterval initial_time_span = tsc->time_span;
 	TimeInterval updated_time_span;
@@ -1521,10 +1538,12 @@ live_trace_update_handler(Tab *tab)
 
 	/* Timer will be recalled as long as there is files to update */
 	return (updated_count > 0);
+#endif /* BABEL_CLEANUP */
 }
 
 static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 {
+  #ifdef BABEL_CLEANUP
   LttvTraceset *traceset = tab->traceset_info->traceset;
   guint i;
   guint num_traces = lttv_traceset_number(traceset);
@@ -1585,7 +1604,7 @@ static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 				 (GSourceFunc) live_trace_update_handler,
 				 tab);
   }
-
+#endif /* BABEL_CLEANUP */
 }
 
 /* add_trace adds a trace into the current traceset. It first displays a 
@@ -1595,6 +1614,7 @@ static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 
 void add_trace(GtkWidget * widget, gpointer user_data)
 {
+#ifdef BABEL_CLEANUP
   LttTrace *trace;
   LttvTrace * trace_v;
   LttvTraceset * traceset;
@@ -1699,6 +1719,8 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 	    break;
   }
   gtk_widget_destroy((GtkWidget*)file_chooser);
+  
+#endif /* BABEL_CLEANUP */
 
 }
 
@@ -1716,6 +1738,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 
 void remove_trace(GtkWidget *widget, gpointer user_data)
 {
+  #ifdef BABEL_CLEANUP
   LttTrace *trace;
   LttvTrace * trace_v;
   LttvTraceset * traceset;
@@ -1804,6 +1827,7 @@ void remove_trace(GtkWidget *widget, gpointer user_data)
     SetTraceset(tab, (gpointer)traceset);
   }
   g_free(name);
+#endif /* BABEL_CLEANUP */ 
 }
 
 #if 0
@@ -2056,6 +2080,7 @@ void save_as(GtkWidget * widget, gpointer user_data)
 
 void zoom(GtkWidget * widget, double size)
 {
+  #ifdef BABEL_CLEANUP
   TimeInterval time_span;
   TimeWindow new_time_window;
   LttTime    current_time, time_delta;
@@ -2139,6 +2164,8 @@ void zoom(GtkWidget * widget, double size)
  } else {
    time_change_manager(tab, new_time_window);
   }
+  
+#endif /* BABEL_CLEANUP */
 }
 
 void zoom_in(GtkWidget * widget, gpointer user_data)
@@ -3234,14 +3261,19 @@ on_MNotebook_switch_page               (GtkNotebook     *notebook,
 
 void time_change_manager               (Tab *tab,
                                         TimeWindow new_time_window)
-{
+{ 
+  
   /* Only one source of time change */
   if(tab->time_manager_lock == TRUE) return;
 
   tab->time_manager_lock = TRUE;
+  TimeInterval time_span;
+  
+  LttvTraceset *ts = tab->traceset_info->traceset;
+  time_span.start_time =ltt_time_from_uint64( lttv_traceset_get_timestamp_begin(ts));
+  time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
+  
 
-  LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
   LttTime start_time = new_time_window.start_time;
   LttTime end_time = new_time_window.end_time;
 
@@ -3249,7 +3281,8 @@ void time_change_manager               (Tab *tab,
   
   /* Set scrollbar */
   GtkAdjustment *adjustment = gtk_range_get_adjustment(GTK_RANGE(tab->scrollbar));
-  LttTime upper = ltt_time_sub(time_span.end_time, time_span.start_time);
+  LttTime upper = ltt_time_sub(time_span.end_time, time_span.start_time); 
+
 #if 0  
   gtk_range_set_increments(GTK_RANGE(tab->scrollbar),
                ltt_time_to_double(new_time_window.time_width)
@@ -3304,6 +3337,8 @@ void time_change_manager               (Tab *tab,
   set_time_window(tab, &new_time_window);
 
   tab->time_manager_lock = FALSE;
+  
+
 }
 
 
@@ -3326,8 +3361,9 @@ void current_time_change_manager       (Tab *tab,
 }
 
 void current_position_change_manager(Tab *tab,
-                                     LttvTracesetContextPosition *pos)
+                                     LttvTracesetPosition *pos)
 {
+    #ifdef BABEL_CLEANUP
   LttvTracesetContext *tsc =
     LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
   int retval;
@@ -3341,11 +3377,13 @@ void current_position_change_manager(Tab *tab,
   current_time_change_manager(tab, new_time);
   
   set_current_position(tab, pos);
+    #endif /* BABEL_CLEANUP */
 }
 
 static void on_timebar_starttime_changed(Timebar *timebar,
 				gpointer user_data)
 {
+  #ifdef BABEL_CLEANUP
 	Tab *tab = (Tab *)user_data;
 	LttvTracesetContext * tsc =
 		LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
@@ -3377,12 +3415,13 @@ static void on_timebar_starttime_changed(Timebar *timebar,
 
 	/* Notify the time_manager */
 	time_change_manager(tab, new_time_window);
-
+#endif /* BABEL_CLEANUP */
 }
 
 static void on_timebar_endtime_changed(Timebar *timebar,
 				gpointer user_data)
 {
+    #ifdef BABEL_CLEANUP
 	Tab *tab = (Tab *)user_data;
 	LttvTracesetContext * tsc = 
 		LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
@@ -3414,6 +3453,7 @@ static void on_timebar_endtime_changed(Timebar *timebar,
 
 	/* Notify the time_manager */
 	time_change_manager(tab, new_time_window);  
+	  #endif /* BABEL_CLEANUP*/
 }
 static void on_timebar_currenttime_changed(Timebar *timebar,
 				gpointer user_data)
@@ -3428,6 +3468,7 @@ static void on_timebar_currenttime_changed(Timebar *timebar,
 void scroll_value_changed_cb(GtkWidget *scrollbar,
                              gpointer user_data)
 {
+    #ifdef BABEL_CLEANUP
   Tab *tab = (Tab *)user_data;
   TimeWindow new_time_window;
   LttTime time;
@@ -3485,6 +3526,7 @@ void scroll_value_changed_cb(GtkWidget *scrollbar,
   /* call viewer hooks for new time window */
   set_time_window(tab, &time_window);
 #endif //0
+#endif /* BABEL_CLEANUP */
 }
 
 
@@ -3855,6 +3897,7 @@ MainWindow *construct_main_window(MainWindow * parent)
 
 void tab_destructor(LttvPluginTab * ptab)
 {
+#ifdef BABEL_CLEANUP
   int i, nb, ref_count;
   LttvTrace * trace;
   Tab *tab = ptab->tab;
@@ -3893,6 +3936,7 @@ void tab_destructor(LttvPluginTab * ptab)
   g_free(tab->traceset_info);
   //g_free(tab);
   g_object_unref(ptab);
+#endif /* BABEL_CLEANUP */
 }
 
 
@@ -3902,6 +3946,7 @@ void tab_destructor(LttvPluginTab * ptab)
 void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab, 
 		  GtkNotebook * notebook, char * label)
 {
+
   GList * list;
   //Tab * tab;
   //LttvFilter *filter = NULL;
@@ -3919,9 +3964,13 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
     /* Copy the previous tab's filter */
     /* We can clone the filter, as we copy the trace set also */
     /* The filter must always be in sync with the trace set */
+   
+#ifdef BABEL_CLEANUP
     tab->filter = lttv_filter_clone(copy_tab->filter);
+#endif /* BABEL_CLEANUP */
   } else {
     tab->traceset_info->traceset = lttv_traceset_new();
+
     tab->filter = NULL;
   }
 #ifdef DEBUG
@@ -3931,21 +3980,17 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
       0, 4);
   fflush(stdout);
 #endif //DEBUG
-
+// 
   tab->time_manager_lock = FALSE;
   tab->current_time_manager_lock = FALSE;
-
+#ifdef BABEL_CLEANUP
   //FIXME copy not implemented in lower level
   tab->traceset_info->traceset_context =
     g_object_new(LTTV_TRACESET_STATS_TYPE, NULL);
-  g_assert(tab->traceset_info->traceset_context != NULL);
-  lttv_context_init(
-	    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context),
-	                          tab->traceset_info->traceset);
   //add state update hooks
   lttv_state_add_event_hooks(
        (LttvTracesetState*)tab->traceset_info->traceset_context);
-  
+#endif //BABEL_CLEANUP
   //determine the current_time and time_window of the tab
 #if 0
   if(copy_tab != NULL){
@@ -4110,7 +4155,7 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
     lttvwindow_report_time_window(tab, time_window);
     lttvwindow_report_current_time(tab, ltt_time_zero);
   }
- 
+
   LttvTraceset *traceset = tab->traceset_info->traceset;
   SetTraceset(tab, traceset);
 }
@@ -4128,8 +4173,9 @@ gboolean execute_events_requests(Tab *tab)
 }
 
 
-__EXPORT void create_main_window_with_trace_list(GSList *traces, gboolean is_live)
+__EXPORT void create_main_window_with_trace_list(GSList *traces)
 {
+
   GSList *iter = NULL;
 
   /* Create window */
@@ -4149,24 +4195,19 @@ __EXPORT void create_main_window_with_trace_list(GSList *traces, gboolean is_liv
     ptab = (LttvPluginTab *)g_object_get_data(G_OBJECT(page), "Tab_Plugin");
     tab = ptab->tab;
   }
-
+  
+  LttvTraceset * traceset = lttv_traceset_new();
   for(iter=traces; iter!=NULL; iter=g_slist_next(iter)) {
     gchar *path = (gchar*)iter->data;
     /* Add trace */
     gchar abs_path[PATH_MAX];
-    LttvTrace *trace_v;
-    LttTrace *trace;
 
+ 
     get_absolute_pathname(path, abs_path);
-    trace_v = lttvwindowtraces_get_trace_by_name(abs_path);
-    if(trace_v == NULL) {
-      if(is_live) {
-	trace = ltt_trace_open_live(abs_path);
-      } else {
-	trace = ltt_trace_open(abs_path);
-      }
-      if(trace == NULL) {
-        g_warning("cannot open trace %s", abs_path);
+    
+    if(lttv_traceset_add_path(traceset,abs_path) != 0 ){ /*failure*/
+    
+      g_warning("cannot open trace %s", abs_path);
 
         GtkWidget *dialogue = 
           gtk_message_dialog_new(
@@ -4178,19 +4219,10 @@ __EXPORT void create_main_window_with_trace_list(GSList *traces, gboolean is_liv
             "to select it ?");
         gtk_dialog_run(GTK_DIALOG(dialogue));
         gtk_widget_destroy(dialogue);
-      } else {
-        trace_v = lttv_trace_new(trace);
-        lttvwindowtraces_add_trace(trace_v);
-        lttvwindow_add_trace(tab, trace_v);
-      }
-    } else {
-      lttvwindow_add_trace(tab, trace_v);
     }
-  }
-  
-  LttvTraceset *traceset;
-
-  traceset = tab->traceset_info->traceset;
-  SetTraceset(tab, traceset);
+    else{
+        SetTraceset(tab, traceset);
+    }
+  } 
 }
 

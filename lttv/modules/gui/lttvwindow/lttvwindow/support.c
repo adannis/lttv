@@ -32,7 +32,7 @@
 
 #include <gtk/gtk.h>
 
-#include <ltt/compiler.h>
+#include <lttv/compiler.h>
 
 #include "support.h"
 

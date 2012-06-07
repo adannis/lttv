@@ -15,15 +15,15 @@ BUILDPATH=$(dirname $0)
 RCFILE="$(dirname $0)/.runlttvrc"
 TEXTLIBS="-L ${BUILDPATH}/lttv/modules/text/.libs -m textDump"
 EVALLIBS="-L ${BUILDPATH}/lttv/modules/text/.libs -m sync_chain_batch"
-GRAPHLIBS="-L ${BUILDPATH}/lttv/modules/gui/lttvwindow/lttvwindow/.libs -m lttvwindow "\
-"-L ${BUILDPATH}/lttv/modules/gui/controlflow/.libs -m guicontrolflow "\
-"-L ${BUILDPATH}/lttv/modules/gui/detailedevents/.libs -m guievents "\
-"-L ${BUILDPATH}/lttv/modules/gui/tracecontrol/.libs -m guitracecontrol "\
-"-L ${BUILDPATH}/lttv/modules/gui/statistics/.libs -m guistatistics "\
-"-L ${BUILDPATH}/lttv/modules/gui/resourceview/.libs -m resourceview "\
-"-L ${BUILDPATH}/lttv/modules/gui/filter/.libs -m guifilter "\
-"-L ${BUILDPATH}/lttv/modules/gui/interrupts/.libs -m interrupts "\
-"-L ${BUILDPATH}/lttv/modules/gui/histogram/.libs -m guihistogram"
+GRAPHLIBS="-L ${BUILDPATH}/lttv/modules/gui/lttvwindow/lttvwindow/.libs -m lttvwindow"
+#"-L ${BUILDPATH}/lttv/modules/gui/controlflow/.libs -m guicontrolflow "\
+#"-L ${BUILDPATH}/lttv/modules/gui/detailedevents/.libs -m guievents "\
+#"-L ${BUILDPATH}/lttv/modules/gui/tracecontrol/.libs -m guitracecontrol "\
+#"-L ${BUILDPATH}/lttv/modules/gui/statistics/.libs -m guistatistics "\
+#"-L ${BUILDPATH}/lttv/modules/gui/resourceview/.libs -m resourceview "\
+#"-L ${BUILDPATH}/lttv/modules/gui/filter/.libs -m guifilter "\
+#"-L ${BUILDPATH}/lttv/modules/gui/interrupts/.libs -m interrupts "\
+#"-L ${BUILDPATH}/lttv/modules/gui/histogram/.libs -m guihistogram"
 DEFAULTMODE="gui"
 
 usage () {

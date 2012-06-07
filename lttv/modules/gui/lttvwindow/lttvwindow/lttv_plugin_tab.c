@@ -32,11 +32,12 @@ static void tab_update_filter(LttvPlugin *parent, LttvFilter *filter)
 {
   LttvPluginTab *self = LTTV_PLUGIN_TAB(parent);
   g_message("In tab update filter.");
+  #ifdef BABEL_CLEANUP
   lttv_filter_destroy(self->tab->filter);
+  #endif /* BABEL_CLEANUP */ 
   self->tab->filter = filter;
   lttvwindow_report_filter(self->tab, filter);
 }
-
 
 static void
 lttv_plugin_tab_class_init (LttvPluginTabClass *klass)

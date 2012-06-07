@@ -36,7 +36,6 @@
 #include <lttv/lttv.h>
 #include <lttv/traceset.h>
 #include <lttv/attribute.h>
-#include <lttv/tracecontext.h>
 #include <lttvwindow/lttvwindowtraces.h>
 #include <lttvwindow/lttvwindow.h> // for CHUNK_NUM_EVENTS
 #include <lttvwindow/mainwindow-private.h> /* for main window structure */
@@ -56,7 +55,7 @@ typedef struct _BackgroundNotify {
   gpointer                     owner;
   LttvTrace                   *trace; /* trace */
   LttTime                      notify_time;
-  LttvTracesetContextPosition *notify_position;
+  LttvTracesetPosition 	       *notify_position;
   LttvHooks                   *notify; /* Hook to call when the notify is
                                           passed, or at the end of trace */
 } BackgroundNotify;
@@ -75,6 +74,7 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace);
 
 __EXPORT LttvTrace *lttvwindowtraces_get_trace_by_name(gchar *path)
 {
+#ifdef BABEL_CLEANUP
   guint i;
 
   for(i=0;i<lttvwindowtraces_get_number();i++) {
@@ -92,7 +92,7 @@ __EXPORT LttvTrace *lttvwindowtraces_get_trace_by_name(gchar *path)
       return trace_v;
     }
   }
-  
+#endif
   return NULL;
 }
 
@@ -141,6 +141,7 @@ __EXPORT guint lttvwindowtraces_get_number()
 
 void lttvwindowtraces_add_trace(LttvTrace *trace)
 {
+
   LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *attribute;
   LttvAttributeValue value;
@@ -148,7 +149,7 @@ void lttvwindowtraces_add_trace(LttvTrace *trace)
   gchar attribute_path[PATH_MAX];
   int result;
   gboolean result_b;
-
+  #ifdef BABEL_CLEANUP
   if(stat(g_quark_to_string(ltt_trace_name(lttv_trace(trace))), &buf)) {
     g_warning("lttvwindowtraces_add_trace: Trace %s not found",
         g_quark_to_string(ltt_trace_name(lttv_trace(trace))));
@@ -196,6 +197,7 @@ void lttvwindowtraces_add_trace(LttvTrace *trace)
   *(value.v_pointer) = tss;
   
   lttv_context_init(LTTV_TRACESET_CONTEXT(tss), ts);
+#endif
 #if 0
   result_b = lttv_iattribute_find(LTTV_IATTRIBUTE(attribute),
                                 LTTV_COMPUTATION_SYNC_POSITION,
@@ -252,7 +254,6 @@ void lttvwindowtraces_remove_trace(LttvTrace *trace)
 
       /* destroy traceset and tracesetcontext */
       LttvTraceset *ts;
-      LttvTracesetStats *tss;
       //LttvTracesetContextPosition *sync_position;
       
       l_attribute = lttv_trace_attribute(trace);
@@ -296,11 +297,12 @@ void lttvwindowtraces_remove_trace(LttvTrace *trace)
                                     LTTV_POINTER,
                                     &value);
       g_assert(result);
-
+#ifdef BABEL_CLEANUP
       tss = (LttvTracesetStats*)*(value.v_pointer);
       
       lttv_context_fini(LTTV_TRACESET_CONTEXT(tss));
       g_object_unref(tss);
+#endif /* BABEL_CLEANUP */
       lttv_iattribute_remove_by_name(LTTV_IATTRIBUTE(l_attribute),
                                      LTTV_COMPUTATION_TRACESET_CONTEXT);
       lttv_iattribute_remove_by_name(LTTV_IATTRIBUTE(l_attribute),
@@ -390,7 +392,7 @@ __EXPORT void lttvwindowtraces_background_request_queue
       GTK_MESSAGE_INFO, GTK_BUTTONS_OK, 
       "Background computation for %s started for trace %s", 
       module_name,
-      g_quark_to_string(ltt_trace_name(lttv_trace(trace))));
+      trace->traceset->filename);
   gtk_window_set_transient_for(GTK_WINDOW(dialog), GTK_WINDOW(widget));
   g_signal_connect_swapped (dialog, "response",
       G_CALLBACK (destroy_dialog),
@@ -501,9 +503,10 @@ __EXPORT void lttvwindowtraces_background_notify_queue
  (gpointer                     owner,
   LttvTrace                   *trace,
   LttTime                      notify_time,
-  const LttvTracesetContextPosition *notify_position,
+  const LttvTracesetPosition *notify_position,
   const LttvHooks                   *notify)
 {
+  #ifdef BABEL_CLEANUP
   BackgroundNotify *bg_notify;
   LttvAttribute *attribute = lttv_trace_attribute(trace);
   LttvAttributeValue value;
@@ -524,7 +527,7 @@ __EXPORT void lttvwindowtraces_background_notify_queue
                                 &value);
   g_assert(result);
 
-  LttvTracesetContext *tsc = (LttvTracesetContext*)(value.v_pointer);
+  LttvTraceset *ts = (LttvTraceset)(value.v_pointer);
 
   bg_notify = g_new(BackgroundNotify,1);
 
@@ -543,6 +546,7 @@ __EXPORT void lttvwindowtraces_background_notify_queue
   lttv_hooks_add_list(bg_notify->notify, notify);
 
   *slist = g_slist_append(*slist, bg_notify);
+#endif /* BABEL_CLEANUP*/
 }
 
 /**
@@ -560,9 +564,10 @@ __EXPORT void lttvwindowtraces_background_notify_current
  (gpointer                     owner,
   LttvTrace                   *trace,
   LttTime                      notify_time,
-  const LttvTracesetContextPosition *notify_position,
+  const LttvTracesetPosition *notify_position,
   const LttvHooks                   *notify)
 {
+  #ifdef BABEL_CLEANUP
   BackgroundNotify *bg_notify;
   LttvAttribute *attribute = lttv_trace_attribute(trace);
   LttvAttributeValue value;
@@ -602,11 +607,13 @@ __EXPORT void lttvwindowtraces_background_notify_current
   lttv_hooks_add_list(bg_notify->notify, notify);
 
   *slist = g_slist_append(*slist, bg_notify);
+  #endif /* BABEL_CLEANUP */
 }
 
 
 static void notify_request_free(BackgroundNotify *notify_req)
 {
+  #ifdef BABEL_CLEANUP
   if(notify_req == NULL) return;
 
   if(notify_req->notify_position != NULL)
@@ -614,6 +621,7 @@ static void notify_request_free(BackgroundNotify *notify_req)
   if(notify_req->notify != NULL)
     lttv_hooks_destroy(notify_req->notify);
   g_free(notify_req);
+  #endif /* BABEL_CLEANUP */
 }
 
 /**
@@ -688,9 +696,10 @@ __EXPORT void lttvwindowtraces_background_notify_remove(gpointer owner)
 /* Background processing helper functions */
 
 void lttvwindowtraces_add_computation_hooks(LttvAttributeName module_name,
-                                            LttvTracesetContext *tsc,
+                                            LttvTraceset *ts,
                                             LttvHooks *hook_adder)
 {
+  #ifdef BABEL_CLEANUP
   LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *module_attribute;
   LttvAttributeType type;
@@ -717,12 +726,14 @@ void lttvwindowtraces_add_computation_hooks(LttvAttributeName module_name,
     if(hook_adder != NULL)
       lttv_hooks_add_list(hook_adder, (LttvHooks*)*(value.v_pointer));
   }
+#endif /* BABEL_CLEANUP */
 }
                                             
 void lttvwindowtraces_remove_computation_hooks(LttvAttributeName module_name,
-                                               LttvTracesetContext *tsc,
+                                               LttvTraceset *ts,
                                                LttvHooks *hook_remover)
 {
+  #ifdef BABEL_CLEANUP
   LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *module_attribute;
   LttvAttributeType type;
@@ -748,11 +759,13 @@ void lttvwindowtraces_remove_computation_hooks(LttvAttributeName module_name,
     if(hook_remover != NULL)
       lttv_hooks_add_list(hook_remover, (LttvHooks*)*(value.v_pointer));
   }
+  #endif /* BABEL_CLEANUP */
 }
 
 void lttvwindowtraces_call_before_chunk(LttvAttributeName module_name,
-                                        LttvTracesetContext *tsc)
+                                        LttvTraceset *ts)
 {
+  #ifdef BABEL_CLEANUP
   LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *module_attribute;
   LttvAttributeType type;
@@ -816,12 +829,13 @@ void lttvwindowtraces_call_before_chunk(LttvAttributeName module_name,
                               before_chunk_tracefile,
                               event_hook,
                               event_hook_by_id_channel);
+#endif /* BABEL_CLEANUP */
 }
 
 
 
 void lttvwindowtraces_call_after_chunk(LttvAttributeName module_name,
-                                       LttvTracesetContext *tsc)
+                                       LttvTraceset *ts)
 {
   LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *module_attribute;
@@ -831,7 +845,6 @@ void lttvwindowtraces_call_after_chunk(LttvAttributeName module_name,
   LttvHooks *after_chunk_trace=NULL;
   LttvHooks *after_chunk_tracefile=NULL;
   LttvHooks *event_hook=NULL;
-  LttvHooksByIdChannelArray *event_hook_by_id_channel=NULL;
  
   module_attribute =
       LTTV_ATTRIBUTE(lttv_iattribute_find_subdir(LTTV_IATTRIBUTE(g_attribute),
@@ -875,16 +888,13 @@ void lttvwindowtraces_call_after_chunk(LttvAttributeName module_name,
   type = lttv_iattribute_get_by_name(LTTV_IATTRIBUTE(module_attribute),
                                      LTTV_EVENT_HOOK_BY_ID_CHANNEL,
                                      &value);
-  if(type == LTTV_POINTER) {
-    event_hook_by_id_channel = (LttvHooksByIdChannelArray*)*(value.v_pointer);
-  }
-  
+  #ifdef BABEL_CLEANUP
   lttv_process_traceset_end(tsc,
                             after_chunk_traceset,
                             after_chunk_trace,
                             after_chunk_tracefile,
-                            event_hook,
-                            event_hook_by_id_channel);
+                            event_hook);
+#endif /* BABEL_CLEANUP*/
 
 }
 
@@ -1014,10 +1024,8 @@ static gint find_window_widget(MainWindow *a, GtkWidget *b)
 
 gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
 {
-  LttvTracesetContext *tsc;
-  LttvTracesetStats *tss;
+  LttvTraceset *tsc;
   LttvTraceset *ts;
-  //LttvTracesetContextPosition *sync_position;
   LttvAttribute *attribute;
   LttvAttribute *g_attribute = lttv_global_attributes();
   GSList **list_out, **list_in, **notify_in, **notify_out;
@@ -1062,14 +1070,6 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
   g_assert(type == LTTV_POINTER);
   ts = (LttvTraceset*)*(value.v_pointer);
  
-  type = lttv_iattribute_get_by_name(LTTV_IATTRIBUTE(attribute),
-                                     LTTV_COMPUTATION_TRACESET_CONTEXT,
-                                     &value);
-  g_assert(type == LTTV_POINTER);
-  tsc = (LttvTracesetContext*)*(value.v_pointer);
-  tss = (LttvTracesetStats*)*(value.v_pointer);
-  g_assert(LTTV_IS_TRACESET_CONTEXT(tsc));
-  g_assert(LTTV_IS_TRACESET_STATS(tss));
 #if 0
   type = lttv_iattribute_get_by_name(LTTV_IATTRIBUTE(attribute),
                                      LTTV_COMPUTATION_SYNC_POSITION,
@@ -1077,6 +1077,7 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
   g_assert(type == LTTV_POINTER);
   sync_position = (LttvTracesetContextPosition*)*(value.v_pointer);
 #endif //0
+#ifdef BABEL_CLEANUP
   /* There is no events requests pending : we should never have been called! */
   g_assert(g_slist_length(*list_out) != 0 || g_slist_length(*list_in) != 0);
   /* 0.1 Lock traces */
@@ -1084,9 +1085,9 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
     guint iter_trace=0;
     
     for(iter_trace=0; 
-        iter_trace<lttv_traceset_number(tsc->ts);
+        iter_trace<lttv_traceset_number(ts->ts);
         iter_trace++) {
-      LttvTrace *trace_v = lttv_traceset_get(tsc->ts,iter_trace);
+      LttvTrace *trace_v = lttv_traceset_get(ts->ts,iter_trace);
 
       if(lttvwindowtraces_lock(trace_v) != 0)
         return TRUE; /* Cannot get trace lock, try later */
@@ -1487,6 +1488,7 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
       lttvwindowtraces_unlock(trace_v);
     }
   }
+  #endif /* BABEL_CLEANUP */
   return ret_val;
 }
 
@@ -1509,7 +1511,6 @@ void lttvwindowtraces_register_computation_hooks(LttvAttributeName module_name,
                                         LttvHooks *before_request,
                                         LttvHooks *after_request,
                                         LttvHooks *event_hook,
-                                        LttvHooksById *event_hook_by_id_channel,
                                         LttvHooks *hook_adder,
                                         LttvHooks *hook_remover)
 {
@@ -1591,13 +1592,6 @@ void lttvwindowtraces_register_computation_hooks(LttvAttributeName module_name,
                                 &value);
   g_assert(result);
   *(value.v_pointer) = event_hook;
-
-  result = lttv_iattribute_find(LTTV_IATTRIBUTE(attribute),
-                                LTTV_EVENT_HOOK_BY_ID_CHANNEL,
-                                LTTV_POINTER,
-                                &value);
-  g_assert(result);
-  *(value.v_pointer) = event_hook_by_id_channel;
 
   result = lttv_iattribute_find(LTTV_IATTRIBUTE(attribute),
                                 LTTV_HOOK_ADDER,
@@ -1832,10 +1826,6 @@ void lttvwindowtraces_unregister_computation_hooks
                                 &value);
   g_assert(result);
 
-  LttvHooksByIdChannelArray *event_hook_by_id_channel = (LttvHooksByIdChannelArray*)*(value.v_pointer);
-  if(event_hook_by_id_channel != NULL)
-    lttv_hooks_by_id_channel_destroy(event_hook_by_id_channel);
- 
   result = lttv_iattribute_find(LTTV_IATTRIBUTE(attribute),
                                 LTTV_HOOK_ADDER,
                                 LTTV_POINTER,

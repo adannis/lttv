@@ -255,9 +255,11 @@ FIXME : explain other important events
 #include <ltt/ltt.h>
 #include <ltt/time.h>
 #include <lttv/hook.h>
-#include <lttv/tracecontext.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
+
 #include <lttv/filter.h>
+#endif /* BABEL_CLEANUP */
 #include <lttvwindow/mainwindow.h>
 #include <lttvwindow/lttv_plugin.h>
 
@@ -663,7 +665,7 @@ void lttvwindow_report_current_time(Tab *tab,
  */
 
 void lttvwindow_report_current_position(Tab *tab,
-                                        LttvTracesetContextPosition *pos);
+                                        LttvTracesetPosition *pos);
 
 /**
  * Function to set the position of the hpane's dividor (viewer).
@@ -684,18 +686,17 @@ typedef struct _EventsRequest {
   gpointer                     viewer_data;     /* Unset : NULL             */
   gboolean                     servicing;       /* service in progress: TRUE*/ 
   LttTime                      start_time;      /* Unset : ltt_time_infinite*/
-  LttvTracesetContextPosition *start_position;  /* Unset : NULL             */
+  LttvTracesetPosition *start_position;  /* Unset : NULL             */
   gboolean                     stop_flag;       /* Continue:TRUE Stop:FALSE */
   LttTime                      end_time;        /* Unset : ltt_time_infinite*/
   guint                        num_events;      /* Unset : G_MAXUINT        */
-  LttvTracesetContextPosition *end_position;    /* Unset : NULL             */
+  LttvTracesetPosition *end_position;    /* Unset : NULL             */
   gint                         trace;           /* unset : -1               */
   GArray                      *hooks;           /* Unset : NULL             */
   LttvHooks                   *before_chunk_traceset; /* Unset : NULL       */
   LttvHooks                   *before_chunk_trace;    /* Unset : NULL       */
   LttvHooks                   *before_chunk_tracefile;/* Unset : NULL       */
   LttvHooks                   *event;           /* Unset : NULL             */
-  LttvHooksByIdChannelArray   *event_by_id_channel;/* Unset : NULL          */
   LttvHooks                   *after_chunk_tracefile; /* Unset : NULL       */
   LttvHooks                   *after_chunk_trace;     /* Unset : NULL       */
   LttvHooks                   *after_chunk_traceset;  /* Unset : NULL       */
@@ -806,7 +807,7 @@ LttTime lttvwindow_get_current_time(Tab *tab);
 
 void lttvwindow_report_filter(Tab *tab, LttvFilter *filter);
 
-
+#ifdef BABEL_CLEANUP
 
 /**
  * Function to get the stats of the traceset 
@@ -817,16 +818,7 @@ void lttvwindow_report_filter(Tab *tab, LttvFilter *filter);
  */
 
 LttvTracesetStats* lttvwindow_get_traceset_stats(Tab *tab);
-
-/**
- * Function to get the context of the traceset 
- * It must be non const so the viewer can add and remove hooks from it.
- * @param tab the tab the viewer belongs to.
- * @return Context of the current tab.
- */
-
-
-LttvTracesetContext* lttvwindow_get_traceset_context(Tab *tab);
+#endif /*BABEL_CLEANUP*/
 
 
 /* set_time_window 
@@ -858,7 +850,7 @@ void events_request_free(EventsRequest *events_request);
 
 GtkWidget *main_window_get_widget(Tab *tab);
 
-void set_current_position(Tab *tab, const LttvTracesetContextPosition *pos);
+void set_current_position(Tab *tab, const LttvTracesetPosition *pos);
 
 
 /**
@@ -881,6 +873,6 @@ static inline void lttvwindow_events_request_enable(void)
 
 
 void current_position_change_manager(Tab *tab,
-                                     LttvTracesetContextPosition *pos);
+                                     LttvTracesetPosition *pos);
 
 #endif //LTTVWINDOW_H

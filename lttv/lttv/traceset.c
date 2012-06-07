@@ -25,13 +25,19 @@
 #include <lttv/state.h>
 #include <lttv/hook.h>
 #include <stdio.h>
+#include <babeltrace/babeltrace.h>
 #include <babeltrace/context.h>
-#include <babeltrace/iterator.h>
+#include <babeltrace/ctf/iterator.h>
 #include <babeltrace/ctf/events.h>
 
 /* To traverse a tree recursively */
 #include <fcntl.h>
 #include <fts.h>
+/* For the use of realpath*/
+#include <limits.h>
+#include <stdlib.h>
+/* For strcpy*/
+#include <string.h>
 
 /* A trace is a sequence of events gathered in the same tracing session. The
    events may be stored in several tracefiles in the same directory. 
@@ -53,16 +59,11 @@ LttvTraceset *lttv_traceset_new(void)
 	//TODO remove this when we have really mecanism
 	//s->tmpState = g_new(LttvTraceState *, 1);
 	//lttv_trace_state_init(s->tmpState,0);
-	begin_pos.type = BT_SEEK_BEGIN;
 
-        //s->iter = bt_ctf_iter_create(lttv_traceset_get_context(s),
-        //                                &begin_pos,
-        //                                NULL);
 	s->iter = 0;
         s->event_hooks = lttv_hooks_new();
+        
 	s->state_trace_handle_index =  g_ptr_array_new();
-
-
 
 	return s;
 }
@@ -84,6 +85,30 @@ LttvTrace *lttv_trace_new(LttTrace *t)
 	return new_trace;
 }
 #endif
+/*
+ * get_absolute_pathname : Return the unique pathname in the system
+ * 
+ * pathname is the relative path.
+ * 
+ * abs_pathname is being set to the absolute path.
+ * 
+ */
+void get_absolute_pathname(const gchar *pathname, gchar * abs_pathname)
+{
+  abs_pathname[0] = '\0';
+
+  if (realpath(pathname, abs_pathname) != NULL)
+    return;
+  else
+  {
+    /* error, return the original path unmodified */
+    strcpy(abs_pathname, pathname);
+    return;
+  }
+  return;
+}
+
+
 
 /*
  * lttv_trace_create : Create a trace from a path
@@ -239,7 +264,6 @@ void lttv_trace_destroy(LttvTrace *t)
 	g_free(t);
 }
 
-
 void lttv_traceset_add(LttvTraceset *s, LttvTrace *t) 
 {
 	t->ref_count++;
@@ -248,11 +272,14 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t)
 
 int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 {
+
 	FTS *tree;
 	FTSENT *node;
 	char * const paths[2] = { trace_path, NULL };
 	int ret = -1;
 
+	ts->filename = trace_path;
+	
 	tree = fts_open(paths, FTS_NOCHDIR | FTS_LOGICAL, 0);
 	if (tree == NULL) {
 		g_warning("Cannot traverse \"%s\" for reading.\n",
@@ -353,12 +380,6 @@ LttvAttribute *lttv_trace_attribute(LttvTrace *t)
 	return t->a;
 }
 
-#ifdef BABEL_CLEANUP
-LttTrace *lttv_trace(LttvTrace *t)
-{
-	return t->t;
-}
-#endif
 
 gint lttv_trace_get_id(LttvTrace *t)
 {
@@ -441,6 +462,68 @@ guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
 	} else {
 		return cpu_id;
 	}
+}
+/*
+ * lttv_traceset_get_timestamp_begin : returns the  minimum timestamp of 
+ * all the traces in the traceset.
+ * 
+ */
+
+guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset)
+{
+  struct bt_context *bt_ctx;
+  bt_ctx = lttv_traceset_get_context(traceset);
+  guint64 timestamp_min = G_MAXUINT64, timestamp_cur = 0;
+  int i;
+  int trace_count;
+  LttvTrace *currentTrace;
+  trace_count = traceset->traces->len;
+  if(trace_count == 0)	
+    timestamp_min = 0;
+  else{
+    timestamp_min = G_MAXUINT64;
+    
+    for(i = 0; i < trace_count;i++)
+    {
+      currentTrace = g_ptr_array_index(traceset->traces,i);
+      timestamp_cur = bt_trace_handle_get_timestamp_begin(bt_ctx, currentTrace->id);
+      if(timestamp_cur < timestamp_min)
+	timestamp_min = timestamp_cur;
+    }
+  }
+  return timestamp_min;
+}
+
+/*
+ * lttv_traceset_get_timestamp_end: returns the maximum timestamp of
+ * all the traces in the traceset.
+ * 
+ */
+guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
+{
+  struct bt_context *bt_ctx;
+  bt_ctx = lttv_traceset_get_context(traceset);
+  guint64 timestamp_max, timestamp_cur = 0;
+  int i;
+  int trace_count;
+  LttvTrace *currentTrace;
+  trace_count = traceset->traces->len;
+  
+  if(trace_count == 0)
+    timestamp_max = 1;
+  else
+  {
+    timestamp_max = 0;
+    for(i =0; i < trace_count;i++)
+    {
+      currentTrace = g_ptr_array_index(traceset->traces,i);
+      timestamp_cur = bt_trace_handle_get_timestamp_end(bt_ctx, currentTrace->id);
+      if(timestamp_cur > timestamp_max)
+	timestamp_max = timestamp_cur;
+    }
+  }
+  return timestamp_max;
+  
 }
 
 const char *lttv_traceset_get_name_from_event(LttvEvent *event)

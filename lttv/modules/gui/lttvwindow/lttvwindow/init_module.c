@@ -34,9 +34,11 @@
 #include <lttv/hook.h>
 #include <lttv/option.h>
 #include <lttv/module.h>
-#include <lttv/tracecontext.h>
+
 #include <lttv/state.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
+#endif /* BABEL_CLEANUP */
 #include <lttvwindow/menu.h>
 #include <lttvwindow/toolbar.h>
 #include <lttvwindow/lttvwindowtraces.h>
@@ -125,7 +127,7 @@ static gboolean window_creation_hook(void *hook_data, void *call_data)
   add_pixmap_directory ("../modules/gui/main/pixmaps");
 
   /* First window, use command line trace */
-  create_main_window_with_trace_list(g_init_trace, a_live);
+  create_main_window_with_trace_list(g_init_trace);
 
   gtk_main ();
 
@@ -187,7 +189,7 @@ static void init() {
   g_assert((main_hooks = *(value.v_pointer)) != NULL);
 
   lttv_hooks_add(main_hooks, window_creation_hook, NULL, LTTV_PRIO_DEFAULT);
-
+#ifdef BABEL_CLEANUP
   {
     /* Register state calculator */
     LttvHooks *hook_adder = lttv_hooks_new();
@@ -227,6 +229,7 @@ static void init() {
         after_request, NULL, NULL,
         hook_adder, hook_remover);
   }
+#endif /* BABEL_CLEANUP */
 }
 
 void
@@ -267,4 +270,4 @@ static void destroy() {
 
 LTTV_MODULE("lttvwindow", "Viewer main window", \
     "Viewer with multiple windows, tabs and panes for graphical modules", \
-	    init, destroy, "stats", "option", "sync")
+	    init, destroy, "option","state")

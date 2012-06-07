@@ -35,8 +35,9 @@
 #include <ltt/ltt.h>
 #include <lttv/lttv.h>
 #include <lttv/state.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
-#include <lttv/tracecontext.h>
+#endif /* BABEL_CLEANUP */
 #include <lttvwindow/mainwindow.h>   
 #include <lttvwindow/mainwindow-private.h>   
 #include <lttvwindow/lttvwindow.h>
@@ -115,8 +116,10 @@ void set_current_time(Tab *tab, const LttTime *current_time)
  * This is called whenever the current time value changes.
  */
 
-void set_current_position(Tab *tab, const LttvTracesetContextPosition *pos)
+void set_current_position(Tab *tab, const LttvTracesetPosition *pos)
 {
+ #ifdef BABEL_CLEANUP
+
   LttvAttributeValue value;
   LttvHooks * tmp;
   gboolean retval;
@@ -130,6 +133,7 @@ void set_current_position(Tab *tab, const LttvTracesetContextPosition *pos)
   if (tmp != NULL) {
     lttv_hooks_call(tmp, (void *) pos);
   }
+#endif /*BABEL_CLEANUP*/
 }
 
 void add_toolbar_constructor(MainWindow *mw, LttvToolbarClosure *toolbar_c)
@@ -1008,7 +1012,7 @@ __EXPORT void lttvwindow_report_current_time(Tab *tab,
  */
 
 __EXPORT void lttvwindow_report_current_position(Tab *tab,
-                                        LttvTracesetContextPosition *pos)
+                                        LttvTracesetPosition *pos)
 {
   current_position_change_manager(tab, pos);
 }
@@ -1214,7 +1218,7 @@ void lttvwindow_report_filter(Tab *tab, LttvFilter *filter)
   lttv_hooks_call(tmp, filter);
 }
 
-
+#ifdef BABEL_CLEANUP
 
 /**
  * Function to get the stats of the traceset 
@@ -1225,15 +1229,11 @@ __EXPORT LttvTracesetStats* lttvwindow_get_traceset_stats(Tab *tab)
 {
   return tab->traceset_info->traceset_context;
 }
-
-__EXPORT LttvTracesetContext* lttvwindow_get_traceset_context(Tab *tab)
-{
-  return (LttvTracesetContext*)tab->traceset_info->traceset_context;
-}
-
+#endif /*BABEL_CLEANUP*/
 
 void events_request_free(EventsRequest *events_request)
 {
+  #ifdef BABEL_CLEANUP
   if(events_request == NULL) return;
 
   if(events_request->start_position != NULL)
@@ -1267,8 +1267,8 @@ void events_request_free(EventsRequest *events_request)
        lttv_hooks_destroy(events_request->after_request);
 
   g_free(events_request);
+  #endif /*BABEL_CLEANUP*/
 }
-
 
 
 __EXPORT GtkWidget *main_window_get_widget(Tab *tab)

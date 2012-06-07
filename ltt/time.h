@@ -21,7 +21,7 @@
 #define LTT_TIME_H
 
 #include <glib.h>
-#include <ltt/compiler.h>
+#include <lttv/compiler.h>
 #include <math.h>
 
 typedef struct _LttTime {

@@ -242,15 +242,9 @@ void timebar_set_minmax_time(Timebar *timebar,
 		) {
 		return;
 	}
-
-	if (min_time != NULL) {
-		timebar->min_time = *min_time;
-	}
-
-	if (max_time != NULL) {
-		timebar->max_time = *max_time;
-	}
-
+	/* null-checked already */
+	timebar->min_time = *min_time;
+	timebar->max_time = *max_time;
 
 	if (ltt_time_compare(timebar->min_time, timebar->max_time) == 0) {
 
