@@ -393,7 +393,7 @@ static void restore_init_state(LttvTraceState *self)
 
 	//LttvTracefileState *tfcs;
 
-	//LttTime start_time, end_time;
+	LttTime start_time;
 
 	/* Free the process tables */
 	if(self->processes != NULL) lttv_state_free_process_table(self->processes);
@@ -407,8 +407,10 @@ static void restore_init_state(LttvTraceState *self)
 	//g_tree_destroy(self->parent.ts_context->pqueue);
 	//self->parent.ts_context->pqueue = g_tree_new(compare_tracefile);
 
-	//TODO use babeltrace one.
-	//ltt_trace_time_span_get(self->parent.t, &start_time, &end_time);
+	start_time = ltt_time_from_uint64(
+			    bt_trace_handle_get_timestamp_begin(self->trace->traceset->context, 
+								self->trace->id));
+
 
 	//lttv_process_trace_seek_time(&self->parent, ltt_time_zero);
 
@@ -421,8 +423,7 @@ static void restore_init_state(LttvTraceState *self)
 	for(i=0; i< nb_cpus; i++) {
 		LttvExecutionState *es;
 		self->running_process[i] = lttv_state_create_process(self, NULL, i, 0, 0,
-				//TODO use &start_time...
-				LTTV_STATE_UNNAMED, &ltt_time_zero);
+				LTTV_STATE_UNNAMED, &start_time);
 		/* We are not sure is it's a kernel thread or normal thread, put the
 		 * bottom stack state to unknown */
 		self->running_process[i]->execution_stack =
