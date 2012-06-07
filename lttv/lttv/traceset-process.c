@@ -34,7 +34,7 @@ void lttv_process_traceset_begin(LttvTraceset *traceset,
 		LttvHooks *before_trace,
 		LttvHooks *event)
 {
-
+	struct bt_iter_pos begin_pos;
 	/* simply add hooks in context. _before hooks are called by add_hooks. */
 	/* It calls all before_traceset, before_trace, and before_tracefile hooks. */
 	lttv_traceset_add_hooks(traceset,
@@ -43,6 +43,14 @@ void lttv_process_traceset_begin(LttvTraceset *traceset,
 				event);
 	
 
+
+	begin_pos.type = BT_SEEK_BEGIN;
+
+	if(!traceset->iter) {
+        traceset->iter = bt_ctf_iter_create(lttv_traceset_get_context(traceset),
+                                        &begin_pos,
+                                        NULL);
+	}
 }
 
 guint lttv_process_traceset_middle(LttvTraceset *traceset,
@@ -56,15 +64,7 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 	struct bt_ctf_event *bt_event;
 	
 	LttvEvent event;
-        struct bt_iter_pos begin_pos;
-
-	begin_pos.type = BT_SEEK_BEGIN;
-
-	if(!traceset->iter) {
-        traceset->iter = bt_ctf_iter_create(lttv_traceset_get_context(traceset),
-                                        &begin_pos,
-                                        NULL);
-	}
+  
 	while(TRUE) {
 
 		if((count >= nb_events) && (nb_events != G_MAXULONG)) {
@@ -182,17 +182,18 @@ void lttv_trace_remove_hooks(LttvTrace *trace,
 
 void lttv_process_traceset_seek_time(LttvTraceset *traceset, LttTime start)
 {
-#ifdef WAIT_FOR_BABELTRACE_FIX_SEEK_ZERO
         struct bt_iter_pos seekpos;
         int ret;
+	if (traceset->iter == NULL) {
+		g_warning("Iterator not valid in seek_time");
+		return;
+	}
         seekpos.type = BT_SEEK_TIME;
         seekpos.u.seek_time = ltt_time_to_uint64(start);
-        ret = bt_iter_set_pos(bt_ctf_get_iter(self->iter), &seekpos);
+
+        ret = bt_iter_set_pos(bt_ctf_get_iter(traceset->iter), &seekpos);
         if(ret < 0) {
                 printf("Seek by time error: %s,\n",strerror(-ret));
         }
-#else
-#warning Seek time disabled because of babeltrace bugs
-#endif
  
 }
