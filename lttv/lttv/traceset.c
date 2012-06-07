@@ -60,7 +60,7 @@ LttvTraceset *lttv_traceset_new(void)
         //                                NULL);
 	s->iter = 0;
         s->event_hooks = lttv_hooks_new();
-
+	s->state_trace_handle_index =  g_ptr_array_new();
 
 
 
@@ -118,7 +118,11 @@ static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
   new_trace->traceset = ts;
   new_trace->state = g_new(LttvTraceState,1);
   lttv_trace_state_init(new_trace->state,new_trace);
-  ts->tmpState = new_trace->state;
+
+  /* Add the state to the trace_handle to state index */
+  g_ptr_array_set_size(ts->state_trace_handle_index,id+1);
+  g_ptr_array_index(ts->state_trace_handle_index,id) = new_trace->state;
+
   return new_trace;
 }
 
@@ -150,6 +154,7 @@ LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig)
 	s = g_new(LttvTraceset, 1);
 	s->filename = NULL;
 	s->traces = g_ptr_array_new();
+	s->state_trace_handle_index = g_ptr_array_new();
 	for(i=0;i<s_orig->traces->len;i++)
 	{
 		trace = g_ptr_array_index(s_orig->traces, i);
@@ -157,6 +162,10 @@ LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig)
 
 		/* WARNING: this is an alias, not a copy. */
 		g_ptr_array_add(s->traces, trace);
+
+		g_ptr_array_set_size(s->state_trace_handle_index,trace->id+1);
+		g_ptr_array_index(s->state_trace_handle_index,trace->id) = trace->state;
+		
 	}
 	s->context = s_orig->context;
 	bt_context_get(s->context);

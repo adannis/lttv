@@ -41,8 +41,7 @@ struct _LttvTraceset {
 	LttvAttribute *a;
 	LttvHooks *event_hooks;
 	struct bt_ctf_iter *iter;
-  LttvTraceState *tmpState;
-
+	GPtrArray *state_trace_handle_index;
 };
 
 struct _LttvTrace {
