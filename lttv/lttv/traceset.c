@@ -277,8 +277,8 @@ int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 	FTSENT *node;
 	char * const paths[2] = { trace_path, NULL };
 	int ret = -1;
-
-	ts->filename = trace_path;
+	
+	gboolean metaFileFound = FALSE;
 	
 	tree = fts_open(paths, FTS_NOCHDIR | FTS_LOGICAL, 0);
 	if (tree == NULL) {
@@ -330,6 +330,7 @@ int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 						"for reading.", node->fts_accpath, trace_path);
 				goto error;
 			}
+			metaFileFound = TRUE;
 		}
 	}
 
@@ -339,8 +340,12 @@ error:
 		g_warning("Unable to close tree  "
 				"file descriptor : %s.", trace_path);
 	}
-	return ret;
+	if(metaFileFound)
+	  return ret;
+	else
+	  return -1;
 }
+
 
 unsigned lttv_traceset_number(LttvTraceset *s) 
 {

@@ -1614,11 +1614,9 @@ static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 
 void add_trace(GtkWidget * widget, gpointer user_data)
 {
-#ifdef BABEL_CLEANUP
-  LttTrace *trace;
-  LttvTrace * trace_v;
+  
   LttvTraceset * traceset;
-  const char * dir;
+  const char * path;
   char abs_path[PATH_MAX];
   gint id;
   MainWindow * mw_data = get_window_data_struct(widget);
@@ -1636,7 +1634,8 @@ void add_trace(GtkWidget * widget, gpointer user_data)
     ptab = (LttvPluginTab *)g_object_get_data(G_OBJECT(page), "Tab_Plugin");
     tab = ptab->tab;
   }
-
+  /* Create a new traceset*/
+  traceset = lttv_traceset_new();
   /* File open dialog management */
   GtkWidget *extra_live_button; 
   GtkFileChooser * file_chooser = 
@@ -1646,7 +1645,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 					  GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER,
 					  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 					  GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
-					  NULL));
+                                         NULL));
 
   /* Button to indicate the opening of a live trace */
   extra_live_button = gtk_check_button_new_with_mnemonic ("Trace is live (currently being writen)");
@@ -1657,70 +1656,60 @@ void add_trace(GtkWidget * widget, gpointer user_data)
   if(remember_trace_dir[0] != '\0')
 	  gtk_file_chooser_set_filename(file_chooser, remember_trace_dir);
 
-  id = gtk_dialog_run(GTK_DIALOG(file_chooser));
+   gboolean closeFileChooserDialog = TRUE;
 
-  switch(id){
-    case GTK_RESPONSE_ACCEPT:
-    case GTK_RESPONSE_OK:
-      dir = gtk_file_chooser_get_filename (file_chooser);
+  do 
+  {
+    id = gtk_dialog_run(GTK_DIALOG(file_chooser));
+    switch(id){
+      case GTK_RESPONSE_ACCEPT:
+      case GTK_RESPONSE_OK:
+	path = gtk_file_chooser_get_filename (file_chooser);
 
-      strncpy(remember_trace_dir, dir, PATH_MAX);
-      strncat(remember_trace_dir, "/", PATH_MAX);
-      if(!dir || strlen(dir) == 0){
-      	break;
-      }
-      get_absolute_pathname(dir, abs_path);
-      trace_v = lttvwindowtraces_get_trace_by_name(abs_path);
-      if(trace_v == NULL) {
-	if(gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (extra_live_button))) {
-	  trace = ltt_trace_open_live(abs_path);
-	} else {
-	  trace = ltt_trace_open(abs_path);
+	strncpy(remember_trace_dir, path, PATH_MAX);
+	strncat(remember_trace_dir, "/", PATH_MAX);
+	if(!path || strlen(path) == 0){
+	  break;
 	}
-	  
-        if(trace == NULL) {
-          g_warning("cannot open trace %s", abs_path);
-
-          GtkWidget *dialogue = 
-            gtk_message_dialog_new(
-              GTK_WINDOW(gtk_widget_get_toplevel(widget)),
-              GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
-              GTK_MESSAGE_ERROR,
-              GTK_BUTTONS_OK,
-              "Cannot open trace : maybe you should enter in the trace "
-              "directory to select it ?");
-          gtk_dialog_run(GTK_DIALOG(dialogue));
-          gtk_widget_destroy(dialogue);
-
-        } else {
-          trace_v = lttv_trace_new(trace);
-          lttvwindowtraces_add_trace(trace_v);
-          lttvwindow_add_trace(tab, trace_v);
-        }
-      } else {
-        lttvwindow_add_trace(tab, trace_v);
-      }
-
+	get_absolute_pathname(path, abs_path);
+	
+      if(lttv_traceset_add_path(traceset,abs_path) != 0 ){ /*failure*/
       
-      //update current tab
-      //update_traceset(mw_data);
+	g_warning("cannot open trace %s", abs_path);
+	strncpy(remember_trace_dir, "\0", PATH_MAX);
+	  GtkWidget *dialogue = 
+	    gtk_message_dialog_new(
+	      GTK_WINDOW(gtk_widget_get_toplevel(widget)),
+	      GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
+	      GTK_MESSAGE_ERROR,
+	      GTK_BUTTONS_OK,
+	      "Cannot open trace : maybe you should enter in the directory "
+	      "to select it ?");
+	  gtk_dialog_run(GTK_DIALOG(dialogue));
+	  gtk_widget_destroy(dialogue);
+	  closeFileChooserDialog = FALSE;
+	}
+	else{
+	  closeFileChooserDialog = TRUE;
+	  SetTraceset(tab, traceset);    
+	}
+	break;
+	//update current tab
+	//update_traceset(mw_data);
 
-      /* Call the updatetraceset hooks */
+	// in expose now call_pending_read_hooks(mw_data);
+	
+	//lttvwindow_report_current_time(mw_data,&(tab->current_time));
       
-      traceset = tab->traceset_info->traceset;
-      SetTraceset(tab, traceset);
-      // in expose now call_pending_read_hooks(mw_data);
-      
-      //lttvwindow_report_current_time(mw_data,&(tab->current_time));
-      break;
-    case GTK_RESPONSE_REJECT:
-    case GTK_RESPONSE_CANCEL:
-    default:
-	    break;
-  }
-  gtk_widget_destroy((GtkWidget*)file_chooser);
+      case GTK_RESPONSE_REJECT:
+      case GTK_RESPONSE_CANCEL:
+      default:
+	closeFileChooserDialog = TRUE;
+	      break;    
+    }
+  }while(!closeFileChooserDialog);
   
-#endif /* BABEL_CLEANUP */
+  gtk_widget_destroy((GtkWidget*)file_chooser);
 
 }
 
