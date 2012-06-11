@@ -56,6 +56,7 @@ struct _LttvTrace {
 /* In babeltrace, the position concept is an iterator. */
 struct _LttvTracesetPosition {
 	struct bt_ctf_iter *iter;
+	struct bt_iter_pos *bt_pos;
 };
 
 /* Tracesets may be added to, removed from and their content listed. */

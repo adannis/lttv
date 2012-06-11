@@ -394,19 +394,30 @@ guint lttv_trace_get_num_cpu(LttvTrace *t)
 
 LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset)
 {
-#warning "TODO"
-	return NULL;
+	LttvTracesetPosition *traceset_pos;
+	
+	traceset_pos = g_new(LttvTracesetPosition, 1);
+
+	/* Check in the new passed */
+	if(traceset_pos == NULL) {
+		return NULL;
+	}
+
+	traceset_pos->iter = traceset->iter;
+	traceset_pos->bt_pos = bt_iter_get_pos(bt_ctf_get_iter(traceset->iter));
+	
+	return traceset_pos;
 }
 
 void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos)
 {
-#warning "TODO"
-	return NULL;
+	bt_iter_free_pos(traceset_pos->bt_pos);
+	g_free(traceset_pos);
 }
 
 void lttv_traceset_seek_to_position(LttvTracesetPosition *traceset_pos)
 {
-#warning "TODO"
+	bt_iter_set_pos(traceset_pos->iter, traceset_pos->bt_pos);
 }
 
 guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
