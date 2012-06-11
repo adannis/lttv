@@ -528,7 +528,19 @@ guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
     }
   }
   return timestamp_max;
-  
+}
+
+/*
+ * lttv_traceset_get_time_span : return a TimeInterval representing the
+ * minimum timestamp dans le maximum timestamp of the traceset.
+ * 
+ */
+TimeInterval lttv_traceset_get_time_span(LttvTraceset *ts)
+{
+        TimeInterval time_span;
+        time_span.start_time =ltt_time_from_uint64( lttv_traceset_get_timestamp_begin(ts));
+        time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
+        return time_span;
 }
 
 const char *lttv_traceset_get_name_from_event(LttvEvent *event)

@@ -283,9 +283,7 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
   }
 #endif /*BABEL_CLEANUP*/
 
-
-  time_span.start_time =ltt_time_from_uint64( lttv_traceset_get_timestamp_begin(traceset));
-  time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(traceset));
+  time_span = lttv_traceset_get_time_span(traceset);
   
   tab->traceset_info->traceset = traceset;
   
@@ -3372,11 +3370,10 @@ void current_position_change_manager(Tab *tab,
 static void on_timebar_starttime_changed(Timebar *timebar,
 				gpointer user_data)
 {
-  #ifdef BABEL_CLEANUP
+ 
 	Tab *tab = (Tab *)user_data;
-	LttvTracesetContext * tsc =
-		LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-	TimeInterval time_span = tsc->time_span;
+	LttvTraceset * ts =tab->traceset_info->traceset;
+	TimeInterval time_span = lttv_traceset_get_time_span(ts);
 
 	TimeWindow new_time_window = tab->time_window;
 	new_time_window.start_time = timebar_get_start_time(timebar);
@@ -3404,17 +3401,16 @@ static void on_timebar_starttime_changed(Timebar *timebar,
 
 	/* Notify the time_manager */
 	time_change_manager(tab, new_time_window);
-#endif /* BABEL_CLEANUP */
+
 }
 
 static void on_timebar_endtime_changed(Timebar *timebar,
 				gpointer user_data)
 {
-    #ifdef BABEL_CLEANUP
+
 	Tab *tab = (Tab *)user_data;
-	LttvTracesetContext * tsc = 
-		LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-	TimeInterval time_span = tsc->time_span;
+        LttvTraceset * ts =tab->traceset_info->traceset;
+        TimeInterval time_span = lttv_traceset_get_time_span(ts);
 
 	TimeWindow new_time_window = tab->time_window;
 
@@ -3441,8 +3437,7 @@ static void on_timebar_endtime_changed(Timebar *timebar,
 	new_time_window.end_time = end_time;
 
 	/* Notify the time_manager */
-	time_change_manager(tab, new_time_window);  
-	  #endif /* BABEL_CLEANUP*/
+	time_change_manager(tab, new_time_window);
 }
 static void on_timebar_currenttime_changed(Timebar *timebar,
 				gpointer user_data)
@@ -3457,7 +3452,7 @@ static void on_timebar_currenttime_changed(Timebar *timebar,
 void scroll_value_changed_cb(GtkWidget *scrollbar,
                              gpointer user_data)
 {
-    #ifdef BABEL_CLEANUP
+   
   Tab *tab = (Tab *)user_data;
   TimeWindow new_time_window;
   LttTime time;
@@ -3465,9 +3460,9 @@ void scroll_value_changed_cb(GtkWidget *scrollbar,
   gdouble value = gtk_adjustment_get_value(adjust);
  // gdouble upper, lower, ratio, page_size;
   gdouble page_size;
-  LttvTracesetContext * tsc = 
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  TimeInterval time_span = tsc->time_span;
+  
+  LttvTraceset * ts = tab->traceset_info->traceset;
+  TimeInterval time_span = lttv_traceset_get_time_span(ts);
 
   time = ltt_time_add(ltt_time_from_double(value),
                       time_span.start_time);
@@ -3487,6 +3482,7 @@ void scroll_value_changed_cb(GtkWidget *scrollbar,
 
 
   time_change_manager(tab, new_time_window);
+
 #if 0
   //time_window = tab->time_window;
 
@@ -3515,7 +3511,7 @@ void scroll_value_changed_cb(GtkWidget *scrollbar,
   /* call viewer hooks for new time window */
   set_time_window(tab, &time_window);
 #endif //0
-#endif /* BABEL_CLEANUP */
+
 }
 
 

@@ -23,6 +23,7 @@
 #include <lttv/hook.h>
 #include <lttv/event.h>
 #include <ltt/ltt.h>
+#include <ltt/time.h>
 #include <lttv/trace.h>
 /* A traceset is a set of traces to be analyzed together. */
 
@@ -122,6 +123,8 @@ guint lttv_traceset_get_cpuid_from_event(LttvEvent *event);
 guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset);
 /* Returns the maximum timestamp of the traces in the traceset */
 guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset);
+/* Returns a TimeInterval struct that represents the min and max of the traceset */
+TimeInterval lttv_traceset_get_time_span(LttvTraceset *traceset);
 
 const char *lttv_traceset_get_name_from_event(LttvEvent *event);
 
