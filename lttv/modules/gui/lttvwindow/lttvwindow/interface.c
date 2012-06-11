@@ -144,7 +144,8 @@ create_MWindow (void)
   gtk_window_set_title (GTK_WINDOW (MWindow), "Linux Trace Toolkit Viewer");
   gtk_window_set_default_size (GTK_WINDOW (MWindow),
       gdk_screen_width()*0.9, gdk_screen_height()*0.9);
-
+  gtk_window_set_icon(GTK_WINDOW(MWindow), create_pixbuf("lttng_logo.svg"));
+  
   MVbox = gtk_vbox_new (FALSE, 0);
   gtk_widget_show (MVbox);
   gtk_container_add (GTK_CONTAINER (MWindow), MVbox);
