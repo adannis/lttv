@@ -116,16 +116,28 @@ LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset);
 /* Destroy position snapshot */
 void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos);
 
-void lttv_traceset_seek_to_position(LttvTracesetPosition *traceset_pos);
+void lttv_traceset_seek_to_position(const LttvTracesetPosition *traceset_pos);
 
 guint lttv_traceset_get_cpuid_from_event(LttvEvent *event);
 /* Returns the minimum timestamp of the traces in the traceset */
 guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset);
 /* Returns the maximum timestamp of the traces in the traceset */
 guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset);
+/* Return a TimeInterval from timestamp of the first event to the last event [experimentale]*/
+TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts);
 /* Returns a TimeInterval struct that represents the min and max of the traceset */
 TimeInterval lttv_traceset_get_time_span(LttvTraceset *traceset);
 
 const char *lttv_traceset_get_name_from_event(LttvEvent *event);
+
+LttvTracesetPosition *lttv_traceset_create_time_position(LttvTraceset *ts, LttTime timestamp);
+
+guint64 lttv_traceset_position_get_timestamp(const LttvTracesetPosition *pos);
+
+LttTime  lttv_traceset_position_get_time(const LttvTracesetPosition *pos);
+
+int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvTracesetPosition *pos2);
+
+
 
 #endif // TRACESET_H

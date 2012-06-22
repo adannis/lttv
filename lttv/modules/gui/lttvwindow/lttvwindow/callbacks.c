@@ -226,7 +226,6 @@ void insert_viewer(GtkWidget* widget, lttvwindow_viewer_constructor constructor)
 int SetTraceset(Tab * tab, LttvTraceset *traceset)
 {
   
-  guint i;
   TimeInterval time_span;
   TimeWindow new_time_window;
   LttTime new_current_time;
@@ -710,7 +709,7 @@ void open_traceset(GtkWidget * widget, gpointer user_data)
 
 gboolean lttvwindow_process_pending_requests(Tab *tab)
 {
-  #ifdef BABEL_CLEANUP
+#ifdef BABEL_CLEANUP
   LttvTracesetContext *tsc;
   LttvTracefileContext *tfc;
   GSList *list_in = NULL;
@@ -987,11 +986,12 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
             /* Process the traceset with only state hooks */
 #ifdef DEBUG
             seek_count =
-#endif
+
                lttv_process_traceset_middle(tsc,
                                             ltt_time_infinite,
                                             G_MAXUINT,
                                             events_request->start_position);
+#endif
             g_assert(lttv_traceset_context_ctx_pos_compare(tsc,
                          events_request->start_position) == 0);
 
@@ -1500,8 +1500,8 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 static gboolean
 live_trace_update_handler(Tab *tab)
 {  
-	unsigned int updated_count;
 #ifdef BABEL_CLEANUP
+	unsigned int updated_count;
 	LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
 	TimeInterval initial_time_span = tsc->time_span;
 	TimeInterval updated_time_span;
@@ -1541,7 +1541,7 @@ live_trace_update_handler(Tab *tab)
 
 static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 {
-  #ifdef BABEL_CLEANUP
+#ifdef BABEL_CLEANUP
   LttvTraceset *traceset = tab->traceset_info->traceset;
   guint i;
   guint num_traces = lttv_traceset_number(traceset);
@@ -1725,7 +1725,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 
 void remove_trace(GtkWidget *widget, gpointer user_data)
 {
-  #ifdef BABEL_CLEANUP
+#ifdef BABEL_CLEANUP
   LttTrace *trace;
   LttvTrace * trace_v;
   LttvTraceset * traceset;
@@ -2067,7 +2067,7 @@ void save_as(GtkWidget * widget, gpointer user_data)
 
 void zoom(GtkWidget * widget, double size)
 {
-  #ifdef BABEL_CLEANUP
+#ifdef BABEL_CLEANUP
   TimeInterval time_span;
   TimeWindow new_time_window;
   LttTime    current_time, time_delta;
@@ -3347,30 +3347,23 @@ void current_time_change_manager       (Tab *tab,
   tab->current_time_manager_lock = FALSE;
 }
 
-void current_position_change_manager(Tab *tab,
-                                     LttvTracesetPosition *pos)
+void current_position_change_manager(Tab *tab, LttvTracesetPosition *pos)
 {
-    #ifdef BABEL_CLEANUP
-  LttvTracesetContext *tsc =
-    LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  int retval;
+  lttv_traceset_seek_to_position( pos);
 
-  retval= lttv_process_traceset_seek_position(tsc, pos);
-  g_assert_cmpint(retval, ==, 0);
-  LttTime new_time = lttv_traceset_context_position_get_time(pos);
+  LttTime new_time = lttv_traceset_position_get_time(pos);
   /* Put the context in a state coherent position */
-  lttv_state_traceset_seek_time_closest((LttvTracesetState*)tsc, ltt_time_zero);
-  
+#ifdef BABEL_CLEANUP
+   lttv_state_traceset_seek_time_closest((LttvTracesetState*)tsc, ltt_time_zero);
+#endif /* BABEL_CLEANUP */
   current_time_change_manager(tab, new_time);
   
   set_current_position(tab, pos);
-    #endif /* BABEL_CLEANUP */
 }
 
 static void on_timebar_starttime_changed(Timebar *timebar,
 				gpointer user_data)
 {
- 
 	Tab *tab = (Tab *)user_data;
 	LttvTraceset * ts =tab->traceset_info->traceset;
 	TimeInterval time_span = lttv_traceset_get_time_span(ts);
@@ -3407,7 +3400,6 @@ static void on_timebar_starttime_changed(Timebar *timebar,
 static void on_timebar_endtime_changed(Timebar *timebar,
 				gpointer user_data)
 {
-
 	Tab *tab = (Tab *)user_data;
         LttvTraceset * ts =tab->traceset_info->traceset;
         TimeInterval time_span = lttv_traceset_get_time_span(ts);
@@ -3452,7 +3444,6 @@ static void on_timebar_currenttime_changed(Timebar *timebar,
 void scroll_value_changed_cb(GtkWidget *scrollbar,
                              gpointer user_data)
 {
-   
   Tab *tab = (Tab *)user_data;
   TimeWindow new_time_window;
   LttTime time;

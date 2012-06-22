@@ -23,6 +23,7 @@
 #include <lttv/traceset.h>
 #include <lttv/iattribute.h>
 #include <lttv/state.h>
+#include <lttv/event.h>
 #include <lttv/hook.h>
 #include <stdio.h>
 #include <babeltrace/babeltrace.h>
@@ -48,24 +49,27 @@
 
 LttvTraceset *lttv_traceset_new(void)
 {
-	LttvTraceset *s;
-        struct bt_iter_pos begin_pos;
+	LttvTraceset *ts;
+	struct bt_iter_pos begin_pos;
 
-	s = g_new(LttvTraceset, 1);
-	s->filename = NULL;
-	s->traces = g_ptr_array_new();
-	s->context = bt_context_create();
-	s->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
+	ts = g_new(LttvTraceset, 1);
+	ts->filename = NULL;
+	ts->traces = g_ptr_array_new();
+	ts->context = bt_context_create();
+	ts->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
 	//TODO remove this when we have really mecanism
 	//s->tmpState = g_new(LttvTraceState *, 1);
 	//lttv_trace_state_init(s->tmpState,0);
 
-	s->iter = 0;
-        s->event_hooks = lttv_hooks_new();
-        
-	s->state_trace_handle_index =  g_ptr_array_new();
+	/*Initialize iterator to the beginning of the traces*/        
+	begin_pos.type = BT_SEEK_BEGIN;
+	ts->iter = bt_ctf_iter_create(ts->context, &begin_pos, NULL);
 
-	return s;
+	ts->event_hooks = lttv_hooks_new();
+
+	ts->state_trace_handle_index = g_ptr_array_new();
+
+	return ts;
 }
 
 char * lttv_traceset_name(LttvTraceset * s)
@@ -124,31 +128,31 @@ void get_absolute_pathname(const gchar *pathname, gchar * abs_pathname)
  */
 static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
 {
-  int id = bt_context_add_trace(lttv_traceset_get_context(ts),
-            path,
-            "ctf",
-            NULL,
-            NULL,
-            NULL);
-  if (id < 0) {
-    return NULL;
-  }
-  // Create the trace and save the trace handle id returned by babeltrace
-  LttvTrace *new_trace;
+	int id = bt_context_add_trace(lttv_traceset_get_context(ts),
+		path,
+		"ctf",
+		NULL,
+		NULL,
+		NULL);
+	if (id < 0) {
+		return NULL;
+	}
+	// Create the trace and save the trace handle id returned by babeltrace
+	LttvTrace *new_trace;
 
-  new_trace = g_new(LttvTrace, 1);
-  new_trace->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
-  new_trace->id = id;
-  new_trace->ref_count = 0;
-  new_trace->traceset = ts;
-  new_trace->state = g_new(LttvTraceState,1);
-  lttv_trace_state_init(new_trace->state,new_trace);
+	new_trace = g_new(LttvTrace, 1);
+	new_trace->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
+	new_trace->id = id;
+	new_trace->ref_count = 0;
+	new_trace->traceset = ts;
+	new_trace->state = g_new(LttvTraceState,1);
+	lttv_trace_state_init(new_trace->state,new_trace);
 
-  /* Add the state to the trace_handle to state index */
-  g_ptr_array_set_size(ts->state_trace_handle_index,id+1);
-  g_ptr_array_index(ts->state_trace_handle_index,id) = new_trace->state;
+	/* Add the state to the trace_handle to state index */
+	g_ptr_array_set_size(ts->state_trace_handle_index,id+1);
+	g_ptr_array_index(ts->state_trace_handle_index,id) = new_trace->state;
 
-  return new_trace;
+	return new_trace;
 }
 
 /*
@@ -162,12 +166,12 @@ static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
  */
 static int lttv_traceset_create_trace(LttvTraceset *ts, const char *path)
 {
-  LttvTrace *trace = lttv_trace_create(ts, path);
-  if (trace == NULL) {
-    return -1;
-  }
-  lttv_traceset_add(ts, trace);
-  return 0;
+	LttvTrace *trace = lttv_trace_create(ts, path);
+	if (trace == NULL) {
+		return -1;
+	}
+	lttv_traceset_add(ts, trace);
+	return 0;
 }
 
 LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig) 
@@ -272,7 +276,6 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t)
 
 int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 {
-
 	FTS *tree;
 	FTSENT *node;
 	char * const paths[2] = { trace_path, NULL };
@@ -388,7 +391,7 @@ LttvAttribute *lttv_trace_attribute(LttvTrace *t)
 
 gint lttv_trace_get_id(LttvTrace *t)
 {
-  return t->id;
+	return t->id;
 }
 
 guint lttv_trace_get_ref_number(LttvTrace * t)
@@ -424,7 +427,7 @@ LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset)
 	
 	traceset_pos = g_new(LttvTracesetPosition, 1);
 
-	/* Check in the new passed */
+	/* Check if the new passed */
 	if(traceset_pos == NULL) {
 		return NULL;
 	}
@@ -435,20 +438,39 @@ LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset)
 	return traceset_pos;
 }
 
+LttvTracesetPosition *lttv_traceset_create_time_position(LttvTraceset *traceset,
+                                                                LttTime timestamp)
+{
+        LttvTracesetPosition *traceset_pos;
+
+        traceset_pos = g_new(LttvTracesetPosition, 1);
+
+        /* Check if the new passed */
+        if(traceset_pos == NULL) {
+                return NULL;
+        }
+        
+        traceset_pos->iter = traceset->iter;
+        traceset_pos->bt_pos = bt_iter_create_time_pos(
+                                        bt_ctf_get_iter(traceset_pos->iter),
+                                        ltt_time_to_uint64(timestamp));
+         
+        return traceset_pos;
+}
+
 void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos)
 {
 	bt_iter_free_pos(traceset_pos->bt_pos);
 	g_free(traceset_pos);
 }
 
-void lttv_traceset_seek_to_position(LttvTracesetPosition *traceset_pos)
+void lttv_traceset_seek_to_position(const LttvTracesetPosition *traceset_pos)
 {
-	bt_iter_set_pos(traceset_pos->iter, traceset_pos->bt_pos);
+	bt_iter_set_pos(bt_ctf_get_iter(traceset_pos->iter), traceset_pos->bt_pos);
 }
 
 guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
 {
-	struct definition *scope;
 	unsigned long timestamp;
 	unsigned int cpu_id;
 	
@@ -457,7 +479,7 @@ guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
 	if (timestamp == -1ULL) {
 		return 0;
 	}
-	scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
+	const struct definition *scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
 	if (bt_ctf_field_get_error()) {
 		return 0;
 	}
@@ -468,35 +490,48 @@ guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
 		return cpu_id;
 	}
 }
+
+guint64 lttv_traceset_get_timestamp_first_event(LttvTraceset *ts)
+{
+        LttvTracesetPosition begin_position;
+        struct bt_iter_pos pos;
+        begin_position.bt_pos = &pos;
+	
+         /* Assign iterator to the beginning of the traces */  
+        begin_position.bt_pos->type = BT_SEEK_BEGIN;
+        begin_position.iter = ts->iter;
+      
+        return lttv_traceset_position_get_timestamp(&begin_position);  
+}
+
 /*
  * lttv_traceset_get_timestamp_begin : returns the  minimum timestamp of 
  * all the traces in the traceset.
  * 
  */
-
 guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset)
 {
-  struct bt_context *bt_ctx;
-  bt_ctx = lttv_traceset_get_context(traceset);
-  guint64 timestamp_min = G_MAXUINT64, timestamp_cur = 0;
-  int i;
-  int trace_count;
-  LttvTrace *currentTrace;
-  trace_count = traceset->traces->len;
-  if(trace_count == 0)	
-    timestamp_min = 0;
-  else{
-    timestamp_min = G_MAXUINT64;
-    
-    for(i = 0; i < trace_count;i++)
-    {
-      currentTrace = g_ptr_array_index(traceset->traces,i);
-      timestamp_cur = bt_trace_handle_get_timestamp_begin(bt_ctx, currentTrace->id);
-      if(timestamp_cur < timestamp_min)
-	timestamp_min = timestamp_cur;
-    }
-  }
-  return timestamp_min;
+        struct bt_context *bt_ctx;
+        bt_ctx = lttv_traceset_get_context(traceset);
+        guint64 timestamp_min, timestamp_cur = 0;
+        int i;
+        int trace_count;
+        LttvTrace *currentTrace;
+        trace_count = traceset->traces->len;
+        if(trace_count == 0)	 
+                timestamp_min = 0;
+        else{
+                timestamp_min = G_MAXUINT64;
+                for(i = 0; i < trace_count;i++)
+                {
+                        currentTrace = g_ptr_array_index(traceset->traces,i);
+                        timestamp_cur = bt_trace_handle_get_timestamp_begin(bt_ctx,
+                                                                        currentTrace->id);
+                        if(timestamp_cur < timestamp_min)
+                                timestamp_min = timestamp_cur;
+                }
+        }
+        return timestamp_min;
 }
 
 /*
@@ -506,28 +541,42 @@ guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset)
  */
 guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
 {
-  struct bt_context *bt_ctx;
-  bt_ctx = lttv_traceset_get_context(traceset);
-  guint64 timestamp_max, timestamp_cur = 0;
-  int i;
-  int trace_count;
-  LttvTrace *currentTrace;
-  trace_count = traceset->traces->len;
-  
-  if(trace_count == 0)
-    timestamp_max = 1;
-  else
-  {
-    timestamp_max = 0;
-    for(i =0; i < trace_count;i++)
-    {
-      currentTrace = g_ptr_array_index(traceset->traces,i);
-      timestamp_cur = bt_trace_handle_get_timestamp_end(bt_ctx, currentTrace->id);
-      if(timestamp_cur > timestamp_max)
-	timestamp_max = timestamp_cur;
-    }
-  }
-  return timestamp_max;
+	struct bt_context *bt_ctx;
+	bt_ctx = lttv_traceset_get_context(traceset);
+	guint64 timestamp_max, timestamp_cur = 0;
+	int i;
+	int trace_count;
+	LttvTrace *currentTrace;
+	trace_count = traceset->traces->len;
+	
+	if(trace_count == 0){
+		timestamp_max = 1;
+	}
+	else{
+		timestamp_max = 0;
+		for(i =0; i < trace_count;i++)
+		{
+			currentTrace = g_ptr_array_index(traceset->traces,i);
+			timestamp_cur = bt_trace_handle_get_timestamp_end(bt_ctx,
+									  currentTrace->id);
+			if(timestamp_cur > timestamp_max){
+				timestamp_max = timestamp_cur;
+			}
+		}
+	}
+	return timestamp_max;
+}
+/*
+ * lttv_traceset_get_time_span_real : return a TimeInterval representing the
+ * minimum timestamp dans le maximum timestamp of the traceset.
+ * 
+ */
+TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
+{
+        TimeInterval time_span;
+        time_span.start_time =ltt_time_from_uint64(lttv_traceset_get_timestamp_first_event(ts));
+        time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
+        return time_span;
 }
 
 /*
@@ -538,7 +587,7 @@ guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
 TimeInterval lttv_traceset_get_time_span(LttvTraceset *ts)
 {
         TimeInterval time_span;
-        time_span.start_time =ltt_time_from_uint64( lttv_traceset_get_timestamp_begin(ts));
+        time_span.start_time =ltt_time_from_uint64(lttv_traceset_get_timestamp_begin(ts));
         time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
         return time_span;
 }
@@ -546,4 +595,62 @@ TimeInterval lttv_traceset_get_time_span(LttvTraceset *ts)
 const char *lttv_traceset_get_name_from_event(LttvEvent *event)
 {
   	return bt_ctf_event_name(event->bt_event);
+}
+
+guint64 lttv_traceset_position_get_timestamp(const LttvTracesetPosition *pos)
+{ 
+        guint64 timestamp = 0;
+	/*We save the current iterator,so we can reassign it after the seek*/
+        LttvTracesetPosition previous_pos;
+        previous_pos.iter = pos->iter;
+        previous_pos.bt_pos = bt_iter_get_pos(bt_ctf_get_iter(pos->iter));
+	/* Seek to the new desired position */
+        lttv_traceset_seek_to_position(pos);
+	/*Read the event*/
+        struct bt_ctf_event *event = bt_ctf_iter_read_event(pos->iter);
+        
+	if(event != NULL){
+		timestamp = bt_ctf_get_timestamp_raw(event); 
+	}
+        /* Reassign the previously saved position */
+        lttv_traceset_seek_to_position(&previous_pos);
+	return timestamp;
+}
+
+LttTime  lttv_traceset_position_get_time(const LttvTracesetPosition *pos)
+{
+        return ltt_time_from_uint64(lttv_traceset_position_get_timestamp(pos));
+}
+
+int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvTracesetPosition *pos2)
+{
+#warning " TODO :Rename for lttv_traceset_position_equals && Must return COMPARAISON OF THE 2 POSITION && verify if it is the best way to compare position"
+        if(pos1 == NULL || pos2 == NULL){
+                return -1;
+	}
+        
+        guint64 timeStampPos1,timeStampPos2;
+        guint cpuId1, cpuId2;
+        LttvEvent event1, event2;
+        int ret;
+        
+        timeStampPos1 = lttv_traceset_position_get_timestamp(pos1);
+        timeStampPos2 = lttv_traceset_position_get_timestamp(pos2);
+        
+        event1.bt_event = bt_ctf_iter_read_event(pos1->iter);
+        event2.bt_event = bt_ctf_iter_read_event(pos2->iter);
+        
+        if(event1.bt_event == NULL || event2.bt_event == NULL){
+                return -1;
+	}
+
+        cpuId1 = lttv_traceset_get_cpuid_from_event(&event1);
+        cpuId2 = lttv_traceset_get_cpuid_from_event(&event2);
+       
+        if(timeStampPos1 == timeStampPos2 && cpuId1 == cpuId2){
+                return 0;
+	}
+        else{
+                return 1;
+	}
 }

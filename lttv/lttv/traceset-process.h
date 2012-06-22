@@ -62,10 +62,10 @@ void lttv_process_traceset_seek_time(LttvTraceset *traceset, LttTime start);
 
 void lttv_traceset_compute_time_span(LttvTraceset *traceset,
 		TimeInterval *time_span);
-
+#ifdef BABEL_CLEANUP
 gboolean lttv_process_traceset_seek_position(LttvTraceset *traceset, 
 		const LttvTracesetPosition *pos);
-
+#endif /*babel_cleanup*/
 void lttv_process_trace_seek_time(LttvTrace *trace, LttTime start);
 
 void lttv_traceset_add_hooks(LttvTraceset *traceset,
@@ -103,17 +103,19 @@ lttv_traceset_pos_pos_compare(const LttvTracesetPosition *pos1,
 
 gint lttv_traceset_ts_pos_compare(const LttvTraceset *traceset,
 		const LttvTracesetPosition *pos2);
-
+#ifdef BABEL_CLEANUP/*Already in traceset.h*/
 LttTime
 lttv_traceset_position_get_time(const LttvTracesetPosition *pos);
-
+#endif //babel_cleanup
 /* Seek n events forward and backward (without filtering) : only use these where
  * necessary : the seek backward is costy. */
 
 #define BACKWARD_SEEK_MUL 2 /* Multiplication factor of time_offset between
                                backward seek iterations */
-
-static const LttTime seek_back_default_offset = { 1, 0 };
+#ifdef BABEL_CLEANUP
+static const gdouble seek_back_default_offset = 10;
+#endif //babel_cleanup
+static const gdouble SEEK_BACK_DEFAULT_RATIO = 20;
 
 typedef gboolean check_handler(guint count, gboolean *stop_flag, gpointer data);
 
@@ -129,15 +131,16 @@ guint lttv_process_traceset_seek_n_forward(LttvTraceset *traceset,
 typedef void (*seek_time_fct)(LttvTraceset *traceset, LttTime start);
 
 /* If first_offset is ltt_time_zero, it will choose a default value */
-guint lttv_process_traceset_seek_n_backward(LttvTraceset *traceset,
-		guint n,
-		LttTime first_offset,
-		seek_time_fct,
-		check_handler *check,
-		gboolean *stop_flag,
-		LttvFilter *filter1,
-		LttvFilter *filter2,
-		LttvFilter *filter3,
-		gpointer data);
+
+
+guint lttv_process_traceset_seek_n_backward(LttvTraceset *self,
+                guint n,
+                gdouble ratio,/*nanosecond/event*/
+                check_handler *check,
+                gboolean *stop_flag,
+                LttvFilter *filter1,
+                LttvFilter *filter2,
+                LttvFilter *filter3,
+                gpointer data);
 
 #endif // PROCESSTRACE_H

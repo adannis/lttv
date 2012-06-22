@@ -35,11 +35,12 @@
 #include <ltt/ltt.h>
 #include <lttv/lttv.h>
 #include <lttv/state.h>
+#include <lttv/traceset.h>
 #ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
 #endif /* BABEL_CLEANUP */
 #include <lttvwindow/mainwindow.h>   
-#include <lttvwindow/mainwindow-private.h>   
+#include <lttvwindow/mainwindow-private.h>
 #include <lttvwindow/lttvwindow.h>
 #include <lttvwindow/toolbar.h>
 #include <lttvwindow/menu.h>
@@ -118,13 +119,11 @@ void set_current_time(Tab *tab, const LttTime *current_time)
 
 void set_current_position(Tab *tab, const LttvTracesetPosition *pos)
 {
- #ifdef BABEL_CLEANUP
-
   LttvAttributeValue value;
   LttvHooks * tmp;
   gboolean retval;
 
-  tab->current_time = lttv_traceset_context_position_get_time(pos);
+  tab->current_time = lttv_traceset_position_get_time(pos);
 
   retval= lttv_iattribute_find_by_path(tab->attributes,
     "hooks/updatecurrentposition", LTTV_POINTER, &value);
@@ -133,7 +132,6 @@ void set_current_position(Tab *tab, const LttvTracesetPosition *pos)
   if (tmp != NULL) {
     lttv_hooks_call(tmp, (void *) pos);
   }
-#endif /*BABEL_CLEANUP*/
 }
 
 void add_toolbar_constructor(MainWindow *mw, LttvToolbarClosure *toolbar_c)
@@ -1231,9 +1229,14 @@ __EXPORT LttvTracesetStats* lttvwindow_get_traceset_stats(Tab *tab)
 }
 #endif /*BABEL_CLEANUP*/
 
+__EXPORT LttvTraceset *lttvwindow_get_traceset(Tab *tab)
+{
+        return tab->traceset_info->traceset;
+}
+
 void events_request_free(EventsRequest *events_request)
 {
-  #ifdef BABEL_CLEANUP
+#ifdef BABEL_CLEANUP
   if(events_request == NULL) return;
 
   if(events_request->start_position != NULL)
@@ -1267,7 +1270,7 @@ void events_request_free(EventsRequest *events_request)
        lttv_hooks_destroy(events_request->after_request);
 
   g_free(events_request);
-  #endif /*BABEL_CLEANUP*/
+#endif /*BABEL_CLEANUP*/
 }
 
 

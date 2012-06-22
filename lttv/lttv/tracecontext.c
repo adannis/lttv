@@ -693,13 +693,14 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 	
 	unsigned count = 0;
 		
+        gint last_ret = 0;
 	struct bt_ctf_event *bt_event;
 	
 	LttvEvent event;
 
 	while(TRUE) {
 
-		if((count >= nb_events) && (nb_events != G_MAXULONG)) {
+		if(last_ret == TRUE || ((count >= nb_events) && (nb_events != G_MAXULONG))) {
 			break;
 		}
 
@@ -712,7 +713,7 @@ guint lttv_process_traceset_middle(LttvTracesetContext *self,
 			   to retrieve the right state container */
 			event.state = self->tmpState;
 			
-			lttv_hooks_call(self->event_hooks, &event);
+			last_ret = lttv_hooks_call(self->event_hooks, &event);
 
 			if(bt_iter_next(bt_ctf_get_iter(self->iter)) < 0) {
 				printf("ERROR NEXT\n");

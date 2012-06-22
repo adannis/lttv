@@ -142,8 +142,13 @@ create_MWindow (void)
   MWindow = gtk_window_new (GTK_WINDOW_TOPLEVEL);
   gtk_widget_set_size_request (MWindow, 100, 50);
   gtk_window_set_title (GTK_WINDOW (MWindow), "Linux Trace Toolkit Viewer");
+  
+  /* making the window a size higher than 80% of the screen cause a gtk glitch 
+   * where the window is automaticly going fullscreen but the widgets stay 
+   * the normal size.
+   */
   gtk_window_set_default_size (GTK_WINDOW (MWindow),
-      gdk_screen_width()*0.9, gdk_screen_height()*0.9);
+			gdk_screen_width()*0.8, gdk_screen_height()*0.8);
   gtk_window_set_icon(GTK_WINDOW(MWindow), create_pixbuf("lttng_logo.svg"));
   
   MVbox = gtk_vbox_new (FALSE, 0);

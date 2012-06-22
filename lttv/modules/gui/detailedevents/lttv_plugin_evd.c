@@ -28,7 +28,7 @@
 /*
  * Implementation
  */
-
+#ifdef BABEL_CLEANUP
 static void evd_update_filter(LttvPlugin *parent, LttvFilter *filter)
 {
   LttvPluginEVD *self = LTTV_PLUGIN_EVD(parent);
@@ -37,14 +37,16 @@ static void evd_update_filter(LttvPlugin *parent, LttvFilter *filter)
   self->evd->filter = filter;
   evd_redraw_notify(self->evd, NULL);
 }
-
+#endif //babel cleanup
 
 static void
 lttv_plugin_evd_class_init (LttvPluginEVDClass *klass)
 {
   LttvPluginClass *parent_klass;
   parent_klass = &klass->parent;
+  #ifdef BABEL_CLEANUP
   parent_klass->update_filter = evd_update_filter;
+#endif //babel cleanup
   g_type_class_add_private (klass, sizeof (EventViewerData));
 }
 

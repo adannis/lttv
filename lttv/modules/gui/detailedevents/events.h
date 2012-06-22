@@ -7,6 +7,7 @@
 typedef struct _EventViewerData EventViewerData;
 
 struct _EventViewerData {
+  
 
   Tab * tab;
   LttvPluginTab *ptab;
@@ -43,16 +44,16 @@ struct _EventViewerData {
   
   gint num_visible_events;
   
-  LttvTracesetContextPosition *currently_selected_position;
+  LttvTracesetPosition *currently_selected_position;
   gboolean update_cursor; /* Speed optimisation : do not update cursor when 
                              unnecessary */
   gboolean report_position; /* do not report position when in current_time
                                update */
+  LttvTracesetPosition *first_event;  /* Time of the first event shown */
+  
+  LttvTracesetPosition *last_event;  /* Time of the last event shown */
 
-  LttvTracesetContextPosition *first_event;  /* Time of the first event shown */
-  LttvTracesetContextPosition *last_event;  /* Time of the first event shown */
-
-  LttvTracesetContextPosition *current_time_get_first; 
+  LttvTracesetPosition *current_time_get_first; 
 
   LttvFilter *main_win_filter;
 

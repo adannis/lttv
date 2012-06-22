@@ -254,10 +254,10 @@ FIXME : explain other important events
 #include <gtk/gtk.h>
 #include <ltt/ltt.h>
 #include <ltt/time.h>
+#include <lttv/traceset.h>
 #include <lttv/hook.h>
 #ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
-
 #include <lttv/filter.h>
 #endif /* BABEL_CLEANUP */
 #include <lttvwindow/mainwindow.h>
@@ -820,6 +820,7 @@ void lttvwindow_report_filter(Tab *tab, LttvFilter *filter);
 LttvTracesetStats* lttvwindow_get_traceset_stats(Tab *tab);
 #endif /*BABEL_CLEANUP*/
 
+LttvTraceset* lttvwindow_get_traceset(Tab *tab);
 
 /* set_time_window 
  *

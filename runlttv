@@ -15,9 +15,9 @@ BUILDPATH=$(dirname $0)
 RCFILE="$(dirname $0)/.runlttvrc"
 TEXTLIBS="-L ${BUILDPATH}/lttv/modules/text/.libs -m textDump"
 EVALLIBS="-L ${BUILDPATH}/lttv/modules/text/.libs -m sync_chain_batch"
-GRAPHLIBS="-L ${BUILDPATH}/lttv/modules/gui/lttvwindow/lttvwindow/.libs -m lttvwindow"
+GRAPHLIBS="-L ${BUILDPATH}/lttv/modules/gui/lttvwindow/lttvwindow/.libs -m lttvwindow "\
+"-L ${BUILDPATH}/lttv/modules/gui/detailedevents/.libs -m guievents"
 #"-L ${BUILDPATH}/lttv/modules/gui/controlflow/.libs -m guicontrolflow "\
-#"-L ${BUILDPATH}/lttv/modules/gui/detailedevents/.libs -m guievents "\
 #"-L ${BUILDPATH}/lttv/modules/gui/tracecontrol/.libs -m guitracecontrol "\
 #"-L ${BUILDPATH}/lttv/modules/gui/statistics/.libs -m guistatistics "\
 #"-L ${BUILDPATH}/lttv/modules/gui/resourceview/.libs -m resourceview "\
@@ -89,7 +89,7 @@ LTTV_ARGS="$BOPTIONS $LIBS $TRACEFILES $AOPTIONS"
 if [ "$HELPER" = "gdb" ]; then
 	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs gdb --args $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "valgrind" ]; then
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind --show-reachable=yes --leak-check=full --error-limit=no $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind  --show-reachable=yes --leak-check=full --tool=memcheck --suppressions=debug/gtk.suppression --track-origins=yes --error-limit=no $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "massif" ]; then
 	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs valgrind --tool=massif $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "strace" ]; then
