@@ -1633,7 +1633,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
     tab = ptab->tab;
   }
   traceset = lttvwindow_get_traceset(tab);
-  if(traceset != NULL && traceset->traces->len > 0){
+  if(traceset != NULL && lttv_traceset_number(traceset) > 0){
 	  GtkWidget *dialogue = 
 	    gtk_message_dialog_new(
 	      GTK_WINDOW(gtk_widget_get_toplevel(widget)),
@@ -1649,7 +1649,9 @@ void add_trace(GtkWidget * widget, gpointer user_data)
   /* Create a new traceset*/
   traceset = lttv_traceset_new();
   /* File open dialog management */
-  GtkWidget *extra_live_button; 
+#ifdef BABEL_CLEANUP
+  GtkWidget *extra_live_button;
+#endif //babel_cleanup
   GtkFileChooser * file_chooser = 
 	  GTK_FILE_CHOOSER(
 		  gtk_file_chooser_dialog_new ("Select a trace",
@@ -1658,12 +1660,12 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 					  GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL,
 					  GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT,
                                          NULL));
-
+#ifdef BABEL_CLEANUP
   /* Button to indicate the opening of a live trace */
   extra_live_button = gtk_check_button_new_with_mnemonic ("Trace is live (currently being writen)");
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (extra_live_button), FALSE);
   gtk_file_chooser_set_extra_widget (GTK_FILE_CHOOSER (file_chooser), extra_live_button);
-
+#endif //babel_cleanup
   gtk_file_chooser_set_show_hidden (file_chooser, TRUE);
   if(remember_trace_dir[0] != '\0')
 	  gtk_file_chooser_set_filename(file_chooser, remember_trace_dir);
