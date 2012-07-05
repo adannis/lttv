@@ -148,7 +148,6 @@ int event_hook(void *hook_data, void *call_data);
 enum
 {
   TRACE_NAME_COLUMN,
-  TRACEFILE_NAME_COLUMN,
   CPUID_COLUMN,
   EVENT_COLUMN,
   TIME_S_COLUMN,
@@ -252,7 +251,6 @@ gui_events(LttvPluginTab *ptab)
   event_viewer_data->store_m = gtk_list_store_new (
     N_COLUMNS,      /* Total number of columns     */
     G_TYPE_STRING,  /* Trace name                  */
-    G_TYPE_STRING,  /* Tracefile name              */
     G_TYPE_UINT,    /* CPUID                       */
     G_TYPE_STRING,  /* Event                       */
     G_TYPE_UINT,    /* Time s                      */
@@ -320,19 +318,6 @@ gui_events(LttvPluginTab *ptab)
         "size-allocate",
         G_CALLBACK(header_size_allocate),
         (gpointer)event_viewer_data);
-
-
-  
-  renderer = gtk_cell_renderer_text_new ();
-  column = gtk_tree_view_column_new_with_attributes ("Tracefile",
-                 renderer,
-                 "text", TRACEFILE_NAME_COLUMN,
-                 NULL);
-  gtk_tree_view_column_set_alignment (column, 0.0);
-  gtk_tree_view_column_set_fixed_width (column, 120);
-  gtk_tree_view_append_column (GTK_TREE_VIEW (event_viewer_data->tree_v),
-      column);
-
 
   renderer = gtk_cell_renderer_text_new ();
   column = gtk_tree_view_column_new_with_attributes ("CPUID",
@@ -1557,10 +1542,12 @@ int event_hook(void *hook_data, void *call_data)
   GtkTreeIter iter;
 
   GString *desc = g_string_new("");
+  GString *name = g_string_new("");
   
   LttvTracesetPosition *pos = lttv_traceset_create_position(traceState->trace->traceset);
 
-  lttv_event_to_string(e, desc, TRUE);
+  lttv_event_to_string(e, desc, TRUE, FALSE);
+  lttv_event_get_name(e,name);
 
   g_info("detail : %s", desc->str);
 
@@ -1568,9 +1555,8 @@ int event_hook(void *hook_data, void *call_data)
 
   gtk_list_store_set (event_viewer_data->store_m, &iter,
         TRACE_NAME_COLUMN, "TraceName",
-        TRACEFILE_NAME_COLUMN,"TraceFile" /*traceState->trace->traceset->filename*/,
         CPUID_COLUMN, cpu,
-        EVENT_COLUMN,"EventName" /*bt_ctf_event_name(e->bt_event)*/,
+        EVENT_COLUMN,name->str,
         TIME_S_COLUMN, time.tv_sec,
         TIME_NS_COLUMN, time.tv_nsec,
         PID_COLUMN, process->pid,
@@ -1581,6 +1567,7 @@ int event_hook(void *hook_data, void *call_data)
   g_ptr_array_add(event_viewer_data->pos, pos);
   
   g_string_free(desc, TRUE);
+  g_string_free(name, TRUE);
 
   if(event_viewer_data->update_cursor) {
     if(lttv_traceset_position_compare(pos, 

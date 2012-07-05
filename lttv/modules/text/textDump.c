@@ -352,7 +352,7 @@ static int write_event_content(void *hook_data, void *call_data)
 #endif
 
   /* TODO 2012-03-12 Add state info */
-  lttv_event_to_string(event, a_string, !a_no_field_names);
+  lttv_event_to_string(event, a_string, !a_no_field_names, TRUE);
 
 #ifdef BABEL_CLEANUP
   if(a_state) {

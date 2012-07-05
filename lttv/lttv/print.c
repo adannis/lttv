@@ -430,7 +430,8 @@ int getFieldsFromEvent(struct bt_ctf_event *ctf_event, GString* fields, gboolean
 	return ret;
 }
 
-void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_names)
+void lttv_event_to_string(LttvEvent *event, GString *a_string,
+				gboolean field_names, gboolean long_version)
 {
 	GString* processInfos = g_string_new("");
 	GString* fields = g_string_new("");
@@ -441,8 +442,13 @@ void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_na
 	getCPUIdFromEvent(event, cpuId_str);
 
 	g_string_set_size(a_string,0);
-
-	g_string_append_printf(a_string, "%llu %s: { %s }", bt_ctf_get_timestamp(event->bt_event), bt_ctf_event_name(event->bt_event), cpuId_str->str);
+	if(long_version){
+		g_string_append_printf(a_string, "%llu %s: ", 
+				       bt_ctf_get_timestamp(event->bt_event), 
+				       bt_ctf_event_name(event->bt_event));
+	}
+	g_string_append_printf(a_string, "{ %s }", cpuId_str->str);
+	
 	if (strcmp("", processInfos->str) < 0) {
 		g_string_append_printf(a_string, ", { %s }", processInfos->str);
 	}
@@ -454,7 +460,11 @@ void lttv_event_to_string(LttvEvent *event, GString *a_string, gboolean field_na
 	g_string_free(processInfos, TRUE);
 	g_string_free(cpuId_str, TRUE);
 }
-
+void lttv_event_get_name(LttvEvent *event,GString *a_string)
+{
+	g_string_set_size(a_string,0);
+	g_string_append_printf(a_string, " %s", bt_ctf_event_name(event->bt_event));
+}
 #ifdef BABEL_CLEANUP
 void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
 		gboolean field_names, LttvTracefileState *tfs)
