@@ -233,11 +233,11 @@ gui_events(LttvPluginTab *ptab)
       GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER);
 
   event_viewer_data->currently_selected_position =
-				lttv_traceset_create_position(ts);
+				lttv_traceset_create_current_position(ts);
   event_viewer_data->first_event =
-				lttv_traceset_create_position(ts);
+				lttv_traceset_create_current_position(ts);
   event_viewer_data->last_event =
-				lttv_traceset_create_position(ts);
+				lttv_traceset_create_current_position(ts);
   event_viewer_data->main_win_filter = lttvwindow_get_filter(tab);
 
   event_viewer_data->update_cursor = TRUE;
@@ -1416,7 +1416,7 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
 
     /* Save the first event position */
 
-    event_viewer_data->first_event = lttv_traceset_create_position(ts);
+    event_viewer_data->first_event = lttv_traceset_create_current_position(ts);
 
     time = ltt_time_from_uint64(lttv_traceset_position_get_timestamp(
                                             event_viewer_data->first_event));
@@ -1472,7 +1472,7 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
                                                event_viewer_data->pos->len - 1);
     event_viewer_data->last_event = cur_pos;
   } else
-        event_viewer_data->last_event =lttv_traceset_create_position(ts);
+        event_viewer_data->last_event =lttv_traceset_create_current_position(ts);
   
   gtk_adjustment_set_value(event_viewer_data->vadjust_c,
       event_viewer_data->previous_value);
@@ -1544,7 +1544,7 @@ int event_hook(void *hook_data, void *call_data)
   GString *desc = g_string_new("");
   GString *name = g_string_new("");
   
-  LttvTracesetPosition *pos = lttv_traceset_create_position(traceState->trace->traceset);
+  LttvTracesetPosition *pos = lttv_traceset_create_current_position(traceState->trace->traceset);
 
   lttv_event_to_string(e, desc, TRUE, FALSE);
   lttv_event_get_name(e,name);
@@ -1666,7 +1666,7 @@ gboolean update_current_time(void * hook_data, void * call_data)
         lttv_traceset_seek_to_position(currentPosition);
     
     event_viewer_data->currently_selected_position = 
-                                        lttv_traceset_create_position(ts);
+                                        lttv_traceset_create_current_position(ts);
 
 
   }
@@ -1739,11 +1739,11 @@ gboolean traceset_changed(void * hook_data, void * call_data)
   lttv_traceset_destroy_position(event_viewer_data->last_event);
  
   event_viewer_data->currently_selected_position =
-                                lttv_traceset_create_position(ts);
+                                lttv_traceset_create_current_position(ts);
   event_viewer_data->first_event =
-                                lttv_traceset_create_position(ts);
+                                lttv_traceset_create_current_position(ts);
   event_viewer_data->last_event =
-                                lttv_traceset_create_position(ts);
+                                lttv_traceset_create_current_position(ts);
 
   get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
 #endif //babel_cleanup

@@ -421,7 +421,7 @@ guint lttv_trace_get_num_cpu(LttvTrace *t)
 	return 24;
 }
 
-LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset)
+LttvTracesetPosition *lttv_traceset_create_current_position(LttvTraceset *traceset)
 {
 	LttvTracesetPosition *traceset_pos;
 	

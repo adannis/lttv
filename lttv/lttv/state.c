@@ -1460,7 +1460,7 @@ void lttv_state_save(LttvTraceState *self, LttvAttribute *container)
 	/* Save the current position */
 	value = lttv_attribute_add(container, LTTV_STATE_POSITION,
 			LTTV_POINTER);
-	*(value.v_pointer) = lttv_traceset_create_position(lttv_trace_get_traceset(self->trace));
+	*(value.v_pointer) = lttv_traceset_create_current_position(lttv_trace_get_traceset(self->trace));
 
 #ifdef BABEL_CLEANUP
 	nb_tracefile = self->parent.tracefiles->len;

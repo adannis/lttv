@@ -79,7 +79,7 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 				break;
 			}
 			
-			currentPos = lttv_traceset_create_position(traceset);
+			currentPos = lttv_traceset_create_current_position(traceset);
 			if(lttv_traceset_position_compare(currentPos,end_position ) == 0){
 				lttv_traceset_destroy_position(currentPos);
 				break;
@@ -214,7 +214,6 @@ guint lttv_process_traceset_seek_n_forward(LttvTraceset *traceset,
                 LttvFilter *filter3,
                 gpointer data)
 {
-        struct bt_ctf_event *bt_event;
         unsigned count = 0;
         while(count < n) {
 		if(bt_iter_next(bt_ctf_get_iter(traceset->iter)) < 0) {
@@ -242,13 +241,13 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
         LttvTracesetPosition *initialPos, *previousPos, *currentPos;
         
         /*Save initial position of the traceset*/
-        initialPos = lttv_traceset_create_position (ts);
+        initialPos = lttv_traceset_create_current_position (ts);
         
         /*Get the timespan of the initial position*/
         initialTimeStamp = lttv_traceset_position_get_timestamp(initialPos);
         /* 
          * Create a position before the initial timestamp according
-         * to the ratio of nanosecond/nanosecond hopefully before the
+         * to the ratio of nanosecond/event hopefully before the
          * the desired seek position
          */
         while(1){
@@ -267,7 +266,7 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                         if((ret = lttv_traceset_position_compare(currentPos,initialPos)) == 1){       
                                 bt_iter_next(bt_ctf_get_iter(ts->iter));
                                 lttv_traceset_destroy_position(currentPos);
-                                currentPos = lttv_traceset_create_position(ts);
+                                currentPos = lttv_traceset_create_current_position(ts);
                                 count++;
                         }
                 }while(ret != 0);

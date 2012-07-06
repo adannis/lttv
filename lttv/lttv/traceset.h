@@ -111,7 +111,7 @@ void lttv_traceset_remove(LttvTraceset *s, unsigned i);
 LttvAttribute *lttv_traceset_attribute(LttvTraceset *s);
 
 /* Take a position snapshot */
-LttvTracesetPosition *lttv_traceset_create_position(LttvTraceset *traceset);
+LttvTracesetPosition *lttv_traceset_create_current_position(LttvTraceset *traceset);
 
 /* Destroy position snapshot */
 void lttv_traceset_destroy_position(LttvTracesetPosition *traceset_pos);
