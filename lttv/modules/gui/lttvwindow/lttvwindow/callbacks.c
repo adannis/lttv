@@ -1632,6 +1632,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
     ptab = (LttvPluginTab *)g_object_get_data(G_OBJECT(page), "Tab_Plugin");
     tab = ptab->tab;
   }
+//TODO fdeslauriers 2012-07-06: Remove this popup when we support multiple traces
   traceset = lttvwindow_get_traceset(tab);
   if(traceset != NULL && lttv_traceset_number(traceset) > 0){
 	  GtkWidget *dialogue = 

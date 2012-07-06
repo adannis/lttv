@@ -90,6 +90,8 @@ if [ "$HELPER" = "gdb" ]; then
 	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs gdb --args $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "valgrind" ]; then
 	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind  --show-reachable=yes --leak-check=full --tool=memcheck --suppressions=debug/gtk.suppression --track-origins=yes --error-limit=no $LTTV_EXEC $LTTV_ARGS
+elif [ "$HELPER" = "callgrind" ]; then
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind --tool=callgrind $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "massif" ]; then
 	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs valgrind --tool=massif $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "strace" ]; then
