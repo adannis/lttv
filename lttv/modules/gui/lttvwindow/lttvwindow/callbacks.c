@@ -709,14 +709,14 @@ void open_traceset(GtkWidget * widget, gpointer user_data)
 
 gboolean lttvwindow_process_pending_requests(Tab *tab)
 {
-#ifdef BABEL_CLEANUP
-  LttvTracesetContext *tsc;
-  LttvTracefileContext *tfc;
+
+  LttvTraceset *ts;
+
   GSList *list_in = NULL;
   LttTime end_time;
   guint end_nb_events;
   guint count;
-  LttvTracesetContextPosition *end_position;
+  LttvTracesetPosition *end_position;
   
   if(lttvwindow_preempt_count > 0) return TRUE;
   
@@ -728,7 +728,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
   /* There is no events requests pending : we should never have been called! */
   g_assert(g_slist_length(list_out) != 0);
 
-  tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
+  ts = tab->traceset_info->traceset;
 
   //set the cursor to be X shape, indicating that the computer is busy in doing its job
 #if 0
@@ -745,7 +745,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
   
   /* Preliminary check for no trace in traceset */
   /* Unregister the routine if empty, empty list_out too */
-  if(lttv_traceset_number(tsc->ts) == 0) {
+  if(lttv_traceset_number(ts) == 0) {
 
     /* - For each req in list_out */
     GSList *iter = list_out;
@@ -758,13 +758,13 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
       
       /* - Call end request for req */
       if(events_request->servicing == TRUE)
-        lttv_hooks_call(events_request->after_request, (gpointer)tsc);
+        lttv_hooks_call(events_request->after_request, (gpointer)ts);
       
       /* - remove req from list_out */
       /* Destroy the request */
       remove = TRUE;
       free_data = TRUE;
-
+      //TODO ybrosseau: This if is always true
       /* Go to next */
       if(remove)
       {
@@ -784,9 +784,9 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
     guint iter_trace=0;
     
     for(iter_trace=0; 
-        iter_trace<lttv_traceset_number(tsc->ts);
+        iter_trace<lttv_traceset_number(ts);
         iter_trace++) {
-      LttvTrace *trace_v = lttv_traceset_get(tsc->ts, iter_trace);
+      LttvTrace *trace_v = lttv_traceset_get(ts, iter_trace);
 
       if(lttvwindowtraces_lock(trace_v) != 0) {
         g_critical("Foreground processing : Unable to get trace lock");
@@ -796,9 +796,10 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
   }
 
   /* 0.2 Seek tracefiles positions to context position */
+#ifdef BABEL_CLEANUP
   //g_assert(lttv_process_traceset_seek_position(tsc, sync_position) == 0);
   lttv_process_traceset_synchronize_tracefiles(tsc);
-  
+#endif
   
   /* Events processing algorithm implementation */
   /* Warning : the gtk_events_pending takes a LOT of cpu time. So what we do
@@ -855,7 +856,8 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
           if(event_request_lpos->start_position != NULL
               && event_request_list_out->start_position != NULL)
           {
-            comp = lttv_traceset_context_pos_pos_compare
+	    //TODO ybrosseau: this compare is in fact an equal, so the behavior might not be right. 
+            comp = lttv_traceset_position_time_compare
                                  (event_request_lpos->start_position,
                                   event_request_list_out->start_position);
           } else {
@@ -878,7 +880,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
           
           if(event_request_lpos != NULL 
               && event_request_lpos->start_position != NULL) {
-            lpos_start_time = lttv_traceset_context_position_get_time(
+            lpos_start_time = lttv_traceset_position_get_time(
                                       event_request_lpos->start_position);
           }
           
@@ -918,7 +920,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 
       /* 1.2 Seek */
       {
-        tfc = lttv_traceset_context_get_current_tfc(tsc);
+ 
         g_assert(g_slist_length(list_in)>0);
         EventsRequest *events_request = g_slist_nth_data(list_in, 0);
 #ifdef DEBUG
@@ -928,20 +930,21 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
         /* 1.2.1 If first request in list_in is a time request */
         if(events_request->start_position == NULL) {
           /* - If first req in list_in start time != current time */
-          if(tfc == NULL || ltt_time_compare(events_request->start_time,
-                              tfc->timestamp) != 0)
+	  //TODO ybrosseau: if commented out, since it was only affecting the g_debug
+          //if(tfc == NULL || ltt_time_compare(events_request->start_time,
+          //                    tfc->timestamp) != 0)
             /* - Seek to that time */
             g_debug("SEEK TIME : %lu, %lu", events_request->start_time.tv_sec,
               events_request->start_time.tv_nsec);
             //lttv_process_traceset_seek_time(tsc, events_request->start_time);
-            lttv_state_traceset_seek_time_closest(LTTV_TRACESET_STATE(tsc),
+	    lttv_process_traceset_seek_time(ts,
                                                   events_request->start_time);
 
             /* Process the traceset with only state hooks */
 #ifdef DEBUG
             seek_count =
 #endif //DEBUG
-               lttv_process_traceset_middle(tsc,
+               lttv_process_traceset_middle(ts,
                                             events_request->start_time,
                                             G_MAXUINT, NULL);
 #ifdef DEBUG
@@ -950,50 +953,52 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 
 
         } else {
-          LttTime pos_time;
-					LttvTracefileContext *tfc =
-						lttv_traceset_context_get_current_tfc(tsc);
+          //LttTime pos_time;
+	  //LttvTracefileContext *tfc =
+	  //  lttv_traceset_context_get_current_tfc(tsc);
           /* Else, the first request in list_in is a position request */
           /* If first req in list_in pos != current pos */
           g_assert(events_request->start_position != NULL);
           g_debug("SEEK POS time : %lu, %lu", 
-                 lttv_traceset_context_position_get_time(
+                 lttv_traceset_position_get_time(
                       events_request->start_position).tv_sec,
-                 lttv_traceset_context_position_get_time(
+                 lttv_traceset_position_get_time(
                       events_request->start_position).tv_nsec);
 					
-					if(tfc) {
-						g_debug("SEEK POS context time : %lu, %lu", 
-							 tfc->timestamp.tv_sec,
-							 tfc->timestamp.tv_nsec);
+	  /*if(tfc) {*/ if(0) {
+	    /*					g_debug("SEEK POS context time : %lu, %lu", 
+							tfc->timestamp.tv_sec,
+							 tfc->timestamp.tv_nsec); */
 					} else {
 						g_debug("SEEK POS context time : %lu, %lu", 
 							 ltt_time_infinite.tv_sec,
 							 ltt_time_infinite.tv_nsec);
 					}
           g_assert(events_request->start_position != NULL);
-          if(lttv_traceset_context_ctx_pos_compare(tsc,
-                     events_request->start_position) != 0) {
+	  //TODO ybrosseau: for now, always seek
+          if(/*lttv_traceset_context_ctx_pos_compare(tsc,
+                     events_request->start_position) != 0*/1) {
             /* 1.2.2.1 Seek to that position */
             g_debug("SEEK POSITION");
             //lttv_process_traceset_seek_position(tsc, events_request->start_position);
-            pos_time = lttv_traceset_context_position_get_time(
-                                     events_request->start_position);
-            
-            lttv_state_traceset_seek_time_closest(LTTV_TRACESET_STATE(tsc),
-                                                  pos_time);
+            //pos_time = lttv_traceset_position_get_time(
+            //                         events_request->start_position);
+            //
+            //lttv_state_traceset_seek_time(ts,
+            //                                      pos_time);
+	    lttv_traceset_seek_to_position( events_request->start_position);
 
             /* Process the traceset with only state hooks */
 #ifdef DEBUG
             seek_count =
 
-               lttv_process_traceset_middle(tsc,
+               lttv_process_traceset_middle(ts,
                                             ltt_time_infinite,
                                             G_MAXUINT,
                                             events_request->start_position);
 #endif
-            g_assert(lttv_traceset_context_ctx_pos_compare(tsc,
-                         events_request->start_position) == 0);
+            //g_assert(lttv_traceset_context_ctx_pos_compare(tsc,
+            //             events_request->start_position) == 0);
 
 
           }
@@ -1011,32 +1016,33 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
             /* - begin request hooks called
              * - servicing = TRUE
              */
-            lttv_hooks_call(events_request->before_request, (gpointer)tsc);
+            lttv_hooks_call(events_request->before_request, (gpointer)ts);
             events_request->servicing = TRUE;
           }
           /* 1.3.2 call before chunk
            * 1.3.3 events hooks added
            */
-          if(events_request->trace == -1)
-            lttv_process_traceset_begin(tsc,
+	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
+	  //     traceset wide requests
+          if(events_request->trace == -1 || TRUE)
+            lttv_process_traceset_begin(ts,
                 events_request->before_chunk_traceset,
                 events_request->before_chunk_trace,
-                events_request->before_chunk_tracefile,
-                events_request->event,
-                events_request->event_by_id_channel);
+                events_request->event
+                );
           else {
-            guint nb_trace = lttv_traceset_number(tsc->ts);
+            guint nb_trace = lttv_traceset_number(ts);
             g_assert((guint)events_request->trace < nb_trace &&
                       events_request->trace > -1);
-            LttvTraceContext *tc = tsc->traces[events_request->trace];
+            LttvTrace  *trace = lttv_traceset_get(ts, events_request->trace);
 
-            lttv_hooks_call(events_request->before_chunk_traceset, tsc);
+            lttv_hooks_call(events_request->before_chunk_traceset, ts);
 
-            lttv_trace_context_add_hooks(tc,
+            lttv_trace_add_hooks(trace,
                                          events_request->before_chunk_trace,
-                                         events_request->before_chunk_tracefile,
-                                         events_request->event,
-                                         events_request->event_by_id_channel);
+
+                                         events_request->event
+                                         );
           }
         }
       }
@@ -1054,26 +1060,27 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
           /* - Call before chunk
            * - events hooks added
            */
-          if(events_request->trace == -1)
-            lttv_process_traceset_begin(tsc,
+ 	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
+	  //     traceset wide requests
+         if(events_request->trace == -1 || TRUE)
+            lttv_process_traceset_begin(ts,
                 events_request->before_chunk_traceset,
                 events_request->before_chunk_trace,
-                events_request->before_chunk_tracefile,
-                events_request->event,
-                events_request->event_by_id_channel);
+                events_request->event
+                );
           else {
-            guint nb_trace = lttv_traceset_number(tsc->ts);
+            guint nb_trace = lttv_traceset_number(ts);
             g_assert((guint)events_request->trace < nb_trace &&
                       events_request->trace > -1);
-            LttvTraceContext *tc = tsc->traces[events_request->trace];
+            LttvTrace *trace = lttv_traceset_get(ts, events_request->trace);
 
-            lttv_hooks_call(events_request->before_chunk_traceset, tsc);
+            lttv_hooks_call(events_request->before_chunk_traceset, ts);
 
-            lttv_trace_context_add_hooks(tc,
+            lttv_trace_add_hooks(trace,
                                          events_request->before_chunk_trace,
-                                         events_request->before_chunk_tracefile,
-                                         events_request->event,
-                                         events_request->event_by_id_channel);
+
+                                         events_request->event
+                                         );
           }
 
           iter = g_slist_next(iter);
@@ -1081,7 +1088,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
       }
 
       {
-        tfc = lttv_traceset_context_get_current_tfc(tsc);
+
       
         /* 2.1 For each req of list_out */
         GSList *iter = list_out;
@@ -1094,7 +1101,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
           
           /* if req.start time == current context time 
            * or req.start position == current position*/
-          if(  ltt_time_compare(events_request->start_time,
+	  /*          if(  ltt_time_compare(events_request->start_time,
                               tfc->timestamp) == 0 
              ||
                (events_request->start_position != NULL 
@@ -1102,6 +1109,9 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
                lttv_traceset_context_ctx_pos_compare(tsc,
                        events_request->start_position) == 0)
              ) {
+	  */
+	  if(lttv_traceset_position_compare_current(ts, events_request->start_position) == 0) {
+
             /* - Add to list_in, remove from list_out */
             list_in = g_slist_append(list_in, events_request);
             remove = TRUE;
@@ -1112,32 +1122,33 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
               /* - begin request hooks called
                * - servicing = TRUE
                */
-              lttv_hooks_call(events_request->before_request, (gpointer)tsc);
+              lttv_hooks_call(events_request->before_request, (gpointer)ts);
               events_request->servicing = TRUE;
             }
             /* call before chunk
              * events hooks added
              */
-            if(events_request->trace == -1)
-              lttv_process_traceset_begin(tsc,
+ 	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
+	  //     traceset wide requests
+           if(events_request->trace == -1 || TRUE)
+              lttv_process_traceset_begin(ts,
                   events_request->before_chunk_traceset,
                   events_request->before_chunk_trace,
-                  events_request->before_chunk_tracefile,
-                  events_request->event,
-                  events_request->event_by_id_channel);
+                  events_request->event
+                  );
             else {
-              guint nb_trace = lttv_traceset_number(tsc->ts);
+              guint nb_trace = lttv_traceset_number(ts);
               g_assert((guint)events_request->trace < nb_trace &&
                         events_request->trace > -1);
-              LttvTraceContext *tc = tsc->traces[events_request->trace];
+              LttvTrace* trace = lttv_traceset_get(ts,events_request->trace);
 
-              lttv_hooks_call(events_request->before_chunk_traceset, tsc);
+              lttv_hooks_call(events_request->before_chunk_traceset, ts);
 
-              lttv_trace_context_add_hooks(tc,
-                                           events_request->before_chunk_trace,
-                                           events_request->before_chunk_tracefile,
-                                           events_request->event,
-                                           events_request->event_by_id_channel);
+              lttv_trace_add_hooks(trace,
+				   events_request->before_chunk_trace,
+                         
+				   events_request->event);
+                         
           }
 
 
@@ -1218,7 +1229,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
         EventsRequest *events_request = (EventsRequest*)iter->data;
 
         if(events_request->end_position != NULL && end_position != NULL &&
-            lttv_traceset_context_pos_pos_compare(events_request->end_position,
+            lttv_traceset_position_time_compare(events_request->end_position,
                                                  end_position) <0)
           end_position = events_request->end_position;
       }
@@ -1232,7 +1243,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
         EventsRequest *events_request = (EventsRequest*)iter->data;
 
         if(events_request->end_position != NULL && end_position != NULL &&
-            lttv_traceset_context_pos_pos_compare(events_request->end_position,
+            lttv_traceset_position_time_compare(events_request->end_position,
                                                  end_position) <0)
           end_position = events_request->end_position;
       }
@@ -1240,24 +1251,26 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 
     {
       /* 4. Call process traceset middle */
-      g_debug("Calling process traceset middle with %p, %lu sec %lu nsec, %u nb ev, %p end pos", tsc, end_time.tv_sec, end_time.tv_nsec, end_nb_events, end_position);
-      count = lttv_process_traceset_middle(tsc, end_time, end_nb_events, end_position);
+      g_debug("Calling process traceset middle with %p, %lu sec %lu nsec, %u nb ev, %p end pos", ts, end_time.tv_sec, end_time.tv_nsec, end_nb_events, end_position);
+      count = lttv_process_traceset_middle(ts, end_time, end_nb_events, end_position);
 
+#ifdef BABEL_CLEANUP  
       tfc = lttv_traceset_context_get_current_tfc(tsc);
       if(tfc != NULL)
         g_debug("Context time after middle : %lu, %lu", tfc->timestamp.tv_sec,
                                                         tfc->timestamp.tv_nsec);
       else
         g_debug("End of trace reached after middle.");
-
+#endif
     }
+
     {
       /* 5. After process traceset middle */
-      tfc = lttv_traceset_context_get_current_tfc(tsc);
 
+      LttTime curTime = lttv_traceset_get_current_time(ts);
       /* - if current context time > traceset.end time */
-      if(tfc == NULL || ltt_time_compare(tfc->timestamp,
-                                         tsc->time_span.end_time) > 0) {
+      if(ltt_time_compare(curTime,
+			  lttv_traceset_get_time_span_real(ts).end_time) > 0) {
         /* - For each req in list_in */
         GSList *iter = list_in;
     
@@ -1270,33 +1283,33 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
           /* - Remove events hooks for req
            * - Call end chunk for req
            */
-
-          if(events_request->trace == -1) 
-               lttv_process_traceset_end(tsc,
+	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
+	  //     traceset wide requests
+          if(events_request->trace == -1 || TRUE) 
+               lttv_process_traceset_end(ts,
                                          events_request->after_chunk_traceset,
                                          events_request->after_chunk_trace,
-                                         events_request->after_chunk_tracefile,
-                                         events_request->event,
-                                         events_request->event_by_id_channel);
+
+                                         events_request->event);
 
           else {
-            guint nb_trace = lttv_traceset_number(tsc->ts);
+            guint nb_trace = lttv_traceset_number(ts);
             g_assert(events_request->trace < nb_trace &&
                       events_request->trace > -1);
-            LttvTraceContext *tc = tsc->traces[events_request->trace];
+            LttvTrace *trace = lttv_traceset_get(ts,events_request->trace);
 
-            lttv_trace_context_remove_hooks(tc,
+            lttv_trace_remove_hooks(trace,
                                          events_request->after_chunk_trace,
-                                         events_request->after_chunk_tracefile,
-                                         events_request->event,
-                                         events_request->event_by_id_channel);
-            lttv_hooks_call(events_request->after_chunk_traceset, tsc);
+                       
+				    events_request->event);
+                       
+            lttv_hooks_call(events_request->after_chunk_traceset, ts);
 
 
           }
 
           /* - Call end request for req */
-          lttv_hooks_call(events_request->after_request, (gpointer)tsc);
+          lttv_hooks_call(events_request->after_request, (gpointer)ts);
           
           /* - remove req from list_in */
           /* Destroy the request */
@@ -1329,34 +1342,36 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
           /* - Remove events hooks for req
            * - Call end chunk for req
            */
-          if(events_request->trace == -1) 
-               lttv_process_traceset_end(tsc,
+	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
+	  //     traceset wide requests
+          if(events_request->trace == -1 || TRUE) 
+               lttv_process_traceset_end(ts,
                                          events_request->after_chunk_traceset,
                                          events_request->after_chunk_trace,
-                                         events_request->after_chunk_tracefile,
-                                         events_request->event,
-                                         events_request->event_by_id_channel);
+
+                                         events_request->event);
+
 
           else {
-            guint nb_trace = lttv_traceset_number(tsc->ts);
+            guint nb_trace = lttv_traceset_number(ts);
             g_assert(events_request->trace < nb_trace &&
                       events_request->trace > -1);
-            LttvTraceContext *tc = tsc->traces[events_request->trace];
+            LttvTrace *trace = lttv_traceset_get(ts, events_request->trace);
 
-            lttv_trace_context_remove_hooks(tc,
+            lttv_trace_remove_hooks(trace,
                                          events_request->after_chunk_trace,
-                                         events_request->after_chunk_tracefile,
-                                         events_request->event,
-                                         events_request->event_by_id_channel);
 
-            lttv_hooks_call(events_request->after_chunk_traceset, tsc);
+				    events_request->event);
+
+
+            lttv_hooks_call(events_request->after_chunk_traceset, ts);
           }
 
           /* - req.num -= count */
           g_assert(events_request->num_events >= count);
           events_request->num_events -= count;
           
-          g_assert(tfc != NULL);
+          //g_assert(tfc != NULL);
           /* - if req.num == 0
            *   or
            *     current context time >= req.end time
@@ -1369,19 +1384,19 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
               ||
                 events_request->stop_flag == TRUE
               ||
-                ltt_time_compare(tfc->timestamp,
+                ltt_time_compare(lttv_traceset_get_current_time(ts),
                                          events_request->end_time) >= 0
               ||
                   (events_request->end_position != NULL 
                  &&
-                  lttv_traceset_context_ctx_pos_compare(tsc,
+                  lttv_traceset_position_compare_current(ts,
                             events_request->end_position) == 0)
 
               ) {
             g_assert(events_request->servicing == TRUE);
             /* - Call end request for req
              * - remove req from list_in */
-            lttv_hooks_call(events_request->after_request, (gpointer)tsc);
+            lttv_hooks_call(events_request->after_request, (gpointer)ts);
             /* - remove req from list_in */
             /* Destroy the request */
             remove = TRUE;
@@ -1421,9 +1436,9 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
       
       /* 1.1. Use current postition as start position */
       if(events_request->start_position != NULL)
-        lttv_traceset_context_position_destroy(events_request->start_position);
-      events_request->start_position = lttv_traceset_context_position_new(tsc);
-      lttv_traceset_context_position_save(tsc, events_request->start_position);
+        lttv_traceset_destroy_position(events_request->start_position);
+      events_request->start_position = lttv_traceset_create_current_position(ts);
+ 
 
       /* 1.2. Remove start time */
       events_request->start_time = ltt_time_infinite;
@@ -1450,15 +1465,17 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
   }
   /* C Unlock Traces */
   {
+#ifdef BABEL_CLEANUP
     lttv_process_traceset_get_sync_data(tsc);
+#endif
     //lttv_traceset_context_position_save(tsc, sync_position);
     
     guint iter_trace;
     
     for(iter_trace=0; 
-        iter_trace<lttv_traceset_number(tsc->ts);
+        iter_trace<lttv_traceset_number(ts);
         iter_trace++) {
-      LttvTrace *trace_v = lttv_traceset_get(tsc->ts, iter_trace);
+      LttvTrace *trace_v = lttv_traceset_get(ts, iter_trace);
 
       lttvwindowtraces_unlock(trace_v);
     }
@@ -1490,7 +1507,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
   return FALSE;
   */
   
-  #endif /* BABEL_CLEANUP */
+
 }
 
 #undef list_out

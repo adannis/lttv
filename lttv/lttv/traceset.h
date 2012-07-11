@@ -136,8 +136,14 @@ guint64 lttv_traceset_position_get_timestamp(const LttvTracesetPosition *pos);
 
 LttTime  lttv_traceset_position_get_time(const LttvTracesetPosition *pos);
 
+LttTime lttv_traceset_get_current_time(const LttvTraceset *ts);
+
 int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvTracesetPosition *pos2);
 
+int lttv_traceset_position_time_compare(const LttvTracesetPosition *pos1, 
+					const LttvTracesetPosition *pos2);
 
+int lttv_traceset_position_compare_current(const LttvTraceset *ts, 
+					   const LttvTracesetPosition *pos);
 
 #endif // TRACESET_H

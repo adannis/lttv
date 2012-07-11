@@ -622,6 +622,8 @@ LttTime  lttv_traceset_position_get_time(const LttvTracesetPosition *pos)
         return ltt_time_from_uint64(lttv_traceset_position_get_timestamp(pos));
 }
 
+
+
 int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvTracesetPosition *pos2)
 {
 #warning " TODO :Rename for lttv_traceset_position_equals && Must return COMPARAISON OF THE 2 POSITION && verify if it is the best way to compare position"
@@ -653,4 +655,36 @@ int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvT
         else{
                 return 1;
 	}
+}
+
+int lttv_traceset_position_time_compare(const LttvTracesetPosition *pos1, 
+					const LttvTracesetPosition *pos2)
+{
+        guint64 timeStampPos1,timeStampPos2;
+
+	timeStampPos1 = lttv_traceset_position_get_timestamp(pos1);
+        timeStampPos2 = lttv_traceset_position_get_timestamp(pos2);
+        
+	return timeStampPos1 - timeStampPos2;
+}
+int lttv_traceset_position_compare_current(const LttvTraceset *ts, 
+					   const LttvTracesetPosition *pos)
+{
+	int result = 0;
+	LttvTracesetPosition *curPos = lttv_traceset_create_current_position(ts);
+
+	result = lttv_traceset_position_compare(curPos,pos);
+
+	lttv_traceset_destroy_position(curPos);
+
+	return result;
+}
+
+LttTime lttv_traceset_get_current_time(const LttvTraceset *ts)
+{
+	LttvTracesetPosition *curPos = lttv_traceset_create_current_position(ts);
+	guint64 currentTimestamp = lttv_traceset_position_get_timestamp(curPos);
+	lttv_traceset_destroy_position(curPos);
+
+        return ltt_time_from_uint64(currentTimestamp);
 }
