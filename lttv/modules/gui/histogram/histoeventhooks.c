@@ -147,9 +147,8 @@ void histo_request_event( HistoControlFlowData *histocontrol_flow_data, guint x,
   LttTime time_start, time_end;
 
   //find the tracehooks 
-  LttvTracesetContext *tsc = lttvwindow_get_traceset_context(tab);
+  LttvTraceset *traceset = lttvwindow_get_traceset(tab);
   
-  LttvTraceset *traceset = tsc->ts;
   nb_trace = lttv_traceset_number(traceset);
   guint drawing_width= histocontrol_flow_data->drawing->width;
 //start time for chunk.
@@ -169,6 +168,7 @@ void histo_request_event( HistoControlFlowData *histocontrol_flow_data, guint x,
   // LttvHooksById *histo_event_by_id = lttv_hooks_by_id_new();//if necessary for filter!
   // FIXME : eventually request for more traces 
   // fixed for(i = 0; i<MIN(TRACE_NUMBER+1, nb_trace);i++) {
+  //TODO ybrosseau 2012-07-10: Just do one request
   for(i=0;i<nb_trace;i++) {
 	//should be in the loop or before? 
 	EventsRequest *histo_events_request = g_new(EventsRequest, 1);
@@ -216,7 +216,6 @@ void histo_request_event( HistoControlFlowData *histocontrol_flow_data, guint x,
   	histo_events_request->before_chunk_trace    = NULL; 
   	histo_events_request->before_chunk_tracefile= NULL; 
   	histo_events_request->event 		    = histo_count_event_hooks; 
-   	histo_events_request->event_by_id_channel   = NULL;//histo_event_by_id;//NULL; 
   	histo_events_request->after_chunk_tracefile = NULL; 
   	histo_events_request->after_chunk_trace     = NULL;   
   	histo_events_request->after_chunk_traceset  = histo_after_chunk_traceset;//NULL; 
@@ -233,7 +232,7 @@ int histo_count_event(void *hook_data, void *call_data){
 
   guint x;//time to pixel
   LttTime  event_time; 
-  LttEvent *e;
+  LttvEvent *e;
   guint *element;
    
   EventsRequest *events_request = (EventsRequest*)hook_data;
@@ -244,19 +243,16 @@ int histo_count_event(void *hook_data, void *call_data){
   
   g_info("Histogram: count_event() \n");
   
-   
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  e = ltt_tracefile_get_event(tfc->tf);
-
+  e = (LttvEvent *)call_data;
+#ifdef BABEL_CLEANUP
   LttvFilter *histo_filter = histocontrol_flow_data->histo_main_win_filter;
   if(histo_filter != NULL && histo_filter->head != NULL)
     if(!lttv_filter_tree_parse(histo_filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
-
+#endif
   TimeWindow time_window  =  lttvwindow_get_time_window(histocontrol_flow_data->tab);
-  event_time = ltt_event_time(e);
+  event_time = lttv_event_get_timestamp(e);
   
   histo_convert_time_to_pixels(
           time_window,
@@ -636,11 +632,12 @@ gint histo_update_current_time_hook(void *hook_data, void *call_data)
   }
   LttTime time_end = ltt_time_add(time_begin, width);
 
-  LttvTracesetContext * tsc =
-        lttvwindow_get_traceset_context(histocontrol_flow_data->tab);
-  
-  LttTime trace_start = tsc->time_span.start_time;
-  LttTime trace_end = tsc->time_span.end_time;
+  LttvTraceset *traceset =
+        lttvwindow_get_traceset(histocontrol_flow_data->tab);
+  TimeInterval time_span = lttv_traceset_get_time_span(traceset);
+
+  LttTime trace_start = time_span.start_time;
+  LttTime trace_end = time_span.end_time;
   
   g_info("Histogram: New current time HOOK : %lu, %lu", current_time.tv_sec,
               current_time.tv_nsec);
@@ -731,7 +728,7 @@ gboolean histo_filter_changed(void * hook_data, void * call_data)
 
 typedef struct _histo_ClosureData {
   EventsRequest *events_request;
-  LttvTracesetState *tss;
+  LttvTraceset *traceset;
   LttTime end_time;
   guint x_end;
 } histo_ClosureData;
@@ -741,7 +738,7 @@ typedef struct _histo_ClosureData {
 int histo_before_chunk(void *hook_data, void *call_data)
 {
   EventsRequest *histo_events_request = (EventsRequest*)hook_data;
-  LttvTracesetState *histo_tss = (LttvTracesetState*)call_data;
+  LttvTraceset *histo_traceset = (LttvTraceset*)call_data;
 #if 0  
   /* Desactivate sort */
   gtk_tree_sortable_set_sort_column_id(
@@ -749,7 +746,7 @@ int histo_before_chunk(void *hook_data, void *call_data)
       TRACE_COLUMN,
       GTK_SORT_ASCENDING);
 #endif //0
-  histo_drawing_chunk_begin(histo_events_request, histo_tss);
+  histo_drawing_chunk_begin(histo_events_request, histo_traceset);
 
   return 0;
 }
@@ -790,8 +787,8 @@ int histo_after_chunk(void *hook_data, void *call_data)
 {
   EventsRequest *events_request = (EventsRequest*)hook_data;
   HistoControlFlowData *histocontrol_flow_data = events_request->viewer_data;
-  LttvTracesetContext *tsc = (LttvTracesetContext*)call_data;
-  LttvTracefileContext *tfc = lttv_traceset_context_get_current_tfc(tsc);
+  LttvTraceset *traceset = (LttvTraceset*)call_data;
+
   LttTime end_time;
 
   histoDrawing_t *drawing = histocontrol_flow_data->drawing;
@@ -801,9 +798,11 @@ int histo_after_chunk(void *hook_data, void *call_data)
 
   histocontrol_flow_data->chunk_has_begun = TRUE;
 
+#ifdef BABEL_CLEANUP
   if(tfc != NULL)
     end_time = LTT_TIME_MIN(tfc->timestamp, events_request->end_time);
   else /* end of traceset, or position now out of request : end */
+#endif
     end_time = events_request->end_time;
   
   guint x, x_end, width;

@@ -27,7 +27,6 @@
 #include <ltt/trace.h>
 
 #include <lttv/lttv.h>
-#include <lttv/tracecontext.h>
 #include <lttvwindow/lttvwindow.h>
 #include <lttv/state.h>
 #include <lttv/hook.h>
@@ -132,7 +131,7 @@ void histo_drawing_data_request(histoDrawing_t *drawing,
 }
  
 
-void histo_drawing_data_request_begin(EventsRequest *events_request, LttvTracesetState *tss)
+void histo_drawing_data_request_begin(EventsRequest *events_request, LttvTraceset *traceset)
 {
   g_debug("Begin of data request");
   HistoControlFlowData *cfd = events_request->viewer_data;
@@ -152,7 +151,7 @@ void histo_drawing_data_request_begin(EventsRequest *events_request, LttvTracese
 
  }
 
-void histo_drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss)
+void histo_drawing_chunk_begin(EventsRequest *events_request, LttvTraceset *traceset)
 {
   g_debug("Begin of chunk");
   HistoControlFlowData *cfd = events_request->viewer_data;
@@ -164,7 +163,7 @@ void histo_drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState 
 
 
 void histo_drawing_request_expose(EventsRequest *events_request,
-                            LttvTracesetState *tss,
+                            LttvTraceset *traceset,
                             LttTime end_time)
 {
   HistoControlFlowData *cfd = events_request->viewer_data;

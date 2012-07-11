@@ -24,8 +24,8 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <ltt/ltt.h>
-#include <lttv/tracecontext.h>
-#include <lttv/state.h>
+//#include <lttv/tracecontext.h>
+#include <lttv/traceset.h>
 #include <lttvwindow/lttvwindow.h>
 #include "histocfv.h"
 #include "histodrawitem.h"
@@ -151,12 +151,12 @@ void histo_drawing_update_ruler(histoDrawing_t *drawing, TimeWindow *time_window
 void histo_drawing_update_vertical_ruler(histoDrawing_t *drawing);//, TimeWindow *time_window);
 
 void histo_drawing_request_expose(EventsRequest *events_request,
-                            LttvTracesetState *tss,
+                            LttvTraceset *traceset,
                             LttTime end_time);
 
 void histo_drawing_data_request_begin(EventsRequest *events_request,
-                                LttvTracesetState *tss);
-void histo_drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss);
+                                LttvTraceset *traceset);
+void histo_drawing_chunk_begin(EventsRequest *events_request, LttvTraceset *traceset);
 
 
 /* histo_convert_pixels_to_time
