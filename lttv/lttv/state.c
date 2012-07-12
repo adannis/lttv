@@ -3434,11 +3434,16 @@ void lttv_state_add_event_hooks(LttvTraceset *traceset)
 	
 	LttvAttributeValue value;
 	LttvHooks*event_hook;
+#ifdef BABEL_CLEANUP	
 	LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
 	result = lttv_iattribute_find_by_path(attributes, "hooks/event",
 					      LTTV_POINTER, &value);
 	g_assert(result);
 	event_hook = *(value.v_pointer);
+#endif
+	//TODO ybrosseau 2012-07-12: Validate that using traceset hooks instead of the global one is valid
+	//Use traceset hooks 
+	event_hook = lttv_traceset_get_hooks(traceset);
 	g_assert(event_hook);
 
 	lttv_hooks_add(event_hook,syscall_entry , NULL, LTTV_PRIO_STATE);	

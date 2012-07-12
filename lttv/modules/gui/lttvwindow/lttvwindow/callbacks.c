@@ -313,6 +313,7 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
     new_time_window.end_time = ltt_time_add(new_time_window.start_time,
                                             new_time_window.time_width) ;
   }
+  lttv_state_add_event_hooks(traceset);
 
   /* Finally, call the update hooks of the viewers */
   gint retval = update_traceset(tab, traceset);
@@ -3998,9 +3999,10 @@ void init_tab(Tab *tab, MainWindow * mw, Tab *copy_tab,
   tab->traceset_info->traceset_context =
     g_object_new(LTTV_TRACESET_STATS_TYPE, NULL);
   //add state update hooks
-  lttv_state_add_event_hooks(
-       (LttvTracesetState*)tab->traceset_info->traceset_context);
 #endif //BABEL_CLEANUP
+  lttv_state_add_event_hooks(
+       tab->traceset_info->traceset);
+
   //determine the current_time and time_window of the tab
 #if 0
   if(copy_tab != NULL){
