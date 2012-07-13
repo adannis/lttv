@@ -2782,6 +2782,8 @@ static gboolean schedchange(void *hook_data, void *call_data)
 
 	guint pid_in, pid_out;
 	gint64 state_out;
+	//TODO ybrosseau 2012-07-13: manage this 20 in a constact or dynamically
+	char next_comm[20];
 	LttTime timestamp;
 	event = (LttvEvent *) call_data;
 	if (strcmp(lttv_traceset_get_name_from_event(event),
@@ -2794,6 +2796,9 @@ static gboolean schedchange(void *hook_data, void *call_data)
 	pid_out = lttv_event_get_long_unsigned(event, "prev_tid");
 	pid_in = lttv_event_get_long_unsigned(event, "next_tid");
 	state_out = lttv_event_get_long(event, "prev_state");
+
+	strncpy(next_comm, lttv_event_get_string(event, "next_comm"), 20);
+	next_comm[20-1] = '\0';
 
 	timestamp = lttv_event_get_timestamp(event);
 	
@@ -2852,6 +2857,7 @@ static gboolean schedchange(void *hook_data, void *call_data)
 	process->cpu = cpu;
  // process->last_cpu_index = ltt_tracefile_num(((LttvTracefileContext*)s)->tf);
 	process->state->change = timestamp;
+	process->name = g_quark_from_string(next_comm);
 
 	/* update cpu status */
 	if(pid_in == 0)
