@@ -2559,7 +2559,7 @@ static gboolean soft_irq_entry(void *hook_data, void *call_data)
 
 	event = (LttvEvent *) call_data;
 	if (strcmp(lttv_traceset_get_name_from_event(event),
-			"softirq_exit") != 0)
+			"softirq_entry") != 0)
 		return FALSE;
 
 	cpu = lttv_traceset_get_cpuid_from_event(event);
