@@ -59,6 +59,8 @@ struct _LttvTrace {
 struct _LttvTracesetPosition {
 	struct bt_ctf_iter *iter;
 	struct bt_iter_pos *bt_pos;
+        guint64 timestamp;
+        int cpu_id;
 };
 
 /* Tracesets may be added to, removed from and their content listed. */
@@ -85,6 +87,7 @@ gint lttv_traceset_save(LttvTraceset *s);
 
 void lttv_traceset_destroy(LttvTraceset *s);
 
+LttvHooks *lttv_traceset_get_hooks(LttvTraceset *s);
 
 void lttv_traceset_add(LttvTraceset *s, LttvTrace *t);
 

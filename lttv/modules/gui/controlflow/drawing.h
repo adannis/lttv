@@ -24,7 +24,9 @@
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 #include <ltt/ltt.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/tracecontext.h>
+#endif //babel_cleanup
 #include <lttv/state.h>
 #include <lttvwindow/lttvwindow.h>
 #include "cfv.h"
@@ -155,7 +157,7 @@ void drawing_remove_square(Drawing_t *drawing,
         guint height);
 
 void drawing_update_ruler(Drawing_t *drawing, TimeWindow *time_window);
-
+#ifdef BABEL_CLEANUP
 void drawing_request_expose(EventsRequest *events_request,
                             LttvTracesetState *tss,
                             LttTime end_time);
@@ -163,7 +165,7 @@ void drawing_request_expose(EventsRequest *events_request,
 void drawing_data_request_begin(EventsRequest *events_request,
                                 LttvTracesetState *tss);
 void drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss);
-
+#endif //babel_cleanup
 
 
 void

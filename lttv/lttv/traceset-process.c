@@ -238,8 +238,11 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
         guint i, count, ret;
         gint extraEvent = 0;
         guint64 initialTimeStamp, previousTimeStamp;
-        LttvTracesetPosition *initialPos, *previousPos, *currentPos;
-        
+        LttvTracesetPosition *initialPos, *previousPos, *currentPos, beginPos;
+        struct bt_iter_pos pos;
+        beginPos.bt_pos = &pos;
+        beginPos.iter = ts->iter;
+        beginPos.bt_pos->type = BT_SEEK_BEGIN;
         /*Save initial position of the traceset*/
         initialPos = lttv_traceset_create_current_position (ts);
         
@@ -258,6 +261,13 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
 			break;
                 
                 currentPos = lttv_traceset_create_time_position(ts,ltt_time_from_uint64(previousTimeStamp));
+                /*Corner case: When we are near the beginning of the trace and the previousTimeStamp is before
+                        * the beginning of the trace. We have to seek to the first event.
+                        */
+                if((lttv_traceset_position_compare(currentPos,&beginPos ) == 0)){
+                                lttv_traceset_seek_to_position(&beginPos);
+                                break;
+                        }
                 /*move traceset position */
                 lttv_state_traceset_seek_position(ts, previousPos);
                 /* iterate to the initial position counting the number of event*/
@@ -270,10 +280,10 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                                 count++;
                         }
                 }while(ret != 0);
-                lttv_traceset_destroy_position(currentPos);
+                
                 /*substract the desired number of event to the count*/
                 extraEvent = count - n;
-                if(extraEvent >= 0){
+                if (extraEvent >= 0) {
                         //if the extraEvent is over 0 go back to previousPos and 
                         //move forward the value of extraEvent times
                         lttv_state_traceset_seek_position(ts, previousPos);
@@ -287,9 +297,11 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                         }
                         break; /* we successfully seeked backward */
                 }
-                else{ /* if the extraEvent is below 0 create a position before and start over*/  
-                        ratio = ratio * 16;
+                else{ 
+                        /* if the extraEvent is below 0 create a position before and start over*/  
+			ratio = ratio * 16;
                 }
+                lttv_traceset_destroy_position(currentPos);
         }
         return 0;
 }

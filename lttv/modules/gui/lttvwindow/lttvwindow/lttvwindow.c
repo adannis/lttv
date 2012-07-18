@@ -1236,18 +1236,23 @@ __EXPORT LttvTraceset *lttvwindow_get_traceset(Tab *tab)
 
 void events_request_free(EventsRequest *events_request)
 {
-#ifdef BABEL_CLEANUP
+ 
   if(events_request == NULL) return;
 
   if(events_request->start_position != NULL)
-       lttv_traceset_context_position_destroy(events_request->start_position);
+       lttv_traceset_destroy_position(events_request->start_position);
   if(events_request->end_position != NULL)
-       lttv_traceset_context_position_destroy(events_request->end_position);
-  if(events_request->hooks != NULL) {
+       lttv_traceset_destroy_position(events_request->end_position);
+#ifdef BABEL_CLEANUP
+       if(events_request->hooks != NULL) {
     GArray *hooks = events_request->hooks;
+   
     lttv_trace_hook_remove_all(&hooks);
+ 
     g_array_free(events_request->hooks, TRUE);
+     
   }
+
   if(events_request->before_chunk_traceset != NULL)
        lttv_hooks_destroy(events_request->before_chunk_traceset);
   if(events_request->before_chunk_trace != NULL)
@@ -1256,8 +1261,6 @@ void events_request_free(EventsRequest *events_request)
        lttv_hooks_destroy(events_request->before_chunk_tracefile);
   if(events_request->event != NULL)
        lttv_hooks_destroy(events_request->event);
-  if(events_request->event_by_id_channel != NULL)
-       lttv_hooks_by_id_channel_destroy(events_request->event_by_id_channel);
   if(events_request->after_chunk_tracefile != NULL)
        lttv_hooks_destroy(events_request->after_chunk_tracefile);
   if(events_request->after_chunk_trace != NULL)
@@ -1268,9 +1271,10 @@ void events_request_free(EventsRequest *events_request)
        lttv_hooks_destroy(events_request->before_request);
   if(events_request->after_request != NULL)
        lttv_hooks_destroy(events_request->after_request);
-
-  g_free(events_request);
 #endif /*BABEL_CLEANUP*/
+  g_free(events_request);
+ 
+
 }
 
 

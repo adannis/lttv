@@ -105,8 +105,9 @@
 #include <lttv/attribute.h>
 #include <lttv/iattribute.h>
 #include <string.h>
-
+#ifdef BABEL_CLEANUP
 #include <lttv/tracecontext.h>
+#endif //babel_cleanup
 #include <lttv/state.h>
 #include <lttv/lttv.h>
 

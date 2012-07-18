@@ -615,6 +615,8 @@ guint64 lttv_traceset_position_get_timestamp(const LttvTracesetPosition *pos)
 	}
         /* Reassign the previously saved position */
         lttv_traceset_seek_to_position(&previous_pos);
+        /*We must desallocate because the function bt_iter_get_pos() does a g_new */
+        bt_iter_free_pos(previous_pos.bt_pos);
 	return timestamp;
 }
 

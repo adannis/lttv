@@ -27,6 +27,7 @@
 #include <lttv/state.h>
 #include <lttv/compiler.h>
 #include <lttv/traceset.h>
+#include <lttv/trace.h>
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
@@ -3317,7 +3318,6 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 	/* Skip submode 5th param */
 
 	/* Skip status 6th param */
-
 	/* TGID */
 	tgid = lttv_event_get_long(event, "pid");
 	

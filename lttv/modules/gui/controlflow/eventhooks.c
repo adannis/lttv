@@ -113,27 +113,27 @@ static gint background_ready(void *hook_data, void *call_data)
 /* Request background computation. Verify if it is in progress or ready first.
  * Only for each trace in the tab's traceset.
  */
+
 static void request_background_data(ControlFlowData *control_flow_data)
 {
-  LttvTracesetContext * tsc =
-        lttvwindow_get_traceset_context(control_flow_data->tab);
-  gint num_traces = lttv_traceset_number(tsc->ts);
+
+  LttvTraceset *ts = lttvwindow_get_traceset(control_flow_data->tab);
+  gint num_traces = lttv_traceset_number(ts);
   gint i;
   LttvTrace *trace;
   LttvTraceState *tstate;
 
-  LttvHooks *background_ready_hook = 
-    lttv_hooks_new();
+  LttvHooks *background_ready_hook = lttv_hooks_new();
   lttv_hooks_add(background_ready_hook, background_ready, control_flow_data,
       LTTV_PRIO_DEFAULT);
   control_flow_data->background_info_waiting = 0;
   
   for(i=0;i<num_traces;i++) {
-    trace = lttv_traceset_get(tsc->ts, i);
-    tstate = LTTV_TRACE_STATE(tsc->traces[i]);
+    trace = lttv_traceset_get(ts, i);
+    tstate = trace->state;
 
     if(lttvwindowtraces_get_ready(g_quark_from_string("state"),trace)==FALSE
-        && !tstate->has_precomputed_states) {
+        && !ts->has_precomputed_states) {
 
       if(lttvwindowtraces_get_in_progress(g_quark_from_string("state"),
                                           trace) == FALSE) {
@@ -287,8 +287,10 @@ static inline PropertiesLine prepare_s_e_line(LttvProcessState *process)
 
 int before_trywakeup_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
+  
   ControlFlowData *control_flow_data = events_request->viewer_data;
 
   LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
@@ -470,6 +472,7 @@ int before_trywakeup_hook(void *hook_data, void *call_data)
   tfc->target_pid = target_pid_saved;
 
   return 0;
+#endif //babel_cleanup
 
 }
 
@@ -493,52 +496,44 @@ int before_trywakeup_hook(void *hook_data, void *call_data)
 
 int before_schedchange_hook(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
+  LttvEvent *event;
+  guint cpu;
+  LttvTraceState *ts;
+  LttvProcessState *process;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
+  //LttvProcessState *old_process = ts->running_process[cpu];
 
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
+  guint pid_in, pid_out;
+  gint64 state_out;
+  LttTime timestamp;
+  event = (LttvEvent *) call_data;
+  if (strcmp(lttv_traceset_get_name_from_event(event),
+                                    "sched_switch") != 0)
+    return FALSE;
+  ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
 
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-  gint target_pid_saved = tfc->target_pid;
-
-  LttTime evtime = ltt_event_time(e);
-  LttvFilter *filter = control_flow_data->filter;
 
   /* we are in a schedchange, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
    * time to do it.
    */
+  cpu = lttv_traceset_get_cpuid_from_event(event);
+  ts = event->state;      
+  process = ts->running_process[cpu];
+  pid_out = lttv_event_get_long(event, "prev_tid");
+  pid_in = lttv_event_get_long(event, "next_tid");
+  state_out = lttv_event_get_long(event, "prev_state");
 
-  guint pid_out;
-  guint pid_in;
-  {
-    pid_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
-    pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
-  }
-  
-  tfc->target_pid = pid_out;
-  if(!filter || !filter->head ||
-    lttv_filter_tree_parse(filter->head,e,tfc->tf,
-          tfc->t_context->t,tfc,NULL,NULL)) { 
+  timestamp = lttv_event_get_timestamp(event);
     /* For the pid_out */
     /* First, check if the current process is in the state computation
      * process list. If it is there, that means we must add it right now and
      * draw items from the beginning of the read for it. If it is not
      * present, it's a new process and it was not present : it will
      * be added after the state update.  */
-    guint cpu = tfs->cpu;
-    guint trace_num = ts->parent.index;
-    LttvProcessState *process = ts->running_process[cpu];
-    /* unknown state, bad current pid */
-    if(process->pid != pid_out)
-      process = lttv_state_find_process(ts,
-          tfs->cpu, pid_out);
     
+    /* unknown state, bad current pid */
+   
     if(process != NULL) {
       /* Well, the process_out existed : we must get it in the process hash
        * or add it, and draw its items.
@@ -553,7 +548,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
               pid_out,
               process->cpu,
               &birth,
-              trace_num);
+              18);//TODO "use the right value or delete"
       if(hashed_process_data == NULL)
       {
         g_assert(pid_out == 0 || pid_out != process->ppid);
@@ -567,7 +562,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
             process->cpu,
             process->ppid,
             &birth,
-            trace_num,
+            18,//TODO "use the right value or delete"
             process->name,
             process->brand,
             &pl_height,
@@ -579,13 +574,12 @@ int before_schedchange_hook(void *hook_data, void *call_data)
         gtk_widget_queue_draw(drawing->drawing_area);
 
       }
-  
       /* Now, the process is in the state hash and our own process hash.
        * We definitely can draw the items related to the ending state.
        */
       
       if(ltt_time_compare(hashed_process_data->next_good_time,
-                          evtime) > 0)
+                          timestamp) > 0)
       {
         if(hashed_process_data->x.middle_marked == FALSE) {
     
@@ -601,7 +595,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
           guint x;
           convert_time_to_pixels(
                     time_window,
-                    evtime,
+                    timestamp,
                     width,
                     &x);
 
@@ -626,7 +620,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
         guint x;
         convert_time_to_pixels(
                   time_window,
-                  evtime,
+                  timestamp,
                   width,
                   &x);
 
@@ -684,22 +678,14 @@ int before_schedchange_hook(void *hook_data, void *call_data)
         }
       }
     }
-  }
 
-  tfc->target_pid = pid_in;
-  if(!filter || !filter->head ||
-    lttv_filter_tree_parse(filter->head,e,tfc->tf,
-          tfc->t_context->t,tfc,NULL,NULL)) { 
     /* For the pid_in */
     /* First, check if the current process is in the state computation
      * process list. If it is there, that means we must add it right now and
      * draw items from the beginning of the read for it. If it is not
      * present, it's a new process and it was not present : it will
      * be added after the state update.  */
-    LttvProcessState *process;
-    process = lttv_state_find_process(ts,
-        tfs->cpu, pid_in);
-    guint trace_num = ts->parent.index;
+    process = ts->running_process[cpu];
     
     if(process != NULL) {
       /* Well, the process existed : we must get it in the process hash
@@ -713,9 +699,9 @@ int before_schedchange_hook(void *hook_data, void *call_data)
       
       hashed_process_data = processlist_get_process_data(process_list,
               pid_in,
-              tfs->cpu,
+              cpu,
               &birth,
-              trace_num);
+              18);//TODO "use the right value or delete"
       if(hashed_process_data == NULL)
       {
         g_assert(pid_in == 0 || pid_in != process->ppid);
@@ -726,10 +712,10 @@ int before_schedchange_hook(void *hook_data, void *call_data)
             drawing,
             pid_in,
             process->tgid,
-            tfs->cpu,
+            cpu,
             process->ppid,
             &birth,
-            trace_num,
+            18,
             process->name,
             process->brand,
             &pl_height,
@@ -749,7 +735,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
        */
       
       if(ltt_time_compare(hashed_process_data->next_good_time,
-                          evtime) > 0)
+                          timestamp) > 0)
       {
         if(hashed_process_data->x.middle_marked == FALSE) {
 
@@ -765,7 +751,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
           guint x;
           convert_time_to_pixels(
                     time_window,
-                    evtime,
+                    timestamp,
                     width,
                     &x);
 
@@ -791,7 +777,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
 
         convert_time_to_pixels(
                   time_window,
-                  evtime,
+                  timestamp,
                   width,
                   &x);
 
@@ -851,8 +837,9 @@ int before_schedchange_hook(void *hook_data, void *call_data)
       }
     } else
       g_warning("Cannot find pin_in in schedchange %u", pid_in);
-  }
+#ifdef BABEL_CLEANUP
   tfc->target_pid = target_pid_saved;
+#endif //babel_cleanup
   return 0;
 
 
@@ -892,6 +879,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
  */
 int after_schedchange_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -1000,6 +988,7 @@ int after_schedchange_hook(void *hook_data, void *call_data)
   }
 
   return 0;
+#endif //babel_cleanup
 }
 
 
@@ -1025,36 +1014,30 @@ int after_schedchange_hook(void *hook_data, void *call_data)
 
 int before_execmode_hook(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
-  LttvFilter *filter = control_flow_data->filter;
-  if(filter != NULL && filter->head != NULL)
-    if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
-          tfc->t_context->t,tfc,NULL,NULL))
-      return FALSE;
-
-  LttTime evtime = ltt_event_time(e);
-
+  LttvEvent *event;
+  guint cpu;
+  LttvTraceState *ts;
+  LttvProcessState *process;
+  
   /* we are in a execmode, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
    * time to do it.
    */
+  
+  event = (LttvEvent *) call_data;
+  if (strcmp(lttv_traceset_get_name_from_event(event),
+                            "irq_handler_entry") != 0)
+      return FALSE;
+  LttTime evtime = lttv_event_get_timestamp(event);
+  ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
   /* For the pid */
-  //LttvProcessState *process = tfs->process;
-  guint cpu = tfs->cpu;
-  guint trace_num = ts->parent.index;
-  LttvProcessState *process = ts->running_process[cpu];
+  LttvTraceset *traceSet = lttvwindow_get_traceset(control_flow_data->tab);
+  
+  cpu = lttv_traceset_get_cpuid_from_event(event);
+  ts = event->state;
+  
+  guint trace_number = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+  process = ts->running_process[cpu];
   g_assert(process != NULL);
 
   guint pid = process->pid;
@@ -1066,16 +1049,20 @@ int before_execmode_hook(void *hook_data, void *call_data)
   guint pl_height = 0;
   HashedProcessData *hashed_process_data = NULL;
   ProcessList *process_list = control_flow_data->process_list;
+  if(process_list->current_hash_data == NULL){//TODO fdeslauriers 2012-07-17 : should not be necessary
+    return 0;
+  }
+  
   LttTime birth = process->creation_time;
  
-  if(likely(process_list->current_hash_data[trace_num][cpu] != NULL)) {
-    hashed_process_data = process_list->current_hash_data[trace_num][cpu];
+  if(likely(process_list->current_hash_data[trace_number][cpu] != NULL)) {
+    hashed_process_data = process_list->current_hash_data[trace_number][cpu];
   } else {
     hashed_process_data = processlist_get_process_data(process_list,
             pid,
             process->cpu,
             &birth,
-            trace_num);
+            trace_number);
     if(unlikely(hashed_process_data == NULL))
     {
       g_assert(pid == 0 || pid != process->ppid);
@@ -1089,7 +1076,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
           process->cpu,
           process->ppid,
           &birth,
-          trace_num,
+          trace_number,
           process->name,
           process->brand,
           &pl_height,
@@ -1101,7 +1088,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
         gtk_widget_queue_draw(drawing->drawing_area);
     }
     /* Set the current process */
-    process_list->current_hash_data[trace_num][process->cpu] =
+    process_list->current_hash_data[trace_number][process->cpu] =
                                                hashed_process_data;
   }
 
@@ -1228,6 +1215,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
 
 int before_process_exit_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
 
@@ -1407,6 +1395,7 @@ int before_process_exit_hook(void *hook_data, void *call_data)
   }
   
   return 0;
+#endif //babel_cleanup
 
 }
 
@@ -1426,6 +1415,7 @@ int before_process_exit_hook(void *hook_data, void *call_data)
 
 int before_process_release_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
 
@@ -1589,6 +1579,7 @@ int before_process_release_hook(void *hook_data, void *call_data)
   }
 
   return 0;
+#endif //babel_cleanup
 }
 
 
@@ -1608,6 +1599,7 @@ int before_process_release_hook(void *hook_data, void *call_data)
  */
 int after_process_fork_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -1723,6 +1715,7 @@ int after_process_fork_hook(void *hook_data, void *call_data)
     }
   }
   return FALSE;
+#endif //babel_cleanup
 }
 
 
@@ -1740,6 +1733,7 @@ int after_process_fork_hook(void *hook_data, void *call_data)
  */
 int after_process_exit_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -1844,12 +1838,14 @@ int after_process_exit_hook(void *hook_data, void *call_data)
   }
 
   return FALSE;
+#endif //babel_cleanup
 }
 
 
 /* Get the filename of the process to print */
 int after_fs_exec_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -1925,12 +1921,14 @@ int after_fs_exec_hook(void *hook_data, void *call_data)
   processlist_set_name(process_list, process->name, hashed_process_data);
 
   return 0;
+#endif //babel_cleanup
 
 }
 
 /* Get the filename of the process to print */
 int after_user_generic_thread_brand_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -2006,7 +2004,7 @@ int after_user_generic_thread_brand_hook(void *hook_data, void *call_data)
   processlist_set_brand(process_list, process->brand, hashed_process_data);
 
   return 0;
-
+#endif //babel_cleanup
 }
 
 
@@ -2023,6 +2021,7 @@ int after_user_generic_thread_brand_hook(void *hook_data, void *call_data)
  */
 int after_event_enum_process_hook(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -2117,6 +2116,7 @@ int after_event_enum_process_hook(void *hook_data, void *call_data)
     }
   }
   return 0;
+#endif //babel_cleanup
 }
 
 
@@ -2426,10 +2426,11 @@ gint continue_notify(void *hook_data, void *call_data)
 
 gint update_current_time_hook(void *hook_data, void *call_data)
 {
+
   ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
 
   LttTime current_time = *((LttTime*)call_data);
-  
+
   TimeWindow time_window =
             lttvwindow_get_time_window(control_flow_data->tab);
   
@@ -2443,11 +2444,11 @@ gint update_current_time_hook(void *hook_data, void *call_data)
   }
   LttTime time_end = ltt_time_add(time_begin, width);
 
-  LttvTracesetContext * tsc =
-        lttvwindow_get_traceset_context(control_flow_data->tab);
+  LttvTraceset * ts = lttvwindow_get_traceset(control_flow_data->tab);
   
-  LttTime trace_start = tsc->time_span.start_time;
-  LttTime trace_end = tsc->time_span.end_time;
+  TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
+  LttTime trace_start = time_span.start_time;
+  LttTime trace_end = time_span.end_time;
   
   g_info("New current time HOOK : %lu, %lu", current_time.tv_sec,
               current_time.tv_nsec);
@@ -2505,11 +2506,11 @@ gint update_current_time_hook(void *hook_data, void *call_data)
       TRUE);
                              
   return 0;
+  
 }
 
 typedef struct _ClosureData {
   EventsRequest *events_request;
-  LttvTracesetState *tss;
   LttTime end_time;
   guint x_end;
 } ClosureData;
@@ -2517,15 +2518,15 @@ typedef struct _ClosureData {
 
 void draw_closure(gpointer key, gpointer value, gpointer user_data)
 {
+
   ProcessInfo *process_info = (ProcessInfo*)key;
   HashedProcessData *hashed_process_data = (HashedProcessData*)value;
   ClosureData *closure_data = (ClosureData*)user_data;
-    
+  
   EventsRequest *events_request = closure_data->events_request;
   ControlFlowData *control_flow_data = events_request->viewer_data;
+  LttvTraceset *ts = lttvwindow_get_traceset(control_flow_data->tab);
 
-  LttvTracesetState *tss = closure_data->tss;
-  LttvTracesetContext *tsc = (LttvTracesetContext*)tss;
 
   LttTime evtime = closure_data->end_time;
 
@@ -2541,8 +2542,9 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
 #ifdef EXTRA_CHECK
     g_assert(lttv_traceset_number(tsc->ts) > 0);
 #endif //EXTRA_CHECK
-    LttvTraceContext *tc = tsc->traces[process_info->trace_num];
-    LttvTraceState *ts = (LttvTraceState*)tc;
+    //TODO Fdeslauriers 2012-07-17: adapt for multiple traces
+    LttvTrace *trace = lttv_traceset_get(ts,0);
+    LttvTraceState *trace_state = trace->state;
 
 #if 0
     //FIXME : optimize data structures.
@@ -2559,22 +2561,22 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
     g_assert(i<tc->tracefiles->len);
     tfs = LTTV_TRACEFILE_STATE(tfc);
 #endif //0
- //   LttvTracefileState *tfs =
+ //   LttvTracefileState *tfs =ts
  //    (LttvTracefileState*)tsc->traces[process_info->trace_num]->
  //                        tracefiles[process_info->cpu];
  
     LttvProcessState *process;
-    process = lttv_state_find_process(ts, process_info->cpu,
+    process = lttv_state_find_process(trace_state, process_info->cpu,
                                       process_info->pid);
 
     if(unlikely(process != NULL)) {
-      
+#ifdef BABEL_CLEANUP
        LttvFilter *filter = control_flow_data->filter;
        if(filter != NULL && filter->head != NULL)
          if(!lttv_filter_tree_parse(filter->head,NULL,NULL,
              tc->t,NULL,process,tc))
            dodraw = FALSE;
-
+#endif //babel_cleanup
       /* Only draw for processes that are currently in the trace states */
 
 #ifdef EXTRA_CHECK
@@ -2679,8 +2681,9 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
 
 int before_chunk(void *hook_data, void *call_data)
 {
+
   EventsRequest *events_request = (EventsRequest*)hook_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
+  LttvTraceset *ts = (LttvTraceset*)call_data;
 #if 0  
   /* Desactivate sort */
   gtk_tree_sortable_set_sort_column_id(
@@ -2688,19 +2691,20 @@ int before_chunk(void *hook_data, void *call_data)
       TRACE_COLUMN,
       GTK_SORT_ASCENDING);
 #endif //0
-  drawing_chunk_begin(events_request, tss);
+  drawing_chunk_begin(events_request, ts);
 
   return 0;
 }
 
 int before_request(void *hook_data, void *call_data)
 {
+
   EventsRequest *events_request = (EventsRequest*)hook_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
  
-  drawing_data_request_begin(events_request, tss);
+  drawing_data_request_begin(events_request);
 
   return 0;
+
 }
 
 
@@ -2715,16 +2719,15 @@ int before_request(void *hook_data, void *call_data)
  */
 int after_request(void *hook_data, void *call_data)
 {
+
   EventsRequest *events_request = (EventsRequest*)hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
   
   ProcessList *process_list = control_flow_data->process_list;
   LttTime end_time = events_request->end_time;
 
   ClosureData closure_data;
   closure_data.events_request = (EventsRequest*)hook_data;
-  closure_data.tss = tss;
   closure_data.end_time = end_time;
 
   TimeWindow time_window = 
@@ -2743,7 +2746,7 @@ int after_request(void *hook_data, void *call_data)
   
 
   /* Request expose */
-  drawing_request_expose(events_request, tss, end_time);
+  drawing_request_expose(events_request, end_time);
   return 0;
 }
 
@@ -2754,17 +2757,16 @@ int after_request(void *hook_data, void *call_data)
  */
 int after_chunk(void *hook_data, void *call_data)
 {
+
   EventsRequest *events_request = (EventsRequest*)hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
-  LttvTracesetContext *tsc = (LttvTracesetContext*)call_data;
-  LttvTracefileContext *tfc = lttv_traceset_context_get_current_tfc(tsc);
+  LttvTraceset *ts = (LttvTraceset*)call_data;
+  
   LttTime end_time;
   
   ProcessList *process_list = control_flow_data->process_list;
   guint i;
-  LttvTraceset *traceset = tsc->ts;
-  guint nb_trace = lttv_traceset_number(traceset);
+  guint nb_trace = lttv_traceset_number(ts);
 
   /* Only execute when called for the first trace's events request */
   if(!process_list->current_hash_data)
@@ -2776,14 +2778,10 @@ int after_chunk(void *hook_data, void *call_data)
   g_free(process_list->current_hash_data);
   process_list->current_hash_data = NULL;
 
-  if(tfc != NULL)
-    end_time = LTT_TIME_MIN(tfc->timestamp, events_request->end_time);
-  else /* end of traceset, or position now out of request : end */
     end_time = events_request->end_time;
   
   ClosureData closure_data;
   closure_data.events_request = (EventsRequest*)hook_data;
-  closure_data.tss = tss;
   closure_data.end_time = end_time;
 
   TimeWindow time_window = 
@@ -2810,8 +2808,8 @@ int after_chunk(void *hook_data, void *call_data)
   gtk_widget_queue_draw(control_flow_data->drawing->drawing_area);
 #endif //0
   /* Request expose (updates damages zone also) */
-  drawing_request_expose(events_request, tss, end_time);
 
+  drawing_request_expose(events_request, end_time);
   return 0;
 }
 
@@ -2825,6 +2823,7 @@ int after_chunk(void *hook_data, void *call_data)
  */
 int before_statedump_end(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
   EventsRequest *events_request = (EventsRequest*)th->hook_data;
   ControlFlowData *control_flow_data = events_request->viewer_data;
@@ -2877,4 +2876,5 @@ int before_statedump_end(void *hook_data, void *call_data)
   drawing_request_expose(events_request, tss, evtime);
 
   return 0;
+#endif //babel_cleanup
 }

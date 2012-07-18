@@ -323,7 +323,7 @@ int getProcessInfosFromEvent(LttvEvent *event, GString* processInfos)
 	}
 #endif
 	if (noError||1) {
-		g_string_append_printf(processInfos, "%u, %u, %s, %u", pid, tid, procname, ppid);
+		g_string_append_printf(processInfos, "%u, %u, %s, %u. %s, %s", pid, tid, procname, ppid, g_quark_to_string(process->state->t), g_quark_to_string(process->state->s));
 	}
 	else {
 		ret = -1;

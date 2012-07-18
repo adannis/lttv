@@ -1077,11 +1077,8 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 
             lttv_hooks_call(events_request->before_chunk_traceset, ts);
 
-            lttv_trace_add_hooks(trace,
-                                         events_request->before_chunk_trace,
-
-                                         events_request->event
-                                         );
+            lttv_trace_add_hooks(trace, events_request->before_chunk_trace,
+                                        events_request->event);
           }
         }
       }
@@ -1117,7 +1114,6 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 
             lttv_trace_add_hooks(trace,
                                          events_request->before_chunk_trace,
-
                                          events_request->event
                                          );
           }
@@ -2139,11 +2135,11 @@ void save_as(GtkWidget * widget, gpointer user_data)
 
 void zoom(GtkWidget * widget, double size)
 {
-#ifdef BABEL_CLEANUP
+
   TimeInterval time_span;
   TimeWindow new_time_window;
   LttTime    current_time, time_delta;
-  LttvTracesetContext *tsc;
+  LttvTraceset *ts;
   GtkWidget * notebook = lookup_widget(widget, "MNotebook");
 
   GtkWidget *page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(notebook),
@@ -2160,8 +2156,8 @@ void zoom(GtkWidget * widget, double size)
 
   if(size == 1) return;
 
-  tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
-  time_span = tsc->time_span;
+  ts = lttvwindow_get_traceset(tab);
+  time_span = lttv_traceset_get_time_span_real(ts);
   new_time_window =  tab->time_window;
   current_time = tab->current_time;
   
@@ -2223,8 +2219,6 @@ void zoom(GtkWidget * widget, double size)
  } else {
    time_change_manager(tab, new_time_window);
   }
-  
-#endif /* BABEL_CLEANUP */
 }
 
 void zoom_in(GtkWidget * widget, gpointer user_data)

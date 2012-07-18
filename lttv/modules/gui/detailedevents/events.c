@@ -1609,6 +1609,7 @@ static void event_update_selection(EventViewerData *event_viewer_data)
 			if(path) {
 	      gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
 	                             path, NULL, FALSE);
+              gtk_widget_grab_focus(event_viewer_data->tree_v );
 	      gtk_tree_path_free(path);
               break;
                         }               
@@ -1652,8 +1653,7 @@ gboolean update_current_time(void * hook_data, void * call_data)
   EventViewerData *event_viewer_data = (EventViewerData*) hook_data;
  
   const LttTime * current_time = (LttTime*)call_data;
-  LttvTraceset * ts =
-        lttvwindow_get_traceset(event_viewer_data->tab);
+  LttvTraceset * ts = lttvwindow_get_traceset(event_viewer_data->tab);
   
   /* If the currently selected event time != current time, set the first event
    * with this time as currently selected. */
@@ -1661,7 +1661,6 @@ gboolean update_current_time(void * hook_data, void * call_data)
                         event_viewer_data->currently_selected_position);
      
   if(ltt_time_compare(pos_time, *current_time) != 0) {
-   
         /*create position*/
         LttvTracesetPosition *currentPosition = 
                         lttv_traceset_create_time_position(ts,*current_time );
@@ -1670,8 +1669,6 @@ gboolean update_current_time(void * hook_data, void * call_data)
     
     event_viewer_data->currently_selected_position = 
                                         lttv_traceset_create_current_position(ts);
-
-
   }
 
   event_viewer_data->report_position = FALSE;
@@ -1740,7 +1737,7 @@ gboolean traceset_changed(void * hook_data, void * call_data)
   lttv_traceset_destroy_position(event_viewer_data->currently_selected_position);
   lttv_traceset_destroy_position(event_viewer_data->first_event);
   lttv_traceset_destroy_position(event_viewer_data->last_event);
- 
+  
   event_viewer_data->currently_selected_position =
                                 lttv_traceset_create_current_position(ts);
   event_viewer_data->first_event =
@@ -1749,6 +1746,7 @@ gboolean traceset_changed(void * hook_data, void * call_data)
                                 lttv_traceset_create_current_position(ts);
 
   get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+
 #endif //babel_cleanup
   //  event_viewer_data->vadjust_c->value = 0;
 

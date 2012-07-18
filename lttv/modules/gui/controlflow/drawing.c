@@ -27,7 +27,9 @@
 #include <ltt/trace.h>
 
 #include <lttv/lttv.h>
+#ifdef BABEL_CLEANUP
 #include <lttv/tracecontext.h>
+#endif //babel_cleanup
 #include <lttvwindow/lttvwindow.h>
 #include <lttv/state.h>
 #include <lttv/hook.h>
@@ -125,8 +127,11 @@ void drawing_data_request(Drawing_t *drawing,
 
 
   Tab *tab = drawing->control_flow_data->tab;
-  TimeWindow time_window =
-              lttvwindow_get_time_window(tab);
+  TimeWindow time_window = lttvwindow_get_time_window(tab);
+  LttvTraceset *traceset = lttvwindow_get_traceset(tab);
+  if(lttv_traceset_number(traceset) <= 0){
+    return;
+  }
 
   ControlFlowData *control_flow_data = drawing->control_flow_data;
   //    (ControlFlowData*)g_object_get_data(
@@ -160,13 +165,35 @@ void drawing_data_request(Drawing_t *drawing,
                                        control_flow_data);
 
   {
-    /* find the tracehooks */
-    LttvTracesetContext *tsc = lttvwindow_get_traceset_context(tab);
-    LttvTraceset *traceset = tsc->ts;
+        LttvHooks *event_hook;
+//TODO "fdeslauriers : Is it the right way to get the hooks - july 11 2012"
+	event_hook = lttv_traceset_get_hooks(traceset);
+	g_assert(event_hook);
+ 
+	lttv_hooks_add(event_hook,before_execmode_hook , control_flow_data, LTTV_PRIO_STATE);
+   #ifdef BABEL_CLEANUP     
+	lttv_hooks_add(event_hook,syscall_exit , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,irq_entry , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,irq_exit , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,soft_irq_raise , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,soft_irq_entry , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,soft_irq_exit , control_flow_data, LTTV_PRIO_STATE);	
+#endif //babel_cleanup
+	lttv_hooks_add(event_hook,before_schedchange_hook , control_flow_data, LTTV_PRIO_STATE);	
+#ifdef BABEL_CLEANUP
+	lttv_hooks_add(event_hook,sched_try_wakeup , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,process_exit , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,process_free , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,process_exec , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,enum_process_state , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,statedump_end , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,enum_interrupt , control_flow_data, LTTV_PRIO_STATE);
+#endif //babel_cleanup
+	
+
     guint i, k, nb_trace;
     LttvTraceState *ts;
     GArray *hooks;
-    LttvTraceHook *th;
     gint first_after;
 
     nb_trace = lttv_traceset_number(traceset);
@@ -175,8 +202,7 @@ void drawing_data_request(Drawing_t *drawing,
       EventsRequest *events_request = g_new(EventsRequest, 1);
       // Create the hooks
       //LttvHooks *event = lttv_hooks_new();
-      LttvHooksByIdChannelArray *event_by_id_channel =
-          lttv_hooks_by_id_channel_new();
+
       LttvHooks *before_chunk_traceset = lttv_hooks_new();
       LttvHooks *after_chunk_traceset = lttv_hooks_new();
       LttvHooks *before_request_hook = lttv_hooks_new();
@@ -202,7 +228,7 @@ void drawing_data_request(Drawing_t *drawing,
                      events_request,
                      LTTV_PRIO_DEFAULT);
 
-
+#ifdef BABEL_CLEANUP
       ts = (LttvTraceState *)tsc->traces[i];
 
       /* Find the eventtype id for the following events and register the
@@ -423,7 +449,7 @@ void drawing_data_request(Drawing_t *drawing,
       }
       
       events_request->hooks = hooks;
-
+#endif //babel_cleanup
       // Fill the events request
       events_request->owner = control_flow_data;
       events_request->viewer_data = control_flow_data;
@@ -438,8 +464,7 @@ void drawing_data_request(Drawing_t *drawing,
       events_request->before_chunk_traceset = before_chunk_traceset;
       events_request->before_chunk_trace = NULL;
       events_request->before_chunk_tracefile = NULL;
-      events_request->event = NULL;
-      events_request->event_by_id_channel = event_by_id_channel;
+      events_request->event = event_hook;
       events_request->after_chunk_tracefile = NULL;
       events_request->after_chunk_trace = NULL;
       events_request->after_chunk_traceset = after_chunk_traceset;
@@ -454,7 +479,9 @@ void drawing_data_request(Drawing_t *drawing,
 
       lttvwindow_events_request(tab, events_request);
     }
-  }
+  
+
+}
 }
  
 
@@ -476,8 +503,7 @@ static void set_last_start(gpointer key, gpointer value, gpointer user_data)
 
   return;
 }
-
-void drawing_data_request_begin(EventsRequest *events_request, LttvTracesetState *tss)
+void drawing_data_request_begin(EventsRequest *events_request)
 {
   g_debug("Begin of data request");
   ControlFlowData *cfd = events_request->viewer_data;
@@ -499,21 +525,18 @@ void drawing_data_request_begin(EventsRequest *events_request, LttvTracesetState
 		       GUINT_TO_POINTER(x));
 
 }
-
-void drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss)
+void drawing_chunk_begin(EventsRequest *events_request, LttvTraceset *ts)
 {
   g_debug("Begin of chunk");
   ControlFlowData *cfd = events_request->viewer_data;
-  LttvTracesetContext *tsc = &tss->parent;
   //LttTime current_time = lttv_traceset_context_get_current_tfc(tsc)->timestamp;
   guint i;
-  LttvTraceset *traceset = tsc->ts;
-  guint nb_trace = lttv_traceset_number(traceset);
+  guint nb_trace = lttv_traceset_number(ts);
   
   if(!cfd->process_list->current_hash_data) {
     cfd->process_list->current_hash_data = g_new(HashedProcessData**,nb_trace);
     for(i = 0 ; i < nb_trace ; i++) {
-      guint num_cpu = ltt_trace_get_num_cpu(tss->parent.traces[i]->t);
+      guint num_cpu = lttv_trace_get_num_cpu( lttv_traceset_get(ts, i));
       cfd->process_list->current_hash_data[i] = g_new(HashedProcessData*,num_cpu);
       memset(cfd->process_list->current_hash_data[i], 0,
              sizeof(HashedProcessData*)*num_cpu);
@@ -525,7 +548,6 @@ void drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss)
 
 
 void drawing_request_expose(EventsRequest *events_request,
-                            LttvTracesetState *tss,
                             LttTime end_time)
 {
   gint x, width;
@@ -534,8 +556,7 @@ void drawing_request_expose(EventsRequest *events_request,
   ControlFlowData *cfd = events_request->viewer_data;
   Drawing_t *drawing = cfd->drawing;
   
-  TimeWindow time_window = 
-        lttvwindow_get_time_window(cfd->tab);
+  TimeWindow time_window = lttvwindow_get_time_window(cfd->tab);
 
   g_debug("request expose");
   
@@ -559,7 +580,6 @@ void drawing_request_expose(EventsRequest *events_request,
   gdk_window_process_updates(drawing->drawing_area->window,
       TRUE);
 }
-
 
 /* Callbacks */
 
@@ -613,7 +633,7 @@ configure_event( GtkWidget *widget, GdkEventConfigure *event,
                          drawing->alloc_width);
       update_index_to_pixmap(drawing->control_flow_data->process_list);
     }
-    //drawing->height = widget->allocation.height;
+    drawing->height = widget->allocation.height;
 
     //ProcessList_get_height
     // (GuiControlFlow_get_process_list(drawing->control_flow_data)),

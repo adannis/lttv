@@ -348,8 +348,9 @@ guicontrolflow_destructor(gpointer data)
   g_info("%p, %p, %p", update_time_window_hook, plugin_cfv, tab);
   if(GTK_IS_WIDGET(guicontrolflow_get_widget(plugin_cfv->cfd)))
     g_info("widget still exists");
-  
+#ifdef BABEL_CLEANUP
   lttv_filter_destroy(plugin_cfv->cfd->filter);
+#endif //babel_cleanup
   /* Process List is removed with it's widget */
   //ProcessList_destroy(control_flow_data->process_list);
   if(tab != NULL)
@@ -374,7 +375,9 @@ guicontrolflow_destructor(gpointer data)
     
     lttvwindow_events_request_remove_all(control_flow_data->tab,
                                          control_flow_data);
-
+    LttvTraceset *traceset = lttvwindow_get_traceset(tab);
+    LttvHooks *event_hook = lttv_traceset_get_hooks(traceset);
+    lttv_hooks_remove(event_hook, before_schedchange_hook);
   }
   lttvwindowtraces_background_notify_remove(control_flow_data);
   g_control_flow_data_list = 
