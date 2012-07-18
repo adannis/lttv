@@ -31,6 +31,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <inttypes.h>
+#include <babeltrace/babeltrace.h>
 
 #define PREALLOCATED_EXECUTION_STACK 10
 

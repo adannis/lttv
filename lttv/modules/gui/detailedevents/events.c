@@ -1599,6 +1599,9 @@ static void event_update_selection(EventViewerData *event_viewer_data)
   guint i;
   GPtrArray *positions = event_viewer_data->pos;
   g_info("event_update_selection");
+  
+  int isFound = FALSE;
+  
 
   for(i=0;i<positions->len;i++) {
     LttvTracesetPosition *cur_pos = 
@@ -1611,10 +1614,26 @@ static void event_update_selection(EventViewerData *event_viewer_data)
 	                             path, NULL, FALSE);
               gtk_widget_grab_focus(event_viewer_data->tree_v );
 	      gtk_tree_path_free(path);
+              isFound = TRUE;
               break;
                         }               
     }
   } 
+        if(isFound){
+          return;
+        }
+  /* If the current selection is not in the currently displayed events*/
+  LttTime currentTime = lttv_traceset_position_get_time(
+                                event_viewer_data->currently_selected_position);
+  LttTime time;
+  
+  LttvTraceset * ts = lttvwindow_get_traceset(event_viewer_data->tab);
+  TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
+  time = ltt_time_sub(currentTime, time_span.start_time);
+  gtk_adjustment_set_value(event_viewer_data->vadjust_c,
+                                                ltt_time_to_double(time));
+  gtk_widget_grab_focus(event_viewer_data->tree_v );
+  
 }
 
 static int current_time_get_first_event_hook(void *hook_data, void *call_data)

@@ -243,6 +243,8 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
         beginPos.bt_pos = &pos;
         beginPos.iter = ts->iter;
         beginPos.bt_pos->type = BT_SEEK_BEGIN;
+        beginPos.timestamp = G_MAXUINT64;
+        beginPos.cpu_id = INT_MAX;
         /*Save initial position of the traceset*/
         initialPos = lttv_traceset_create_current_position (ts);
         

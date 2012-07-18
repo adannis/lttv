@@ -435,7 +435,9 @@ LttvTracesetPosition *lttv_traceset_create_current_position(LttvTraceset *traces
 
 	traceset_pos->iter = traceset->iter;
 	traceset_pos->bt_pos = bt_iter_get_pos(bt_ctf_get_iter(traceset->iter));
-	
+        traceset_pos->timestamp = G_MAXUINT64;
+        traceset_pos->cpu_id = INT_MAX;
+        
 	return traceset_pos;
 }
 
@@ -452,10 +454,11 @@ LttvTracesetPosition *lttv_traceset_create_time_position(LttvTraceset *traceset,
         }
         
         traceset_pos->iter = traceset->iter;
-        traceset_pos->bt_pos = bt_iter_create_time_pos(
+        traceset_pos->bt_pos = bt_iter_create_time_pos( 
                                         bt_ctf_get_iter(traceset_pos->iter),
                                         ltt_time_to_uint64(timestamp));
-         
+        traceset_pos->timestamp = G_MAXUINT64;
+        traceset_pos->cpu_id = INT_MAX;
         return traceset_pos;
 }
 
@@ -497,6 +500,8 @@ guint64 lttv_traceset_get_timestamp_first_event(LttvTraceset *ts)
         LttvTracesetPosition begin_position;
         struct bt_iter_pos pos;
         begin_position.bt_pos = &pos;
+        begin_position.timestamp = G_MAXUINT64;
+        begin_position.cpu_id = INT_MAX;
 	
          /* Assign iterator to the beginning of the traces */  
         begin_position.bt_pos->type = BT_SEEK_BEGIN;
@@ -598,26 +603,52 @@ const char *lttv_traceset_get_name_from_event(LttvEvent *event)
   	return bt_ctf_event_name(event->bt_event);
 }
 
+int set_values_position(const LttvTracesetPosition *pos)
+{
+	LttvTracesetPosition previous_pos;
+	previous_pos.iter = pos->iter;
+	previous_pos.bt_pos = bt_iter_get_pos(bt_ctf_get_iter(pos->iter));
+	/* Seek to the new desired position */
+	lttv_traceset_seek_to_position(pos);
+	/*Read the event*/
+	struct bt_ctf_event *event = bt_ctf_iter_read_event(pos->iter);
+
+	if(event != NULL){
+		((LttvTracesetPosition *)pos)->timestamp = bt_ctf_get_timestamp_raw(event); 
+		
+		LttvEvent lttv_event;
+		lttv_event.bt_event = event;
+		((LttvTracesetPosition *)pos)->cpu_id = lttv_traceset_get_cpuid_from_event(&lttv_event);
+	}
+	else {
+		/* The event is null */
+		return 0;
+	}
+
+	/* Reassign the previously saved position */
+	lttv_traceset_seek_to_position(&previous_pos);
+	/*We must desallocate because the function bt_iter_get_pos() does a g_new */
+	bt_iter_free_pos(previous_pos.bt_pos);
+}
+
 guint64 lttv_traceset_position_get_timestamp(const LttvTracesetPosition *pos)
 { 
-        guint64 timestamp = 0;
-	/*We save the current iterator,so we can reassign it after the seek*/
-        LttvTracesetPosition previous_pos;
-        previous_pos.iter = pos->iter;
-        previous_pos.bt_pos = bt_iter_get_pos(bt_ctf_get_iter(pos->iter));
-	/* Seek to the new desired position */
-        lttv_traceset_seek_to_position(pos);
-	/*Read the event*/
-        struct bt_ctf_event *event = bt_ctf_iter_read_event(pos->iter);
+        if(pos->timestamp == G_MAXUINT64){
+                if(set_values_position(pos) == 0){
+			return 0;
+		}
+        }
         
-	if(event != NULL){
-		timestamp = bt_ctf_get_timestamp_raw(event); 
-	}
-        /* Reassign the previously saved position */
-        lttv_traceset_seek_to_position(&previous_pos);
-        /*We must desallocate because the function bt_iter_get_pos() does a g_new */
-        bt_iter_free_pos(previous_pos.bt_pos);
-	return timestamp;
+        return pos->timestamp;
+}
+
+int lttv_traceset_position_get_cpuid(const LttvTracesetPosition *pos){
+        if(pos->cpu_id == INT_MAX ){
+                 if(set_values_position(pos) == 0){
+			return 0;
+		}
+        }
+        return pos->cpu_id;
 }
 
 LttTime  lttv_traceset_position_get_time(const LttvTracesetPosition *pos)
@@ -636,21 +667,13 @@ int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvT
         
         guint64 timeStampPos1,timeStampPos2;
         guint cpuId1, cpuId2;
-        LttvEvent event1, event2;
-        int ret;
         
         timeStampPos1 = lttv_traceset_position_get_timestamp(pos1);
         timeStampPos2 = lttv_traceset_position_get_timestamp(pos2);
         
-        event1.bt_event = bt_ctf_iter_read_event(pos1->iter);
-        event2.bt_event = bt_ctf_iter_read_event(pos2->iter);
         
-        if(event1.bt_event == NULL || event2.bt_event == NULL){
-                return -1;
-	}
-
-        cpuId1 = lttv_traceset_get_cpuid_from_event(&event1);
-        cpuId2 = lttv_traceset_get_cpuid_from_event(&event2);
+        cpuId1 = lttv_traceset_position_get_cpuid(pos1);
+        cpuId2 = lttv_traceset_position_get_cpuid(pos2);
        
         if(timeStampPos1 == timeStampPos2 && cpuId1 == cpuId2){
                 return 0;

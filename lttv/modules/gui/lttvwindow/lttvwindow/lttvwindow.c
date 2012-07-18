@@ -1142,8 +1142,12 @@ __EXPORT gboolean lttvwindow_events_request_pending(Tab            *tab)
 {
   GSList *element = tab->events_requests;
 
-  if(element == NULL) return FALSE;
-  else return TRUE;
+  if(element == NULL){
+          return FALSE;
+  }
+  else {
+          return TRUE;
+  }
 }
 
 
