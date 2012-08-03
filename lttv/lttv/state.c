@@ -2439,7 +2439,7 @@ static gboolean irq_entry(void *hook_data, void *call_data)
 	ts = event->state;
 
 	nt = ts->name_tables;
-	irq = lttv_event_get_long_unsigned(event, "irq");
+	irq = lttv_event_get_long(event, "irq");
 
 	expand_irq_table(ts, irq);
 
@@ -2751,7 +2751,7 @@ static gboolean sched_try_wakeup(void *hook_data, void *call_data)
 	ts = event->state;
 
 	woken_pid = lttv_event_get_long(event, "tid");
-	woken_cpu = lttv_event_get_long_unsigned(event, "target_cpu");
+	woken_cpu = lttv_event_get_long(event, "target_cpu");
 
 	timestamp = lttv_event_get_timestamp(event);
 	process = lttv_state_find_process_or_create(
@@ -3014,7 +3014,7 @@ static gboolean process_exit(void *hook_data, void *call_data)
 	ts = event->state;
 	process = ts->running_process[cpu];
 
-	pid = lttv_event_get_long_unsigned(event, "tid");
+	pid = lttv_event_get_long(event, "tid");
 	//s->parent.target_pid = pid;
 
 	// FIXME : Add this test in the "known state" section
@@ -3044,7 +3044,7 @@ static gboolean process_free(void *hook_data, void *call_data)
 	process = ts->running_process[cpu];
 
 	/* PID of the process to release */
-	release_pid = lttv_event_get_long_unsigned(event, "_tid");
+	release_pid = lttv_event_get_long(event, "_tid");
 	//s->parent.target_pid = release_pid;
 
 	g_assert(release_pid != 0);
@@ -3297,18 +3297,18 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 	timestamp = lttv_event_get_timestamp(event);
 
 	/* PID */
-	pid = lttv_event_get_long_unsigned(event, "tid");
+	pid = lttv_event_get_long(event, "tid");
 	//s->parent.target_pid = pid;
 
 	/* Parent PID */
-	parent_pid = lttv_event_get_long_unsigned(event, "ppid");
+	parent_pid = lttv_event_get_long(event, "ppid");
 
 	/* Command name */
 	command = lttv_event_get_string(event, "name");
 
 	/* type */
 	
-	type = lttv_event_get_long_unsigned(event, "type");
+	type = lttv_event_get_long(event, "type");
 
 	//FIXME: type is rarely used, enum must match possible types.
 
@@ -3319,7 +3319,7 @@ static gboolean enum_process_state(void *hook_data, void *call_data)
 	/* Skip status 6th param */
 
 	/* TGID */
-	tgid = lttv_event_get_long_unsigned(event, "pid");
+	tgid = lttv_event_get_long(event, "pid");
 	
 	if(pid == 0) {
 		nb_cpus = lttv_trace_get_num_cpu(ts->trace);
