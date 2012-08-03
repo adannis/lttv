@@ -68,6 +68,7 @@ LttvTraceset *lttv_traceset_new(void)
 	ts->event_hooks = lttv_hooks_new();
 
 	ts->state_trace_handle_index = g_ptr_array_new();
+	ts->has_precomputed_states = FALSE;
 
 	return ts;
 }

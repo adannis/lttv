@@ -259,7 +259,7 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                 
                 currentPos = lttv_traceset_create_time_position(ts,ltt_time_from_uint64(previousTimeStamp));
                 /*move traceset position */
-                lttv_traceset_seek_to_position(previousPos);
+                lttv_state_traceset_seek_position(ts, previousPos);
                 /* iterate to the initial position counting the number of event*/
                 count = 0;
                 do {
@@ -276,7 +276,7 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                 if(extraEvent >= 0){
                         //if the extraEvent is over 0 go back to previousPos and 
                         //move forward the value of extraEvent times
-                        lttv_traceset_seek_to_position(previousPos);
+                        lttv_state_traceset_seek_position(ts, previousPos);
                         
                         for(i = 0 ; i < extraEvent ; i++){
                                 if(bt_iter_next(bt_ctf_get_iter(ts->iter)) < 0){

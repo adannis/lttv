@@ -1375,9 +1375,12 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
         pos = (LttvTracesetPosition*)g_ptr_array_index(
                                                 event_viewer_data->pos,
                                                 0);
-        lttv_traceset_seek_to_position(pos);
+        lttv_state_traceset_seek_position(ts,pos);
       }
-    } 
+    } else {
+      lttv_state_traceset_seek_time(ts,time);
+
+    }
 
   /* Note that, as we mess with the tsc position, this function CANNOT be called
    * from a hook inside the lttv_process_traceset_middle. */
@@ -1426,11 +1429,11 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
     LttTime time_val = ltt_time_sub(time,time_span.start_time);
     event_viewer_data->previous_value = ltt_time_to_double(time_val);
 
-    lttv_traceset_seek_to_position(event_viewer_data->first_event);
+    lttv_state_traceset_seek_position(ts, event_viewer_data->first_event);
 
   } else {
     /* Seek by time */
-    lttv_traceset_seek_to_position(timePos);
+    lttv_state_traceset_seek_time(ts, time);
 
     
     LttTime time_val = ltt_time_sub(time,time_span.start_time);
@@ -1663,7 +1666,7 @@ gboolean update_current_time(void * hook_data, void * call_data)
         LttvTracesetPosition *currentPosition = 
                         lttv_traceset_create_time_position(ts,*current_time );
         /*seek to current position*/
-        lttv_traceset_seek_to_position(currentPosition);
+        lttv_state_traceset_seek_time(ts, *current_time);
     
     event_viewer_data->currently_selected_position = 
                                         lttv_traceset_create_current_position(ts);

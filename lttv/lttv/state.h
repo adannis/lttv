@@ -171,11 +171,22 @@ typedef struct _LttvTraceStateClass LttvTraceStateClass;
 typedef struct _LttvTracefileState LttvTracefileState;
 typedef struct _LttvTracefileStateClass LttvTracefileStateClass;
 
-void lttv_traceset_add_state_event_hooks(LttvTraceset *traceset);
+void lttv_state_add_event_hooks(LttvTraceset *traceset);
+gint lttv_state_hook_add_event_hooks(void *hook_data, void *call_data);
 
-void lttv_traceset_remove_state_event_hooks(LttvTraceset *traceset);
+void lttv_state_remove_event_hooks(LttvTraceset *traceset);
+gint lttv_state_hook_remove_event_hooks(void *hook_data, void *call_data);
 
-void lttv_traceset_seek_time_closest_prior_state(LttvTraceset *traceset, LttTime t);
+gint lttv_state_save_hook_add_event_hooks(void *hook_data, void *call_data);
+gint lttv_state_save_hook_remove_event_hooks(void *hook_data, void *call_data);
+
+
+//TODO ybrosseau 2012-07-30: Change name of seek_time_closest to:
+//void lttv_traceset_seek_time_closest_prior_state(LttvTraceset *traceset, LttTime t);
+
+void lttv_state_traceset_seek_time_closest(LttvTraceset *traceset, LttTime t);
+void lttv_state_traceset_seek_time(LttvTraceset *traceset, LttTime t);
+void lttv_state_traceset_seek_position(LttvTraceset *traceset, LttvTracesetPosition *position);
 
 /* The LttvProcessState structure defines the current state for each process.
    A process can make system calls (in some rare cases nested) and receive
@@ -364,7 +375,7 @@ struct _LttvTraceState {
 
 	/* Array of per cpu running process */
 	LttvProcessState **running_process;
-	gboolean has_precomputed_states;
+
 	LttvCPUState *cpu_states; /* state of each cpu */
 	/* FIXME should be a g_array to deal with resize and copy. */
 	LttvIRQState *irq_states; /* state of each irq handler */

@@ -1683,7 +1683,7 @@ void lttv_state_saved_free(LttvTraceState *self, LttvAttribute *container)
 	running_process = *(value.v_pointer);
 	g_free(running_process);
 
-	/* free cpu resource states */
+	/* free cpu resources */
 	type = lttv_attribute_get_by_name(container, LTTV_STATE_RESOURCE_CPUS_COUNT, &value);
 	g_assert(type == LTTV_UINT);
 	nb_cpus = *value.v_uint;
@@ -2793,8 +2793,8 @@ static gboolean schedchange(void *hook_data, void *call_data)
 	cpu = lttv_traceset_get_cpuid_from_event(event);
 	ts = event->state;	
 	process = ts->running_process[cpu];
-	pid_out = lttv_event_get_long_unsigned(event, "prev_tid");
-	pid_in = lttv_event_get_long_unsigned(event, "next_tid");
+	pid_out = lttv_event_get_long(event, "prev_tid");
+	pid_in = lttv_event_get_long(event, "next_tid");
 	state_out = lttv_event_get_long(event, "prev_state");
 
 	strncpy(next_comm, lttv_event_get_string(event, "next_comm"), 20);
@@ -3714,34 +3714,53 @@ void lttv_state_add_event_hooks(LttvTraceset *traceset)
 
 gint lttv_state_hook_remove_event_hooks(void *hook_data, void *call_data)
 {
-	//TODO ybrosseau 2012-05-11 Reactivate the remove
-#if 0
-	LttvTracesetState *tss = (LttvTracesetState*)(call_data);
 
-	lttv_state_remove_event_hooks(tss);
-#endif
+	LttvTraceset *traceset = (LttvTraceset*)(call_data);
+
+	lttv_state_remove_event_hooks(traceset);
+
 	return 0;
 }
-#if 0
-void lttv_state_remove_event_hooks(LttvTracesetState *self)
+
+void lttv_state_remove_event_hooks(LttvTraceset *traceset)
 {
-	LttvTraceset *traceset = self->parent.ts;
 
 	guint i, j, k, nb_trace, nb_tracefile;
 
-	LttvTraceState *ts;
+	//LttvTraceState *ts;
 
-	LttvTracefileState *tfs;
+	//GArray *hooks;
 
-	GArray *hooks;
+	//LttvTraceHook *th;
 
-	LttvTraceHook *th;
+	//LttvAttributeValue val;
 
-	LttvAttributeValue val;
+	LttvHooks*event_hook;
+	//TODO ybrosseau 2012-07-17 validate this. Reversed what's done in the add
+	event_hook = lttv_traceset_get_hooks(traceset);
 
+	g_assert(event_hook);
+
+
+	lttv_hooks_remove(event_hook,syscall_entry );
+	lttv_hooks_remove(event_hook,syscall_exit);
+	lttv_hooks_remove(event_hook,irq_entry );
+	lttv_hooks_remove(event_hook,irq_exit );
+	lttv_hooks_remove(event_hook,soft_irq_raise);
+	lttv_hooks_remove(event_hook,soft_irq_entry);
+	lttv_hooks_remove(event_hook,soft_irq_exit);
+	lttv_hooks_remove(event_hook,schedchange);
+	lttv_hooks_remove(event_hook,sched_try_wakeup);
+	lttv_hooks_remove(event_hook,process_exit);
+	lttv_hooks_remove(event_hook,process_free);
+	lttv_hooks_remove(event_hook,process_exec);
+	lttv_hooks_remove(event_hook,enum_process_state);
+	lttv_hooks_remove(event_hook,statedump_end);
+	lttv_hooks_remove(event_hook,enum_interrupt);
+#ifdef BABEL_CLEANUP
 	nb_trace = lttv_traceset_number(traceset);
 	for(i = 0 ; i < nb_trace ; i++) {
-		ts = LTTV_TRACE_STATE(self->parent.traces[i]);
+		ts = lttv_traceset_get(i);
 
 		lttv_attribute_find(ts->parent.a, LTTV_STATE_HOOKS, LTTV_POINTER, &val);
 		hooks = *(val.v_pointer);
@@ -3767,9 +3786,10 @@ void lttv_state_remove_event_hooks(LttvTracesetState *self)
 		lttv_trace_hook_remove_all(&hooks);
 		g_array_free(hooks, TRUE);
 	}
-}
 #endif
-#ifdef BABEL_CLEANUP
+}
+
+
 static gboolean state_save_event_hook(void *hook_data, void *call_data)
 {
 	guint *event_count = (guint*)hook_data;
@@ -3780,40 +3800,54 @@ static gboolean state_save_event_hook(void *hook_data, void *call_data)
 	else
 		*event_count = 0;
 
-	LttvTracefileState *self = (LttvTracefileState *)call_data;
+	LttvEvent *event = (LttvEvent *)call_data;
 
-	LttvTraceState *tcs = (LttvTraceState *)(self->parent.t_context);
+	LttvTraceset *traceset = lttv_trace_get_traceset(event->state->trace);
 
 	LttvAttribute *saved_states_tree, *saved_state_tree;
 
 	LttvAttributeValue value;
+	LttTime currentTime;
+	guint i;
+	currentTime = lttv_event_get_timestamp(event);
+	int nb_trace = lttv_traceset_number(traceset);
+	for(i = 0 ; i < nb_trace ; i++) {
 
-	saved_states_tree = lttv_attribute_find_subdir(tcs->parent.t_a,
-			LTTV_STATE_SAVED_STATES);
-	saved_state_tree = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
-	value = lttv_attribute_add(saved_states_tree,
-			lttv_attribute_get_number(saved_states_tree), LTTV_GOBJECT);
-	*(value.v_gobject) = (GObject *)saved_state_tree;
-	value = lttv_attribute_add(saved_state_tree, LTTV_STATE_TIME, LTTV_TIME);
-	*(value.v_time) = self->parent.timestamp;
-	lttv_state_save(tcs, saved_state_tree);
-	g_debug("Saving state at time %lu.%lu", self->parent.timestamp.tv_sec,
-			self->parent.timestamp.tv_nsec);
+		LttvTrace *trace = lttv_traceset_get(traceset, i);
+		LttvTraceState *tstate = trace->state;
+		saved_states_tree = lttv_attribute_find_subdir(trace->a,
+							       LTTV_STATE_SAVED_STATES);
 
-	*(tcs->max_time_state_recomputed_in_seek) = self->parent.timestamp;
+		saved_state_tree = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
+		value = lttv_attribute_add(saved_states_tree,
+					   lttv_attribute_get_number(saved_states_tree), LTTV_GOBJECT);
+		*(value.v_gobject) = (GObject *)saved_state_tree;
 
+
+		value = lttv_attribute_add(saved_state_tree, LTTV_STATE_TIME, LTTV_TIME);
+		*(value.v_time) = currentTime;
+		
+		lttv_state_save(tstate, saved_state_tree);
+		g_debug("Saving state at time %lu.%lu", currentTime.tv_sec,
+			currentTime.tv_nsec);
+
+		*(tstate->max_time_state_recomputed_in_seek) = currentTime;
+	}
 	return FALSE;
 }
 
 static gboolean state_save_after_trace_hook(void *hook_data, void *call_data)
 {
-	LttvTraceState *tcs = (LttvTraceState *)(call_data);
+#warning "Would we move max_time to traceset"
+	LttvTrace *trace = (LttvTrace *)(call_data);
+	LttvTraceState *tcs = trace->state;
+	TimeInterval time_span = lttv_traceset_get_time_span_real(lttv_trace_get_traceset(trace));
 
-	*(tcs->max_time_state_recomputed_in_seek) = tcs->parent.time_span.end_time;
+	*(tcs->max_time_state_recomputed_in_seek) = time_span.end_time;
 
 	return FALSE;
 }
-
+#ifdef BABEL_CLEANUP
 guint lttv_state_current_cpu(LttvTracefileState *tfs)
 {
 	return tfs->cpu;
@@ -3937,10 +3971,9 @@ void lttv_state_save_add_event_hooks(LttvTracesetState *self)
 	}
 }
 #endif //0
-#ifdef BABEL_CLEANUP
-void lttv_state_save_add_event_hooks(LttvTracesetState *self)
+
+void lttv_state_save_add_event_hooks(LttvTraceset *traceset)
 {
-	LttvTraceset *traceset = self->parent.ts;
 
 	guint i, j, nb_trace, nb_tracefile;
 
@@ -3948,7 +3981,17 @@ void lttv_state_save_add_event_hooks(LttvTracesetState *self)
 
 	LttvTracefileState *tfs;
 
- 
+
+	if(!traceset->has_precomputed_states) {
+		guint *event_count = g_new(guint, 1);
+		
+		*event_count = 0;
+		lttv_hooks_add(traceset->event_hooks,
+			       state_save_event_hook,
+			       event_count,
+			       LTTV_PRIO_STATE);
+	
+#ifdef BABEL_CLEANUP
 	nb_trace = lttv_traceset_number(traceset);
 	for(i = 0 ; i < nb_trace ; i++) {
 
@@ -3971,21 +4014,22 @@ void lttv_state_save_add_event_hooks(LttvTracesetState *self)
 
 		}
 	}
-
-	lttv_process_traceset_begin(&self->parent,
-			NULL, NULL, NULL, NULL, NULL);
+#endif
+	lttv_process_traceset_begin(traceset,
+				    NULL, NULL, NULL, NULL, NULL);
+	}
 
 }
 
 gint lttv_state_save_hook_add_event_hooks(void *hook_data, void *call_data)
 {
-	LttvTracesetState *tss = (LttvTracesetState*)(call_data);
+	LttvTraceset *ts = (LttvTraceset*)(call_data);
 
-	lttv_state_save_add_event_hooks(tss);
+	lttv_state_save_add_event_hooks(ts);
 
 	return 0;
 }
-#endif
+
 
 #if 0
 void lttv_state_save_remove_event_hooks(LttvTracesetState *self)
@@ -4024,10 +4068,9 @@ void lttv_state_save_remove_event_hooks(LttvTracesetState *self)
 	}
 }
 #endif //0
-#ifdef BABEL_CLEANUP
-void lttv_state_save_remove_event_hooks(LttvTracesetState *self)
+
+void lttv_state_save_remove_event_hooks(LttvTraceset *traceset)
 {
-	LttvTraceset *traceset = self->parent.ts;
 
 	guint i, j, nb_trace, nb_tracefile;
 
@@ -4036,6 +4079,7 @@ void lttv_state_save_remove_event_hooks(LttvTracesetState *self)
 	LttvTracefileState *tfs;
 
 	LttvHooks *after_trace = lttv_hooks_new();
+	guint *event_count = NULL;
 
 	lttv_hooks_add(after_trace,
 			state_save_after_trace_hook,
@@ -4043,12 +4087,19 @@ void lttv_state_save_remove_event_hooks(LttvTracesetState *self)
 			LTTV_PRIO_STATE);
 
 
-	lttv_process_traceset_end(&self->parent,
-			NULL, after_trace, NULL, NULL, NULL);
+	lttv_process_traceset_end(traceset,
+			NULL, after_trace, NULL, NULL);
  
 	lttv_hooks_destroy(after_trace);
 
-	nb_trace = lttv_traceset_number(traceset);
+	//nb_trace = lttv_traceset_number(traceset);
+
+	event_count = lttv_hooks_remove(traceset->event_hooks,
+					state_save_event_hook);
+	
+	if(event_count) g_free(event_count);
+
+#ifdef BABEL_CLEANUP
 	for(i = 0 ; i < nb_trace ; i++) {
 
 		ts = (LttvTraceState *)self->parent.traces[i];
@@ -4067,28 +4118,48 @@ void lttv_state_save_remove_event_hooks(LttvTracesetState *self)
 		}
 		if(event_count) g_free(event_count);
 	}
+#endif
 }
 
 gint lttv_state_save_hook_remove_event_hooks(void *hook_data, void *call_data)
 {
-	LttvTracesetState *tss = (LttvTracesetState*)(call_data);
+	LttvTraceset *ts = (LttvTraceset*)(call_data);
 
-	lttv_state_save_remove_event_hooks(tss);
+	lttv_state_save_remove_event_hooks(ts);
 
 	return 0;
 }
 
-void lttv_state_traceset_seek_time_closest(LttvTracesetState *self, LttTime t)
-{
-	LttvTraceset *traceset = self->parent.ts;
 
+void lttv_state_traceset_seek_time(LttvTraceset *traceset, LttTime t)
+{
+      lttv_state_traceset_seek_time_closest(traceset,
+          t);
+      lttv_process_traceset_middle(traceset, t, G_MAXUINT,
+                                   NULL);
+}
+
+void lttv_state_traceset_seek_position(LttvTraceset *traceset, LttvTracesetPosition *position)
+{
+	LttTime t = lttv_traceset_position_get_time(position);
+	
+	lttv_state_traceset_seek_time_closest(traceset,
+					      t);
+	lttv_process_traceset_middle(traceset, 
+				     ltt_time_infinite, 
+				     G_MAXUINT,
+				     position);
+}
+
+void lttv_state_traceset_seek_time_closest(LttvTraceset *traceset, LttTime t)
+{
 	guint i, nb_trace;
 
 	int min_pos, mid_pos, max_pos;
 
 	guint call_rest = 0;
-
-	LttvTraceState *tcs;
+	guint resto_start = 0;
+	guint resto_at = 0;
 
 	LttvAttributeValue value;
 
@@ -4099,6 +4170,8 @@ void lttv_state_traceset_seek_time_closest(LttvTracesetState *self, LttTime t)
 	gboolean is_named;
 
 	LttvAttribute *saved_states_tree, *saved_state_tree, *closest_tree = NULL;
+	
+	LttTime closest_tree_time, restored_time;
 
 	//g_tree_destroy(self->parent.pqueue);
 	//self->parent.pqueue = g_tree_new(compare_tracefile);
@@ -4107,10 +4180,12 @@ void lttv_state_traceset_seek_time_closest(LttvTracesetState *self, LttTime t)
 
 	nb_trace = lttv_traceset_number(traceset);
 	for(i = 0 ; i < nb_trace ; i++) {
-		tcs = (LttvTraceState *)self->parent.traces[i];
 
-		if(ltt_time_compare(t, *(tcs->max_time_state_recomputed_in_seek)) < 0) {
-			saved_states_tree = lttv_attribute_find_subdir(tcs->parent.t_a,
+		LttvTrace *trace = lttv_traceset_get(traceset, i);
+		LttvTraceState *tstate = trace->state;
+
+		if(ltt_time_compare(t, *(tstate->max_time_state_recomputed_in_seek)) < 0) {
+			saved_states_tree = lttv_attribute_find_subdir(trace->a,
 					LTTV_STATE_SAVED_STATES);
 			min_pos = -1;
 
@@ -4128,6 +4203,7 @@ void lttv_state_traceset_seek_time_closest(LttvTracesetState *self, LttTime t)
 					if(ltt_time_compare(*(value.v_time), t) < 0) {
 						min_pos = mid_pos;
 						closest_tree = saved_state_tree;
+						closest_tree_time = *(value.v_time);
 					}
 					else max_pos = mid_pos - 1;
 
@@ -4137,25 +4213,64 @@ void lttv_state_traceset_seek_time_closest(LttvTracesetState *self, LttTime t)
 
 			/* restore the closest earlier saved state */
 			if(min_pos != -1) {
-				lttv_state_restore(tcs, closest_tree);
-				call_rest = 1;
+				if(ltt_time_compare(restored_time, closest_tree_time) == 0) {
+					
+					lttv_state_restore(tstate, closest_tree);
+					
+					restored_time = closest_tree_time;
+					call_rest = 1;
+				} else {
+					g_debug("State: restored time mismatch between traces");
+					resto_start = 1;
+					break;
+				}
+				
 			}
 
 			/* There is no saved state, yet we want to have it. Restart at T0 */
 			else {
-				restore_init_state(tcs);
-				lttv_process_trace_seek_time(&(tcs->parent), ltt_time_zero);
+				resto_start = 1;
+				break;
 			}
 		}
 		/* We want to seek quickly without restoring/updating the state */
 		else {
-			restore_init_state(tcs);
-			lttv_process_trace_seek_time(&(tcs->parent), t);
+			resto_at = 1;
+			break;
 		}
 	}
-	if(!call_rest) g_info("NOT Calling restore");
+
+	if(resto_start || resto_at) {
+		// Restore init state and seek so
+		for(i = 0 ; i < nb_trace ; i++) {
+
+			LttvTrace *trace = lttv_traceset_get(traceset, i);
+			LttvTraceState *tstate = trace->state;
+			
+			restore_init_state(tstate);	
+		}
+
+		// If t > max saved state
+		if(resto_at) {
+			lttv_process_traceset_seek_time(traceset, t);
+		} else if (resto_start) {
+			// If no saved state
+			lttv_process_traceset_seek_time(traceset, ltt_time_zero);
+		} else {
+			g_assert(FALSE);
+		}
+		g_info("NOT Calling restore");
+
+	} else {
+		// Seek at checkpoint		
+		lttv_process_traceset_seek_time(traceset, restored_time);
+					
+
+	}
+
+
 }
-#endif
+
 #ifdef BABEL_CLEANUP
 static void traceset_state_instance_init (GTypeInstance *instance, gpointer g_class)
 {

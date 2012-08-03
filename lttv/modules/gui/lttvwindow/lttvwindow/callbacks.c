@@ -38,6 +38,7 @@
 #include <lttv/module.h>
 #include <lttv/iattribute.h>
 #include <lttv/traceset.h>
+#include <lttv/state.h>
 #ifdef BABEL_CLEANUP
 #include <lttv/stats.h>
 #include <lttv/sync/sync_chain_lttv.h>
@@ -315,6 +316,44 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
   }
   lttv_state_add_event_hooks(traceset);
 
+  //TODO ybrosseau 2012-08-03 Temporarly compute checkpoints right at the adding
+  // of the traceset
+  //Compute the traceset state checkpoint 
+  {
+    
+    EventsRequest *events_request = g_new(EventsRequest, 1);
+       
+    LttvHooks *hook_adder = lttv_hooks_new();
+    lttv_hooks_add(hook_adder, lttv_state_save_hook_add_event_hooks, NULL,
+                   LTTV_PRIO_DEFAULT);
+    LttvHooks *hook_remover = lttv_hooks_new();
+    lttv_hooks_add(hook_remover, lttv_state_save_hook_remove_event_hooks,
+		   NULL, LTTV_PRIO_DEFAULT);
+      
+    // Fill the events request
+    events_request->owner = NULL;
+    events_request->viewer_data = NULL;
+    events_request->servicing = FALSE;
+    events_request->start_time = ltt_time_zero;
+    events_request->start_position = NULL;
+    events_request->stop_flag = FALSE;
+    events_request->end_time = ltt_time_infinite;
+    events_request->num_events = G_MAXUINT;
+    events_request->end_position = NULL;
+    events_request->trace = 1; //fixed    /* FIXME */
+    events_request->before_chunk_traceset = NULL;
+    events_request->before_chunk_trace = NULL;
+    events_request->before_chunk_tracefile = NULL;
+    events_request->event = traceset->event_hooks;
+    events_request->after_chunk_tracefile = NULL;
+    events_request->after_chunk_trace = NULL;
+    events_request->after_chunk_traceset = NULL;
+    events_request->before_request = hook_adder;
+    events_request->after_request = hook_remover;
+      
+    lttvwindow_events_request(tab, events_request);
+  }
+  
   /* Finally, call the update hooks of the viewers */
   gint retval = update_traceset(tab, traceset);
 
@@ -937,8 +976,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
             /* - Seek to that time */
             g_debug("SEEK TIME : %lu, %lu", events_request->start_time.tv_sec,
               events_request->start_time.tv_nsec);
-            //lttv_process_traceset_seek_time(tsc, events_request->start_time);
-	    lttv_process_traceset_seek_time(ts,
+	    lttv_state_traceset_seek_time_closest(ts,
                                                   events_request->start_time);
 
             /* Process the traceset with only state hooks */
@@ -954,7 +992,7 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 
 
         } else {
-          //LttTime pos_time;
+          LttTime pos_time;
 	  //LttvTracefileContext *tfc =
 	  //  lttv_traceset_context_get_current_tfc(tsc);
           /* Else, the first request in list_in is a position request */
@@ -982,12 +1020,12 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
             /* 1.2.2.1 Seek to that position */
             g_debug("SEEK POSITION");
             //lttv_process_traceset_seek_position(tsc, events_request->start_position);
-            //pos_time = lttv_traceset_position_get_time(
-            //                         events_request->start_position);
-            //
-            //lttv_state_traceset_seek_time(ts,
-            //                                      pos_time);
-	    lttv_traceset_seek_to_position( events_request->start_position);
+            pos_time = lttv_traceset_position_get_time(
+                                     events_request->start_position);
+            
+            lttv_state_traceset_seek_time_closest(ts,
+                                                  pos_time);
+	    //lttv_traceset_seek_to_position( events_request->start_position);
 
             /* Process the traceset with only state hooks */
 #ifdef DEBUG
@@ -1269,9 +1307,8 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
       /* 5. After process traceset middle */
 
       LttTime curTime = lttv_traceset_get_current_time(ts);
-      /* - if current context time > traceset.end time */
-      if(ltt_time_compare(curTime,
-			  lttv_traceset_get_time_span_real(ts).end_time) > 0) {
+      /* - if the iterator is not valid anymore (got to the end) */
+      if(bt_ctf_iter_read_event(ts->iter) == NULL) {
         /* - For each req in list_in */
         GSList *iter = list_in;
     
@@ -3388,9 +3425,9 @@ void current_position_change_manager(Tab *tab, LttvTracesetPosition *pos)
 
   LttTime new_time = lttv_traceset_position_get_time(pos);
   /* Put the context in a state coherent position */
-#ifdef BABEL_CLEANUP
-   lttv_state_traceset_seek_time_closest((LttvTracesetState*)tsc, ltt_time_zero);
-#endif /* BABEL_CLEANUP */
+
+   lttv_state_traceset_seek_time_closest(tab->traceset_info->traceset, ltt_time_zero);
+
   current_time_change_manager(tab, new_time);
   
   set_current_position(tab, pos);

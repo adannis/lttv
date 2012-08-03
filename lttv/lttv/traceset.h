@@ -43,6 +43,7 @@ struct _LttvTraceset {
 	LttvHooks *event_hooks;
 	struct bt_ctf_iter *iter;
 	GPtrArray *state_trace_handle_index;
+	gboolean has_precomputed_states;
 };
 
 struct _LttvTrace {
