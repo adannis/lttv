@@ -634,7 +634,7 @@ gint histo_update_current_time_hook(void *hook_data, void *call_data)
 
   LttvTraceset *traceset =
         lttvwindow_get_traceset(histocontrol_flow_data->tab);
-  TimeInterval time_span = lttv_traceset_get_time_span(traceset);
+  TimeInterval time_span = lttv_traceset_get_time_span_real(traceset);
 
   LttTime trace_start = time_span.start_time;
   LttTime trace_end = time_span.end_time;

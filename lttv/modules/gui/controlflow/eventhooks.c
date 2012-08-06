@@ -507,9 +507,9 @@ int before_schedchange_hook(void *hook_data, void *call_data)
   gint64 state_out;
   LttTime timestamp;
   event = (LttvEvent *) call_data;
-  if (strcmp(lttv_traceset_get_name_from_event(event),
-                                    "sched_switch") != 0)
-    return FALSE;
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_switch") != 0)
+        return FALSE;
+  
   ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
 
 
@@ -519,11 +519,13 @@ int before_schedchange_hook(void *hook_data, void *call_data)
    */
   cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;      
-  process = ts->running_process[cpu];
+  
   pid_out = lttv_event_get_long(event, "prev_tid");
   pid_in = lttv_event_get_long(event, "next_tid");
   state_out = lttv_event_get_long(event, "prev_state");
+  guint trace_number = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
 
+  process = lttv_state_find_process(ts,cpu,pid_out);
   timestamp = lttv_event_get_timestamp(event);
     /* For the pid_out */
     /* First, check if the current process is in the state computation
@@ -548,7 +550,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
               pid_out,
               process->cpu,
               &birth,
-              18);//TODO "use the right value or delete"
+              trace_number);
       if(hashed_process_data == NULL)
       {
         g_assert(pid_out == 0 || pid_out != process->ppid);
@@ -562,7 +564,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
             process->cpu,
             process->ppid,
             &birth,
-            18,//TODO "use the right value or delete"
+            trace_number,
             process->name,
             process->brand,
             &pl_height,
@@ -685,7 +687,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
      * draw items from the beginning of the read for it. If it is not
      * present, it's a new process and it was not present : it will
      * be added after the state update.  */
-    process = ts->running_process[cpu];
+        process = lttv_state_find_process(ts,cpu,pid_in);
     
     if(process != NULL) {
       /* Well, the process existed : we must get it in the process hash
@@ -701,7 +703,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
               pid_in,
               cpu,
               &birth,
-              18);//TODO "use the right value or delete"
+              trace_number);//TODO "use the right value or delete"
       if(hashed_process_data == NULL)
       {
         g_assert(pid_in == 0 || pid_in != process->ppid);
@@ -715,7 +717,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
             cpu,
             process->ppid,
             &birth,
-            18,
+            trace_number,
             process->name,
             process->brand,
             &pl_height,
@@ -1016,6 +1018,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
 {
   LttvEvent *event;
   guint cpu;
+  guint pid;
   LttvTraceState *ts;
   LttvProcessState *process;
   
@@ -1025,9 +1028,11 @@ int before_execmode_hook(void *hook_data, void *call_data)
    */
   
   event = (LttvEvent *) call_data;
-  if (strcmp(lttv_traceset_get_name_from_event(event),
-                            "irq_handler_entry") != 0)
-      return FALSE;
+  if ((strncmp(lttv_traceset_get_name_from_event(event),"sys_", sizeof("sys_") - 1) == 0)
+          ||(strcmp(lttv_traceset_get_name_from_event(event),"exit_syscall") == 0)
+          ||(strncmp(lttv_traceset_get_name_from_event(event),"irq_handler_",sizeof("irq_handler_")) == 0)
+          ||(strncmp(lttv_traceset_get_name_from_event(event),"softirq_", sizeof("softirq_")) == 0)){
+          
   LttTime evtime = lttv_event_get_timestamp(event);
   ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
   /* For the pid */
@@ -1037,7 +1042,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
   ts = event->state;
   
   guint trace_number = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
-  process = ts->running_process[cpu];
+  process = lttv_state_find_process(ts ,cpu ,pid);
   g_assert(process != NULL);
 
   guint pid = process->pid;
@@ -1197,7 +1202,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
                              &hashed_process_data->next_good_time);
     }
   }
-  
+  }
   return 0;
 }
 

@@ -44,6 +44,7 @@ struct _LttvTraceset {
 	struct bt_ctf_iter *iter;
 	GPtrArray *state_trace_handle_index;
 	gboolean has_precomputed_states;
+	TimeInterval time_span;
 };
 
 struct _LttvTrace {

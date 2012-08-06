@@ -283,7 +283,7 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
   }
 #endif /*BABEL_CLEANUP*/
 
-  time_span = lttv_traceset_get_time_span(traceset);
+  time_span = lttv_traceset_get_time_span_real(traceset);
   
   tab->traceset_info->traceset = traceset;
   
@@ -3323,9 +3323,8 @@ void time_change_manager               (Tab *tab,
   TimeInterval time_span;
   
   LttvTraceset *ts = tab->traceset_info->traceset;
-  time_span.start_time =ltt_time_from_uint64( lttv_traceset_get_timestamp_begin(ts));
-  time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
   
+  time_span = lttv_traceset_get_time_span_real(ts);
 
   LttTime start_time = new_time_window.start_time;
   LttTime end_time = new_time_window.end_time;
@@ -3432,7 +3431,7 @@ static void on_timebar_starttime_changed(Timebar *timebar,
 {
 	Tab *tab = (Tab *)user_data;
 	LttvTraceset * ts =tab->traceset_info->traceset;
-	TimeInterval time_span = lttv_traceset_get_time_span(ts);
+	TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
 
 	TimeWindow new_time_window = tab->time_window;
 	new_time_window.start_time = timebar_get_start_time(timebar);
@@ -3468,7 +3467,7 @@ static void on_timebar_endtime_changed(Timebar *timebar,
 {
 	Tab *tab = (Tab *)user_data;
         LttvTraceset * ts =tab->traceset_info->traceset;
-        TimeInterval time_span = lttv_traceset_get_time_span(ts);
+        TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
 
 	TimeWindow new_time_window = tab->time_window;
 
@@ -3519,7 +3518,7 @@ void scroll_value_changed_cb(GtkWidget *scrollbar,
   gdouble page_size;
   
   LttvTraceset * ts = tab->traceset_info->traceset;
-  TimeInterval time_span = lttv_traceset_get_time_span(ts);
+  TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
 
   time = ltt_time_add(ltt_time_from_double(value),
                       time_span.start_time);

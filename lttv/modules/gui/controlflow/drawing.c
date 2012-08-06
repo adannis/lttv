@@ -172,12 +172,12 @@ void drawing_data_request(Drawing_t *drawing,
  
 	lttv_hooks_add(event_hook,before_execmode_hook , control_flow_data, LTTV_PRIO_STATE-5);
    #ifdef BABEL_CLEANUP     
-	lttv_hooks_add(event_hook,syscall_exit , control_flow_data, LTTV_PRIO_STATE);	
-	lttv_hooks_add(event_hook,irq_entry , control_flow_data, LTTV_PRIO_STATE);	
-	lttv_hooks_add(event_hook,irq_exit , control_flow_data, LTTV_PRIO_STATE);	
-	lttv_hooks_add(event_hook,soft_irq_raise , control_flow_data, LTTV_PRIO_STATE);	
-	lttv_hooks_add(event_hook,soft_irq_entry , control_flow_data, LTTV_PRIO_STATE);	
-	lttv_hooks_add(event_hook,soft_irq_exit , control_flow_data, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,syscall_exit , control_flow_data, LTTV_PRIO_STATE);
+	lttv_hooks_add(event_hook,irq_entry , control_flow_data, LTTV_PRIO_STATE);
+	lttv_hooks_add(event_hook,irq_exit , control_flow_data, LTTV_PRIO_STATE);
+	lttv_hooks_add(event_hook,soft_irq_raise , control_flow_data, LTTV_PRIO_STATE);
+	lttv_hooks_add(event_hook,soft_irq_entry , control_flow_data, LTTV_PRIO_STATE);
+	lttv_hooks_add(event_hook,soft_irq_exit , control_flow_data, LTTV_PRIO_STATE);
 #endif //babel_cleanup
 	lttv_hooks_add(event_hook,before_schedchange_hook , control_flow_data, LTTV_PRIO_STATE-5);	
 #ifdef BABEL_CLEANUP

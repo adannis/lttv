@@ -70,6 +70,9 @@ LttvTraceset *lttv_traceset_new(void)
 	ts->state_trace_handle_index = g_ptr_array_new();
 	ts->has_precomputed_states = FALSE;
 
+	ts->time_span.start_time = ltt_time_from_uint64(0);
+	ts->time_span.end_time = ltt_time_from_uint64(0);
+
 	return ts;
 }
 
@@ -510,6 +513,21 @@ guint64 lttv_traceset_get_timestamp_first_event(LttvTraceset *ts)
         return lttv_traceset_position_get_timestamp(&begin_position);  
 }
 
+guint64 lttv_traceset_get_timestamp_last_event(LttvTraceset *ts)
+{
+	LttvTracesetPosition last_position;
+	struct bt_iter_pos pos;
+	last_position.bt_pos = &pos;
+	last_position.timestamp = G_MAXUINT64;
+	last_position.cpu_id = INT_MAX;
+	
+	/* Assign iterator to the last event of the traces */  
+	last_position.bt_pos->type = BT_SEEK_LAST;
+	last_position.iter = ts->iter;
+
+	return lttv_traceset_position_get_timestamp(&last_position);
+}
+
 /*
  * lttv_traceset_get_timestamp_begin : returns the  minimum timestamp of 
  * all the traces in the traceset.
@@ -564,7 +582,7 @@ guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
 		{
 			currentTrace = g_ptr_array_index(traceset->traces,i);
 			timestamp_cur = bt_trace_handle_get_timestamp_end(bt_ctx,
-									  currentTrace->id);
+									currentTrace->id);
 			if(timestamp_cur > timestamp_max){
 				timestamp_max = timestamp_cur;
 			}
@@ -574,28 +592,35 @@ guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
 }
 /*
  * lttv_traceset_get_time_span_real : return a TimeInterval representing the
- * minimum timestamp dans le maximum timestamp of the traceset.
+ * minimum timestamp and the maximum timestamp of the traceset.
  * 
  */
 TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
 {
-        TimeInterval time_span;
-        time_span.start_time =ltt_time_from_uint64(lttv_traceset_get_timestamp_first_event(ts));
-        time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
-        return time_span;
+	if(ltt_time_compare(ts->time_span.start_time, 
+				ltt_time_from_uint64(0)) == 0 && ts->traces->len > 0){
+		ts->time_span.start_time = ltt_time_from_uint64(
+				lttv_traceset_get_timestamp_first_event(ts));
+		ts->time_span.end_time = ltt_time_from_uint64(
+				lttv_traceset_get_timestamp_last_event(ts));
+	}
+        return ts->time_span;
 }
 
 /*
  * lttv_traceset_get_time_span : return a TimeInterval representing the
- * minimum timestamp dans le maximum timestamp of the traceset.
+ * minimum timestamp and the maximum timestamp of the traceset.
  * 
  */
 TimeInterval lttv_traceset_get_time_span(LttvTraceset *ts)
 {
-        TimeInterval time_span;
-        time_span.start_time =ltt_time_from_uint64(lttv_traceset_get_timestamp_begin(ts));
-        time_span.end_time = ltt_time_from_uint64(lttv_traceset_get_timestamp_end(ts));
-        return time_span;
+	if(ltt_time_compare(ts->time_span.start_time, ltt_time_from_uint64(0)) == 0){
+		ts->time_span.start_time =ltt_time_from_uint64(
+					lttv_traceset_get_timestamp_begin(ts));
+		ts->time_span.end_time = ltt_time_from_uint64(
+					lttv_traceset_get_timestamp_end(ts));
+	}
+        return ts->time_span;
 }
 
 const char *lttv_traceset_get_name_from_event(LttvEvent *event)

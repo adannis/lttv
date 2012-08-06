@@ -1721,7 +1721,7 @@ gboolean timespan_changed(void * hook_data, void * call_data)
        
   EventViewerData *event_viewer_data = (EventViewerData*) hook_data;
   LttvTraceset * ts = lttvwindow_get_traceset(event_viewer_data->tab);
-  TimeInterval time_span = lttv_traceset_get_time_span(ts);
+  TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
  
   LttTime end;
 
@@ -1743,7 +1743,7 @@ gboolean traceset_changed(void * hook_data, void * call_data)
 
   EventViewerData *event_viewer_data = (EventViewerData*) hook_data;
   LttvTraceset * ts = lttvwindow_get_traceset(event_viewer_data->tab);
-  TimeInterval time_span = lttv_traceset_get_time_span(ts);
+  TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
   
   LttTime end;
   gtk_list_store_clear(event_viewer_data->store_m);
