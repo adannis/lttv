@@ -70,8 +70,8 @@ LttvTraceset *lttv_traceset_new(void)
 	ts->state_trace_handle_index = g_ptr_array_new();
 	ts->has_precomputed_states = FALSE;
 
-	ts->time_span.start_time = ltt_time_from_uint64(0);
-	ts->time_span.end_time = ltt_time_from_uint64(0);
+	ts->time_span.start_time = ltt_time_zero;
+        ts->time_span.end_time = ltt_time_zero;
 
 	return ts;
 }
@@ -600,7 +600,7 @@ TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
 #ifdef BABEL_HAS_SEEK_LAST	
 
 	if(ltt_time_compare(ts->time_span.start_time, 
-				ltt_time_from_uint64(0)) == 0 && ts->traces->len > 0){
+				ltt_time_zero) == 0 && ts->traces->len > 0){
 		ts->time_span.start_time = ltt_time_from_uint64(
 				lttv_traceset_get_timestamp_first_event(ts));
 		ts->time_span.end_time = ltt_time_from_uint64(
@@ -619,7 +619,7 @@ TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
  */
 TimeInterval lttv_traceset_get_time_span(LttvTraceset *ts)
 {
-	if(ltt_time_compare(ts->time_span.start_time, ltt_time_from_uint64(0)) == 0){
+	if(ltt_time_compare(ts->time_span.start_time, ltt_time_zero) == 0){
 		ts->time_span.start_time =ltt_time_from_uint64(
 					lttv_traceset_get_timestamp_begin(ts));
 		ts->time_span.end_time = ltt_time_from_uint64(
