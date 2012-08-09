@@ -411,7 +411,7 @@ static void restore_init_state(LttvTraceState *self)
 
 	start_time = ltt_time_from_uint64(
 			    bt_trace_handle_get_timestamp_begin(self->trace->traceset->context, 
-								self->trace->id));
+								self->trace->id,BT_CLOCK_REAL));
 
 
 	//lttv_process_trace_seek_time(&self->parent, ltt_time_zero);

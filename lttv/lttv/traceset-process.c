@@ -74,7 +74,7 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 
 		if((bt_event = bt_ctf_iter_read_event(traceset->iter)) != NULL) {
 
-			LttTime time = ltt_time_from_uint64(bt_ctf_get_timestamp_raw(bt_event));
+			LttTime time = ltt_time_from_uint64(bt_ctf_get_timestamp(bt_event));
 			if(ltt_time_compare(end, time) <= 0) {
 				break;
 			}

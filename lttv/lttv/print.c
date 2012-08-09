@@ -444,7 +444,7 @@ void lttv_event_to_string(LttvEvent *event, GString *a_string,
 	g_string_set_size(a_string,0);
 	if(long_version){
 		g_string_append_printf(a_string, "%llu %s: ", 
-				       bt_ctf_get_timestamp_raw(event->bt_event), 
+				       bt_ctf_get_timestamp(event->bt_event), 
 				       bt_ctf_event_name(event->bt_event));
 	}
 	g_string_append_printf(a_string, "{ %s }", cpuId_str->str);

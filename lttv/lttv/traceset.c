@@ -72,7 +72,7 @@ LttvTraceset *lttv_traceset_new(void)
 
 	ts->time_span.start_time = ltt_time_zero;
         ts->time_span.end_time = ltt_time_zero;
-
+	lttv_traceset_get_time_span_real(ts);
 	return ts;
 }
 
@@ -550,7 +550,8 @@ guint64 lttv_traceset_get_timestamp_begin(LttvTraceset *traceset)
                 {
                         currentTrace = g_ptr_array_index(traceset->traces,i);
                         timestamp_cur = bt_trace_handle_get_timestamp_begin(bt_ctx,
-                                                                        currentTrace->id);
+									currentTrace->id,
+									BT_CLOCK_REAL);
                         if(timestamp_cur < timestamp_min)
                                 timestamp_min = timestamp_cur;
                 }
@@ -582,7 +583,8 @@ guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
 		{
 			currentTrace = g_ptr_array_index(traceset->traces,i);
 			timestamp_cur = bt_trace_handle_get_timestamp_end(bt_ctx,
-									currentTrace->id);
+									currentTrace->id,
+									BT_CLOCK_REAL);
 			if(timestamp_cur > timestamp_max){
 				timestamp_max = timestamp_cur;
 			}
@@ -604,7 +606,7 @@ TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
 		ts->time_span.start_time = ltt_time_from_uint64(
 				lttv_traceset_get_timestamp_first_event(ts));
 		ts->time_span.end_time = ltt_time_from_uint64(
-				lttv_traceset_get_timestamp_last_event(ts));
+					lttv_traceset_get_timestamp_end(ts));
 	}
         return ts->time_span;
 #else
@@ -644,7 +646,7 @@ int set_values_position(const LttvTracesetPosition *pos)
 	struct bt_ctf_event *event = bt_ctf_iter_read_event(pos->iter);
 
 	if(event != NULL){
-		((LttvTracesetPosition *)pos)->timestamp = bt_ctf_get_timestamp_raw(event); 
+		((LttvTracesetPosition *)pos)->timestamp = bt_ctf_get_timestamp(event); 
 		
 		LttvEvent lttv_event;
 		lttv_event.bt_event = event;
@@ -659,6 +661,7 @@ int set_values_position(const LttvTracesetPosition *pos)
 	lttv_traceset_seek_to_position(&previous_pos);
 	/*We must desallocate because the function bt_iter_get_pos() does a g_new */
 	bt_iter_free_pos(previous_pos.bt_pos);
+	return 1;
 }
 
 guint64 lttv_traceset_position_get_timestamp(const LttvTracesetPosition *pos)

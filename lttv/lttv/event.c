@@ -7,7 +7,7 @@
 
 LttTime lttv_event_get_timestamp(LttvEvent *event)
 {
-  return ltt_time_from_uint64(bt_ctf_get_timestamp_raw(event->bt_event));
+  return ltt_time_from_uint64(bt_ctf_get_timestamp(event->bt_event));
 }
 
 //TODO ybrosseau find a way to return an error code
