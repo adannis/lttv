@@ -599,19 +599,20 @@ guint64 lttv_traceset_get_timestamp_end(LttvTraceset *traceset)
  */
 TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
 {
-#ifdef BABEL_HAS_SEEK_LAST	
+
 
 	if(ltt_time_compare(ts->time_span.start_time, 
 				ltt_time_zero) == 0 && ts->traces->len > 0){
 		ts->time_span.start_time = ltt_time_from_uint64(
 				lttv_traceset_get_timestamp_first_event(ts));
+#ifdef BABEL_HAS_SEEK_LAST	
 		ts->time_span.end_time = ltt_time_from_uint64(
 					lttv_traceset_get_timestamp_end(ts));
+#else
+		ts->time_span.end_time = lttv_traceset_get_time_span(ts).end_time;	
+#endif
 	}
         return ts->time_span;
-#else
-	return lttv_traceset_get_time_span(ts);
-#endif
 }
 
 /*
