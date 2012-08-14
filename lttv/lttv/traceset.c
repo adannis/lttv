@@ -609,7 +609,8 @@ TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
 		ts->time_span.end_time = ltt_time_from_uint64(
 					lttv_traceset_get_timestamp_end(ts));
 #else
-		ts->time_span.end_time = lttv_traceset_get_time_span(ts).end_time;	
+		ts->time_span.end_time = ltt_time_from_uint64(
+				        lttv_traceset_get_timestamp_end(ts));	
 #endif
 	}
         return ts->time_span;

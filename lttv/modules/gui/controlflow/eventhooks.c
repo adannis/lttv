@@ -471,8 +471,8 @@ int before_trywakeup_hook(void *hook_data, void *call_data)
 
   tfc->target_pid = target_pid_saved;
 
-  return 0;
 #endif //babel_cleanup
+  return 0;
 
 }
 
@@ -989,8 +989,8 @@ int after_schedchange_hook(void *hook_data, void *call_data)
     }
   }
 
-  return 0;
 #endif //babel_cleanup
+  return 0;
 }
 
 
@@ -1018,7 +1018,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
 {
   LttvEvent *event;
   guint cpu;
-  guint pid;
+  guint pid = 0;
   LttvTraceState *ts;
   LttvProcessState *process;
   
@@ -1399,8 +1399,8 @@ int before_process_exit_hook(void *hook_data, void *call_data)
     }
   }
   
-  return 0;
 #endif //babel_cleanup
+  return 0;
 
 }
 
@@ -1583,8 +1583,8 @@ int before_process_release_hook(void *hook_data, void *call_data)
     }
   }
 
-  return 0;
 #endif //babel_cleanup
+  return 0;
 }
 
 
@@ -1719,8 +1719,8 @@ int after_process_fork_hook(void *hook_data, void *call_data)
       hashed_process_data_child->x.under_marked = FALSE;
     }
   }
-  return FALSE;
 #endif //babel_cleanup
+  return FALSE;
 }
 
 
@@ -1842,8 +1842,8 @@ int after_process_exit_hook(void *hook_data, void *call_data)
     }
   }
 
-  return FALSE;
 #endif //babel_cleanup
+  return FALSE;
 }
 
 
@@ -1925,8 +1925,8 @@ int after_fs_exec_hook(void *hook_data, void *call_data)
 
   processlist_set_name(process_list, process->name, hashed_process_data);
 
-  return 0;
 #endif //babel_cleanup
+  return 0;
 
 }
 
@@ -2008,8 +2008,8 @@ int after_user_generic_thread_brand_hook(void *hook_data, void *call_data)
 
   processlist_set_brand(process_list, process->brand, hashed_process_data);
 
-  return 0;
 #endif //babel_cleanup
+  return 0;
 }
 
 
@@ -2120,8 +2120,8 @@ int after_event_enum_process_hook(void *hook_data, void *call_data)
                            hashed_process_data_in);
     }
   }
-  return 0;
 #endif //babel_cleanup
+  return 0;
 }
 
 
@@ -2880,6 +2880,6 @@ int before_statedump_end(void *hook_data, void *call_data)
   /* Request expose (updates damages zone also) */
   drawing_request_expose(events_request, tss, evtime);
 
-  return 0;
 #endif //babel_cleanup
+  return 0;
 }
