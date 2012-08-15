@@ -165,9 +165,7 @@ void drawing_data_request(Drawing_t *drawing,
                                        control_flow_data);
 
   {
-        LttvHooks *event_hook;
-//TODO "fdeslauriers : Is it the right way to get the hooks - july 11 2012"
-	event_hook = lttv_traceset_get_hooks(traceset);
+        LttvHooks *event_hook = lttv_hooks_new();
 	g_assert(event_hook);
  
 	lttv_hooks_add(event_hook,before_execmode_hook , control_flow_data, LTTV_PRIO_STATE-5);
