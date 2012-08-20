@@ -520,11 +520,11 @@ guint64 lttv_traceset_get_timestamp_last_event(LttvTraceset *ts)
 	last_position.bt_pos = &pos;
 	last_position.timestamp = G_MAXUINT64;
 	last_position.cpu_id = INT_MAX;
-#ifdef BABEL_HAS_SEEK_LAST	
+
 	/* Assign iterator to the last event of the traces */  
 	last_position.bt_pos->type = BT_SEEK_LAST;
 	last_position.iter = ts->iter;
-#endif
+
 	return lttv_traceset_position_get_timestamp(&last_position);
 }
 
@@ -605,13 +605,8 @@ TimeInterval lttv_traceset_get_time_span_real(LttvTraceset *ts)
 				ltt_time_zero) == 0 && ts->traces->len > 0){
 		ts->time_span.start_time = ltt_time_from_uint64(
 				lttv_traceset_get_timestamp_first_event(ts));
-#ifdef BABEL_HAS_SEEK_LAST	
 		ts->time_span.end_time = ltt_time_from_uint64(
-					lttv_traceset_get_timestamp_end(ts));
-#else
-		ts->time_span.end_time = ltt_time_from_uint64(
-				        lttv_traceset_get_timestamp_end(ts));	
-#endif
+				        lttv_traceset_get_timestamp_last_event(ts));	
 	}
         return ts->time_span;
 }
