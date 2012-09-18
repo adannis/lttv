@@ -33,7 +33,7 @@ usage () {
 	echo "Options:" >/dev/stderr
 	printf "\t-m MODE      Output mode (modes: text, eval, gui)\n" >/dev/stderr
 	printf "\t-H HELPER    Invoke LTTV through a helper program\n" >/dev/stderr
-	printf "\t             (helpers: gdb, valgrind, massif, strace)\n" >/dev/stderr
+	printf "\t             (helpers: gdb, valgrind, massif, strace, callgrind)\n" >/dev/stderr
 	printf "\t-b OPTIONS   LTTV options to specify before the module list\n" >/dev/stderr
 	printf "\t-a OPTIONS   LTTV options to specify after the module list\n" >/dev/stderr
 	echo "" >/dev/stderr
