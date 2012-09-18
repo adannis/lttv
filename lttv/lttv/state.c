@@ -2903,7 +2903,7 @@ static gboolean process_fork(void *hook_data, void *call_data)
 	/* Skip Parent PID param */
 
 	/* Child PID */
-	child_pid = lttv_event_get_long_unsigned(event, "child_tid");
+	child_pid = lttv_event_get_long(event, "child_tid");
 	//ts->target_pid = child_pid;
 
 	/* Child TGID */
@@ -3463,7 +3463,8 @@ void lttv_state_add_event_hooks(LttvTraceset *traceset)
 	lttv_hooks_add(event_hook,schedchange , NULL, LTTV_PRIO_STATE);	
 	lttv_hooks_add(event_hook,sched_try_wakeup , NULL, LTTV_PRIO_STATE);	
 	lttv_hooks_add(event_hook,process_exit , NULL, LTTV_PRIO_STATE);	
-	lttv_hooks_add(event_hook,process_free , NULL, LTTV_PRIO_STATE);	
+	lttv_hooks_add(event_hook,process_free , NULL, LTTV_PRIO_STATE);
+	lttv_hooks_add(event_hook,process_fork , NULL, LTTV_PRIO_STATE);	
 	lttv_hooks_add(event_hook,process_exec , NULL, LTTV_PRIO_STATE);	
 	lttv_hooks_add(event_hook,enum_process_state , NULL, LTTV_PRIO_STATE);	
 	lttv_hooks_add(event_hook,statedump_end , NULL, LTTV_PRIO_STATE);	

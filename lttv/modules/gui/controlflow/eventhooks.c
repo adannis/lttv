@@ -287,40 +287,43 @@ static inline PropertiesLine prepare_s_e_line(LttvProcessState *process)
 
 int before_trywakeup_hook(void *hook_data, void *call_data)
 {
-#ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
   
-  ControlFlowData *control_flow_data = events_request->viewer_data;
+  LttvEvent *event;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
+  event = (LttvEvent *) call_data;
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_wakeup") != 0)
+        return FALSE; 
 
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
+  ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
 
-  LttEvent *e = ltt_tracefile_get_event(tfc->tf);
-  gint target_pid_saved = tfc->target_pid;
+  LttvTraceState *ts =  event->state;;
 
-  LttTime evtime = ltt_event_time(e);
+
+  LttTime evtime = lttv_event_get_timestamp(event);
+#ifdef BABEL_CLEANUP
   LttvFilter *filter = control_flow_data->filter;
+#endif
 
   guint woken_pid;
   gint woken_cpu;
 
-  woken_pid = ltt_event_get_int(e, lttv_trace_get_hook_field(th, 0));
-  woken_cpu = ltt_event_get_unsigned(e, lttv_trace_get_hook_field(th, 1));
-  
-  tfc->target_pid = woken_pid;
+  woken_pid = lttv_event_get_long(event, "tid");
+  woken_cpu = lttv_event_get_long(event, "target_cpu");
+
+#ifdef BABEL_CLEANUP  
   if(!filter || !filter->head ||
     lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL)) { 
-
+#else
+    {
+#endif
     /* First, check if the woken process is in the state computation
      * process list. If it is there, that means we must add it right now and
      * draw items from the beginning of the read for it. If it is not
      * present, it's a new process and it was not present : it will
      * be added after the state update. TOCHECK: What does that last para mean? */
-    guint trace_num = ts->parent.index;
-    LttvProcessState *process = lttv_state_find_process(ts, woken_cpu, woken_pid);
+      guint trace_num = 0; /*TODO ybrosseau 2012-08-23: use right number */
+      LttvProcessState *process = lttv_state_find_process(ts, woken_cpu, woken_pid);
     
     if(process != NULL) {
       /* Well, the woken process existed : we must get it in the process hash
@@ -469,9 +472,9 @@ int before_trywakeup_hook(void *hook_data, void *call_data)
     }
   }
 
-  tfc->target_pid = target_pid_saved;
 
-#endif //babel_cleanup
+
+
   return 0;
 
 }
@@ -881,22 +884,22 @@ int before_schedchange_hook(void *hook_data, void *call_data)
  */
 int after_schedchange_hook(void *hook_data, void *call_data)
 {
+  LttvEvent *event;
+
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_switch") != 0)
+        return FALSE;
+
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+
+
+  LttvTraceState *ts = event->state;
+
 #ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
   LttvFilter *filter = control_flow_data->filter;
-  LttTime evtime = ltt_event_time(e);
+#endif
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   /* Add process to process list (if not present) */
   LttvProcessState *process_in;
@@ -908,18 +911,21 @@ int after_schedchange_hook(void *hook_data, void *call_data)
   
   guint pid_in;
   {
-    pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
+    pid_in = lttv_event_get_long(event, "next_tid");
   }
 
-  tfc->target_pid = pid_in;
+#ifdef BABEL_CLEANUP
   if(!filter || !filter->head ||
     lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL)) { 
+#else 
+    {
+#endif 
     /* Find process pid_in in the list... */
     //process_in = lttv_state_find_process(ts, ANY_CPU, pid_in);
     //process_in = tfs->process;
-    guint cpu = tfs->cpu;
-    guint trace_num = ts->parent.index;
+    guint cpu = lttv_traceset_get_cpuid_from_event(event);
+    guint trace_num = 0; /* TODO set right trace number */
     process_in = ts->running_process[cpu];
     /* It should exist, because we are after the state update. */
 #ifdef EXTRA_CHECK
@@ -989,7 +995,6 @@ int after_schedchange_hook(void *hook_data, void *call_data)
     }
   }
 
-#endif //babel_cleanup
   return 0;
 }
 
@@ -1220,33 +1225,33 @@ int before_execmode_hook(void *hook_data, void *call_data)
 
 int before_process_exit_hook(void *hook_data, void *call_data)
 {
+
+  LttvEvent *event;
+
+  event = (LttvEvent *) call_data;
+  if (strcmp(lttv_traceset_get_name_from_event(event),
+	     "sched_process_exit") != 0)
+    return FALSE;
+
+ 
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+  LttvTraceState *ts = event->state;
+
 #ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-
-  ControlFlowData *control_flow_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
   LttvFilter *filter = control_flow_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
 
-  LttTime evtime = ltt_event_time(e);
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   /* Add process to process list (if not present) */
   //LttvProcessState *process = tfs->process;
-  guint cpu = tfs->cpu;
-  guint trace_num = ts->parent.index;
+    guint cpu = lttv_traceset_get_cpuid_from_event(event);
+    guint trace_num = 0; /* TODO set right trace number */
+
   LttvProcessState *process = ts->running_process[cpu];
   guint pid = process->pid;
   LttTime birth;
@@ -1398,8 +1403,7 @@ int before_process_exit_hook(void *hook_data, void *call_data)
                              &hashed_process_data->next_good_time);
     }
   }
-  
-#endif //babel_cleanup
+
   return 0;
 
 }
@@ -1420,32 +1424,34 @@ int before_process_exit_hook(void *hook_data, void *call_data)
 
 int before_process_release_hook(void *hook_data, void *call_data)
 {
+
+  LttvEvent *event;
+
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_process_free") != 0)
+        return FALSE;
+
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+
+
+  LttvTraceState *ts = event->state;
+
 #ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-
-  ControlFlowData *control_flow_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
   LttvFilter *filter = control_flow_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
+  LttTime evtime = lttv_event_get_timestamp(event);
 
-  LttTime evtime = ltt_event_time(e);
 
-  guint trace_num = ts->parent.index;
+    guint trace_num = 0; /* TODO set right trace number */
 
   guint pid;
   {
-    pid = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
+    pid = lttv_event_get_long(event, "tid");
   }
 
   /* Add process to process list (if not present) */
@@ -1583,7 +1589,6 @@ int before_process_release_hook(void *hook_data, void *call_data)
     }
   }
 
-#endif //babel_cleanup
   return 0;
 }
 
@@ -1604,29 +1609,31 @@ int before_process_release_hook(void *hook_data, void *call_data)
  */
 int after_process_fork_hook(void *hook_data, void *call_data)
 {
+ LttvEvent *event;
+
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_process_fork") != 0)
+        return FALSE;
+
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+
+
+  LttvTraceState *ts = event->state;
+
 #ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
   LttvFilter *filter = control_flow_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
 
-  LttTime evtime = ltt_event_time(e);
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   guint child_pid;
   {
-    child_pid = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
+    child_pid = lttv_event_get_long(event, "child_tid");
   }
 
   /* Add process to process list (if not present) */
@@ -1643,7 +1650,7 @@ int after_process_fork_hook(void *hook_data, void *call_data)
   g_assert(process_child != NULL);
 
   birth = process_child->creation_time;
-  guint trace_num = ts->parent.index;
+  guint trace_num = 0; /* TODO put right */
 
   /* Cannot use current process, because this action is done by the parent
    * on its child. */
@@ -1719,7 +1726,6 @@ int after_process_fork_hook(void *hook_data, void *call_data)
       hashed_process_data_child->x.under_marked = FALSE;
     }
   }
-#endif //babel_cleanup
   return FALSE;
 }
 
@@ -1738,32 +1744,32 @@ int after_process_fork_hook(void *hook_data, void *call_data)
  */
 int after_process_exit_hook(void *hook_data, void *call_data)
 {
+#if 0
+  LttvEvent *event;
+
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_process_exit") != 0)
+    return FALSE;
+
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+
+  LttvTraceState *ts = event->state;
+
 #ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
   LttvFilter *filter = control_flow_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
 
-  LttTime evtime = ltt_event_time(e);
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   /* Add process to process list (if not present) */
   //LttvProcessState *process = tfs->process;
-  guint cpu = tfs->cpu;
-  guint trace_num = ts->parent.index;
+  guint cpu = lttv_traceset_get_cpuid_from_event(event);
+  guint trace_num = 0; /* TODO set right trace number */
   LttvProcessState *process = ts->running_process[cpu];
 
   /* It should exist, because we are after the state update. */
@@ -1841,8 +1847,7 @@ int after_process_exit_hook(void *hook_data, void *call_data)
       hashed_process_data->x.middle_marked = FALSE;
     }
   }
-
-#endif //babel_cleanup
+#endif
   return FALSE;
 }
 
@@ -2026,26 +2031,27 @@ int after_user_generic_thread_brand_hook(void *hook_data, void *call_data)
  */
 int after_event_enum_process_hook(void *hook_data, void *call_data)
 {
-#ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
+  LttvEvent *event;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"lttng_statedump_process_state") != 0)
+        return FALSE;
 
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+
+
+  LttvTraceState *ts = event->state;
 
   guint first_cpu, nb_cpus, cpu;
 
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
+#ifdef BABEL_CLEANUP
   LttvFilter *filter = control_flow_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
-
+#endif
   /* Add process to process list (if not present) */
   LttvProcessState *process_in;
   LttTime birth;
@@ -2053,16 +2059,16 @@ int after_event_enum_process_hook(void *hook_data, void *call_data)
   HashedProcessData *hashed_process_data_in = NULL;
 
   ProcessList *process_list = control_flow_data->process_list;
-  guint trace_num = ts->parent.index;
+  guint trace_num = 0; /* TODO put right trace number */
   
   guint pid_in;
   {
-    pid_in = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
+    pid_in = lttv_event_get_long(event, "tid");
   }
   
   if(pid_in == 0) {
     first_cpu = 0;
-    nb_cpus = ltt_trace_get_num_cpu(ts->parent.t);
+    nb_cpus = lttv_trace_get_num_cpu(ts->trace);
   } else {
     first_cpu = ANY_CPU;
     nb_cpus = ANY_CPU+1;
@@ -2120,7 +2126,6 @@ int after_event_enum_process_hook(void *hook_data, void *call_data)
                            hashed_process_data_in);
     }
   }
-#endif //babel_cleanup
   return 0;
 }
 
@@ -2828,27 +2833,31 @@ int after_chunk(void *hook_data, void *call_data)
  */
 int before_statedump_end(void *hook_data, void *call_data)
 {
-#ifdef BABEL_CLEANUP
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *control_flow_data = events_request->viewer_data;
+  LttvEvent *event;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"lttng_statedump_end") != 0)
+        return FALSE;
 
-  LttvTracesetState *tss = (LttvTracesetState*)tfc->t_context->ts_context;
+  ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
+
+
+  LttvTraceState *ts = event->state;
+
+
   ProcessList *process_list = control_flow_data->process_list;
 
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
+#ifdef BABEL_CLEANUP
   LttvFilter *filter = control_flow_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
 
-  LttTime evtime = ltt_event_time(e);
-
+  LttTime evtime = lttv_event_get_timestamp(event);
+#ifdef BABEL_CLEANUP
   ClosureData closure_data;
   closure_data.events_request = events_request;
   closure_data.tss = tss;
@@ -2866,6 +2875,7 @@ int before_statedump_end(void *hook_data, void *call_data)
   /* Draw last items */
   g_hash_table_foreach(process_list->process_hash, draw_closure,
                         (void*)&closure_data);
+
 #if 0
   /* Reactivate sort */
   gtk_tree_sortable_set_sort_column_id(
@@ -2879,7 +2889,6 @@ int before_statedump_end(void *hook_data, void *call_data)
 #endif //0
   /* Request expose (updates damages zone also) */
   drawing_request_expose(events_request, tss, evtime);
-
-#endif //babel_cleanup
+#endif
   return 0;
 }

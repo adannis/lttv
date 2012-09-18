@@ -187,7 +187,15 @@ void drawing_data_request(Drawing_t *drawing,
 	lttv_hooks_add(event_hook,statedump_end , control_flow_data, LTTV_PRIO_STATE);	
 	lttv_hooks_add(event_hook,enum_interrupt , control_flow_data, LTTV_PRIO_STATE);
 #endif //babel_cleanup
-	
+	lttv_hooks_add(event_hook, before_trywakeup_hook, control_flow_data, LTTV_PRIO_STATE-5);
+	lttv_hooks_add(event_hook, before_process_exit_hook, control_flow_data, LTTV_PRIO_STATE-5);
+	lttv_hooks_add(event_hook, before_process_release_hook, control_flow_data, LTTV_PRIO_STATE-5);
+	lttv_hooks_add(event_hook, before_statedump_end, control_flow_data, LTTV_PRIO_STATE-5);     
+
+	lttv_hooks_add(event_hook, after_schedchange_hook, control_flow_data, LTTV_PRIO_STATE+5);
+ 	lttv_hooks_add(event_hook, after_process_fork_hook, control_flow_data, LTTV_PRIO_STATE+5);
+	lttv_hooks_add(event_hook, after_process_exit_hook, control_flow_data, LTTV_PRIO_STATE+5);
+	lttv_hooks_add(event_hook, after_event_enum_process_hook, control_flow_data, LTTV_PRIO_STATE+5);
 
     guint i, k, nb_trace;
     LttvTraceState *ts;
