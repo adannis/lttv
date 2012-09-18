@@ -133,8 +133,10 @@ static gboolean process_list_equ_fct(gconstpointer a, gconstpointer b)
     ret = FALSE;
   if(likely((pa->pid == 0 && (pa->cpu != pb->cpu))))
     ret = FALSE;
-  if(unlikely(ltt_time_compare(pa->birth, pb->birth) != 0))
-    ret = FALSE;
+  //TODO ybrosseau 2012-09-18 Check if we want to reenable birth comparision
+  // We currently do not have valid birth info, so don't compare it
+  /*  if(unlikely(ltt_time_compare(pa->birth, pb->birth) != 0))
+      ret = FALSE;*/
   if(unlikely(pa->trace_num != pb->trace_num))
     ret = FALSE;
 
