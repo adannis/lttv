@@ -344,7 +344,7 @@ int SetTraceset(Tab * tab, LttvTraceset *traceset)
     events_request->before_chunk_traceset = NULL;
     events_request->before_chunk_trace = NULL;
     events_request->before_chunk_tracefile = NULL;
-    events_request->event = traceset->event_hooks;
+    events_request->event = NULL;
     events_request->after_chunk_tracefile = NULL;
     events_request->after_chunk_trace = NULL;
     events_request->after_chunk_traceset = NULL;
@@ -1030,12 +1030,12 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
             /* Process the traceset with only state hooks */
 #ifdef DEBUG
             seek_count =
-
+#endif
                lttv_process_traceset_middle(ts,
                                             ltt_time_infinite,
                                             G_MAXUINT,
                                             events_request->start_position);
-#endif
+
             //g_assert(lttv_traceset_context_ctx_pos_compare(tsc,
             //             events_request->start_position) == 0);
 
@@ -1047,7 +1047,6 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
       /* 1.3 Add hooks and call before request for all list_in members */
       {
         GSList *iter = NULL;
-
         for(iter=list_in;iter!=NULL;iter=g_slist_next(iter)) {
           EventsRequest *events_request = (EventsRequest*)iter->data;
           /* 1.3.1 If !servicing */
@@ -1063,13 +1062,14 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
            */
 	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
 	  //     traceset wide requests
-          if(events_request->trace == -1 || TRUE)
+          if(events_request->trace == -1 || TRUE) {
+
             lttv_process_traceset_begin(ts,
                 events_request->before_chunk_traceset,
                 events_request->before_chunk_trace,
                 events_request->event
                 );
-          else {
+	  } else {
             guint nb_trace = lttv_traceset_number(ts);
             g_assert((guint)events_request->trace < nb_trace &&
                       events_request->trace > -1);
@@ -1378,15 +1378,12 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
            */
 	  //TODO ybrosseau 2012-07-10: || TRUE added since we only support
 	  //     traceset wide requests
-          if(events_request->trace == -1 || TRUE) 
+          if(events_request->trace == -1 || TRUE) {
                lttv_process_traceset_end(ts,
                                          events_request->after_chunk_traceset,
                                          events_request->after_chunk_trace,
-
                                          events_request->event);
-
-
-          else {
+	  } else {
             guint nb_trace = lttv_traceset_number(ts);
             g_assert(events_request->trace < nb_trace &&
                       events_request->trace > -1);
