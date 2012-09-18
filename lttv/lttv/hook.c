@@ -193,19 +193,23 @@ void lttv_hooks_remove_data(LttvHooks *h, LttvHook f, void *hook_data)
 }
 
 
-void lttv_hooks_remove_list(LttvHooks *h, LttvHooks *list)
+void lttv_hooks_remove_list(LttvHooks *h, const LttvHooks *list)
 {
 	guint i, j;
 
 	LttvHookClosure *c, *c_list;
 
 	if(list == NULL) return;
+	g_assert(h != list);
+	/* This iteration assume that both list are in the same order */
 	for(i = 0, j = 0 ; i < h->len && j < list->len ;) {
 		c = &g_array_index(h, LttvHookClosure, i);
 		c_list = &g_array_index(list, LttvHookClosure, j);
 		if(c->hook == c_list->hook && c->hook_data == c_list->hook_data) {
 			if(c->ref_count == 1) {
+				int count = h->len;
 				lttv_hooks_remove_by_position(h, i);
+				g_assert((count-1) == h->len);
 			} else {
 				g_assert(c->ref_count != 0);
 				c->ref_count--;
@@ -393,4 +397,23 @@ gboolean lttv_hooks_call_check_merge(LttvHooks *h1, void *call_data1,
 	}
 
 	return FALSE;
+}
+
+
+void lttv_hooks_print(const LttvHooks *h)
+{
+	gboolean ret, sum_ret = FALSE;
+
+	LttvHookClosure *c;
+
+	guint i;
+
+	if(likely(h != NULL)) {
+		for(i = 0 ; i < h->len ; i++) {
+			c = &g_array_index(h, LttvHookClosure, i);
+			printf("%p:%i:%i,", c->hook, c->ref_count, c->prio);
+		}
+		printf("\n");
+	}
+
 }

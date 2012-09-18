@@ -77,7 +77,7 @@ void lttv_hooks_remove_data(LttvHooks *h, LttvHook f, void *hook_data);
 
 /* Remove a list of hooks from the hooks list in h. */
 
-void lttv_hooks_remove_list(LttvHooks *h, LttvHooks *list);
+void lttv_hooks_remove_list(LttvHooks *h, const LttvHooks *list);
 
 
 /* Return the number of hooks in the list */
@@ -187,5 +187,9 @@ LttvHooks *lttv_hooks_by_id_channel_find(LttvHooksByIdChannelArray *h,
 		GQuark channel, guint16 id);
 
 #endif /* BABEL_CLEANUP */
+
+/* Print information about each hook in the list*/
+
+void lttv_hooks_print(const LttvHooks *h);
 
 #endif // HOOK_H
