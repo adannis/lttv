@@ -20,15 +20,18 @@ unsigned long lttv_event_get_long_unsigned(LttvEvent *event, const char* field)
 
 	timestamp = bt_ctf_get_timestamp(ctf_event);
 	if (timestamp == -1ULL) {
+		printf("ERROR: lttv_event_get_long_unsigned - invalid event\n");
 		return 0;
 	}
 	//scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
 	scope = bt_ctf_get_top_level_scope(ctf_event, BT_EVENT_FIELDS);
 	if (bt_ctf_field_get_error()) {
+		printf("ERROR: lttv_event_get_long_unsigned - cannot get field scope\n");
 		return 0;
 	}
 	data = bt_ctf_get_uint64(bt_ctf_get_field(ctf_event, scope, field));
 	if (bt_ctf_field_get_error()) {
+		printf("ERROR: lttv_event_get_long_unsigned - cannot get field data %s \n", field);
 		return 0;
 	} else {
 		return data;
@@ -82,14 +85,17 @@ long lttv_event_get_long(LttvEvent *event, const char* field)
 
 	timestamp = bt_ctf_get_timestamp(ctf_event);
 	if (timestamp == -1ULL) {
+		printf("ERROR: lttv_event_get_long - invalid event\n");
 		return 0;
 	}
 	scope = bt_ctf_get_top_level_scope(ctf_event, BT_EVENT_FIELDS);
 	if (bt_ctf_field_get_error()) {
+		printf("ERROR: lttv_event_get_long - cannot get field scope\n");
 		return 0;
 	}
 	data = bt_ctf_get_int64(bt_ctf_get_field(ctf_event, scope, field));
 	if (bt_ctf_field_get_error()) {
+		printf("ERROR: lttv_event_get_long - cannot get field data %s \n", field);
 		return 0;
 	} else {
 		return data;
