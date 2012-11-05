@@ -264,8 +264,8 @@ void lttv_print_field(LttEvent *e, struct marker_field *f, GString *s,
 int getProcessInfosFromEvent(LttvEvent *event, GString* processInfos)
 {
 	int pid=0, tid=0, ppid=0;
-	char *procname;
-	struct definition *scope;
+	const char *procname;
+
 	unsigned long timestamp;
 
 	int ret = 0;
@@ -347,12 +347,12 @@ int getCPUIdFromEvent(LttvEvent *event, GString* cpuId_str)
 
 int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, GString* fieldsStr)
 {
-	enum ctf_type_id fieldType = bt_ctf_field_type(fields);
+	enum ctf_type_id fieldType = bt_ctf_field_type(bt_ctf_get_decl_from_def(fields));
 	int ret = 0, isSigned = -1, len = 0, i = 0;
-	struct definition *index_def;
+	const struct definition *index_def; 
 	switch (fieldType) {
 	case CTF_TYPE_INTEGER:
-		isSigned = bt_ctf_get_int_signedness(fields);
+		isSigned = bt_ctf_get_int_signedness(bt_ctf_get_decl_from_def(fields));
 		if (isSigned == 1) {
 			g_string_append_printf(fieldsStr, "%lu", bt_ctf_get_int64(fields));
 		}
@@ -366,15 +366,15 @@ int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, G
 
 	case CTF_TYPE_ARRAY:
 		g_string_append_printf(fieldsStr, "[ ");
-		len = bt_ctf_get_array_len(fields);
-		if (index_def = bt_ctf_get_index(ctf_event, fields, i)) {
+		len = bt_ctf_get_array_len(bt_ctf_get_decl_from_def(fields));
+		if ((index_def = bt_ctf_get_index(ctf_event, fields, i))) {
 			for (i = 0; i < len; i++) {
 				if (i > 0) {
 					g_string_append_printf(fieldsStr, ", ");
 				}
-				bt_ctf_field_type(bt_ctf_get_index(ctf_event, fields, i));
+				//bt_ctf_field_type( bt_ctf_get_index(ctf_event, fields, i));
 				g_string_append_printf(fieldsStr, " ");
-				g_string_append_printf(fieldsStr, "[%d] = ");
+				g_string_append_printf(fieldsStr, "[%d] = ",i);
 				getFields(ctf_event, bt_ctf_get_index(ctf_event, fields, i), fieldsStr);
 			}
 		}
@@ -385,7 +385,9 @@ int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, G
 
 		break;
 	case CTF_TYPE_UNKNOWN:
+		g_string_append_printf(fieldsStr, "TYPE UNKNOWN");
 	default:
+		g_string_append_printf(fieldsStr, "TYPE UNIMP %i",fieldType );
 		break;
 	}
 	return ret;
@@ -395,9 +397,9 @@ int getFieldsFromEvent(struct bt_ctf_event *ctf_event, GString* fields, gboolean
 {
 	struct definition const * const *list = NULL;
 	unsigned int count;
-	int i = 0, j = 0, ret = 0;
+	int i = 0, ret = 0;
 	gboolean noError = TRUE;
-	struct definition *scope;
+	const struct definition *scope;
 	scope = bt_ctf_get_top_level_scope(ctf_event, BT_EVENT_FIELDS);
 
 	if (!scope) {
