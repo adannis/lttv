@@ -658,6 +658,9 @@ int set_values_position(const LttvTracesetPosition *pos)
 	lttv_traceset_seek_to_position(&previous_pos);
 	/*We must desallocate because the function bt_iter_get_pos() does a g_new */
 	bt_iter_free_pos(previous_pos.bt_pos);
+	if (pos->timestamp == G_MAXUINT64) {
+	  return 0;
+	}
 	return 1;
 }
 
@@ -687,29 +690,37 @@ LttTime  lttv_traceset_position_get_time(const LttvTracesetPosition *pos)
 }
 
 
-
+/* 0 if equals, other is different */
 int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvTracesetPosition *pos2)
 {
 #warning " TODO :Rename for lttv_traceset_position_equals && Must return COMPARAISON OF THE 2 POSITION && verify if it is the best way to compare position"
         if(pos1 == NULL || pos2 == NULL){
                 return -1;
 	}
-        
-        guint64 timeStampPos1,timeStampPos2;
-        guint cpuId1, cpuId2;
-        
-        timeStampPos1 = lttv_traceset_position_get_timestamp(pos1);
-        timeStampPos2 = lttv_traceset_position_get_timestamp(pos2);
-        
-        
-        cpuId1 = lttv_traceset_position_get_cpuid(pos1);
-        cpuId2 = lttv_traceset_position_get_cpuid(pos2);
-       
-        if(timeStampPos1 == timeStampPos2 && cpuId1 == cpuId2){
-                return 0;
-	}
-        else{
-                return 1;
+
+	int res = bt_iter_equals_pos(pos1->bt_pos, pos2->bt_pos);
+	
+	if (res < 0) {
+	
+		guint64 timeStampPos1,timeStampPos2;
+		guint cpuId1, cpuId2;
+		
+		timeStampPos1 = lttv_traceset_position_get_timestamp(pos1);
+		timeStampPos2 = lttv_traceset_position_get_timestamp(pos2);
+		
+		
+		cpuId1 = lttv_traceset_position_get_cpuid(pos1);
+		cpuId2 = lttv_traceset_position_get_cpuid(pos2);
+		
+		if(timeStampPos1 == timeStampPos2 && cpuId1 == cpuId2){
+			return 0;
+		}
+		else{
+			return 1;
+		}
+	} else {
+		
+		return !res;
 	}
 }
 
