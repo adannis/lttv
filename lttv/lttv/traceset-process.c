@@ -276,10 +276,20 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                 count = 0;
                 do {
                         if((ret = lttv_traceset_position_compare(currentPos,initialPos)) == 1){       
-                                bt_iter_next(bt_ctf_get_iter(ts->iter));
-                                lttv_traceset_destroy_position(currentPos);
-                                currentPos = lttv_traceset_create_current_position(ts);
-                                count++;
+				if(bt_iter_next(bt_ctf_get_iter(ts->iter)) == 0) {
+					if(bt_ctf_iter_read_event(ts->iter) != NULL) {
+					lttv_traceset_destroy_position(currentPos);
+					currentPos = lttv_traceset_create_current_position(ts);
+					count++;
+					} else  {
+						break;
+					}
+					
+				} else {
+
+					//No more event available
+					break;
+				}
                         }
                 }while(ret != 0);
                 
