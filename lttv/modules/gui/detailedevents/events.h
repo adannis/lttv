@@ -44,7 +44,7 @@ struct _EventViewerData {
   
   gint num_visible_events;
   
-  LttvTracesetPosition *currently_selected_position;
+  const LttvTracesetPosition *currently_selected_position;
   gboolean update_cursor; /* Speed optimisation : do not update cursor when 
                              unnecessary */
   gboolean report_position; /* do not report position when in current_time

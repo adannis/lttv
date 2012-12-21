@@ -122,6 +122,7 @@ header_size_allocate(GtkWidget *widget,
 
 void tree_v_set_cursor(EventViewerData *event_viewer_data);
 void tree_v_get_cursor(EventViewerData *event_viewer_data);
+static void redraw(EventViewerData *event_viewer_data);
 
 /* Prototype for selection handler callback */
 static void tree_selection_changed_cb (GtkTreeSelection *selection,
@@ -140,7 +141,7 @@ static gboolean tree_v_scroll_handler (GtkWidget *widget, GdkEventScroll *event,
 static gboolean key_handler(GtkWidget *widget, GdkEventKey *event,
     gpointer user_data);
 
-static void get_events(double time, EventViewerData *event_viewer_data);
+static void adjust_event_viewer(double time, EventViewerData *event_viewer_data);
 
 int event_hook(void *hook_data, void *call_data);
 
@@ -597,39 +598,15 @@ header_size_allocate(GtkWidget *widget,
 
 void tree_v_set_cursor(EventViewerData *event_viewer_data)
 {
-  g_debug("set cursor cb");
+  g_debug("set cursor cb - do nothing");
 
-#if 0
-  if(event_viewer_data->currently_selected_event != -1)
-    {
-      path = gtk_tree_path_new_from_indices(
-              event_viewer_data->currently_selected_event,
-              -1);
-      
-      gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-          path, NULL, FALSE);
-      gtk_tree_path_free(path);
-    }
-#endif //0
 }
 
 void tree_v_get_cursor(EventViewerData *event_viewer_data)
 {
-  g_debug("get cursor cb");
+  g_debug("get cursor cb -  do nothing");
   
 
-#if 0
-  gtk_tree_view_get_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-      &path, NULL);
-  indices = gtk_tree_path_get_indices(path);
-  
-  if(indices != NULL)
-      event_viewer_data->currently_selected_event = indices[0];
-    else
-      event_viewer_data->currently_selected_event = -1;
-  
-  gtk_tree_path_free(path);
-#endif //0
 }
 
 /* Filter out the key repeats that come too fast */
@@ -648,7 +625,7 @@ static gboolean key_handler(GtkWidget *widget, GdkEventKey *event,
 }
 
 void tree_v_move_cursor_cb (GtkWidget *widget,
-                            GtkMovementStep arg1,
+                            GtkMovementStep stepType,
                             gint arg2,
                             gpointer data)
 {
@@ -676,35 +653,23 @@ void tree_v_move_cursor_cb (GtkWidget *widget,
   if(lttvwindow_events_request_pending(event_viewer_data->tab)) return;
   
   /* If no prior position... */
-#if 0
-  if(ltt_time_compare(
-        lttv_traceset_context_position_get_time(
-          event_viewer_data->currently_selected_position),
-        ltt_time_infinite) == 0) {
-    
-    path = gtk_tree_path_new_from_indices(0, -1);
-    gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-                                path, NULL, FALSE);
 
-    gtk_tree_path_free(path);
-    return;
 
-  }
-#endif //0
+  g_debug("tree view move cursor : stepType is %u and arg2 is %d",
+      (guint)stepType, arg2);
 
-  g_debug("tree view move cursor : arg1 is %u and arg2 is %d",
-      (guint)arg1, arg2);
-
-  switch(arg1) {
+  switch(stepType) {
   case GTK_MOVEMENT_DISPLAY_LINES:
     if(arg2 == 1) {
       /* Move one line down */
+      LttvTracesetPosition *end_pos = 0;
       if(event_viewer_data->pos->len > 0) {
-        LttvTracesetPosition *end_pos = 
+	end_pos = 
           (LttvTracesetPosition*)g_ptr_array_index(
                                              event_viewer_data->pos,
                                              event_viewer_data->pos->len-1);
-        if(lttv_traceset_position_compare(end_pos, 
+      }
+      if(!end_pos || lttv_traceset_position_compare(end_pos, 
               event_viewer_data->currently_selected_position) == 0) {
           /* Must get down one event and select the last one */
           gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
@@ -723,80 +688,53 @@ void tree_v_move_cursor_cb (GtkWidget *widget,
 						}
 					}
 				}
-			} else {
-				/* Must get down one event and select the last one */
-				gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
-							GTK_TREE_VIEW(event_viewer_data->tree_v)));
-				event_viewer_data->update_cursor = FALSE;
-				gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-						gtk_adjustment_get_value(event_viewer_data->vadjust_c) + 1);
-				event_viewer_data->update_cursor = TRUE;
-				if(event_viewer_data->pos->len > 0) {
-					path = gtk_tree_path_new_from_indices(
-							max(0, event_viewer_data->pos->len - 1), -1);
-					if(path) {
-						gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-                                                                                path, NULL, FALSE);
-						gtk_tree_path_free(path);
-					}
-				}
-			}
-
+		
     } else {
+      LttvTracesetPosition *begin_pos = 0;
+      
       if(event_viewer_data->pos->len > 0) {
         /* Move one line up */
-        LttvTracesetPosition *begin_pos = 
+        begin_pos =  
           (LttvTracesetPosition*)g_ptr_array_index(
-                                             event_viewer_data->pos,
-                                             0);
-        if(lttv_traceset_position_compare(begin_pos, 
-              event_viewer_data->currently_selected_position) == 0) {
-          /* Must get up one event and select the first one */
-          gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
-                GTK_TREE_VIEW(event_viewer_data->tree_v)));
-					event_viewer_data->update_cursor = FALSE;
-					gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-							gtk_adjustment_get_value(event_viewer_data->vadjust_c) - 1);
-					event_viewer_data->update_cursor = TRUE;
-					if(event_viewer_data->pos->len > 0) {
-						path = gtk_tree_path_new_from_indices(
-								0, -1);
-						if(path) {
-							gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-																			 path, NULL, FALSE);
-							gtk_tree_path_free(path);
-						}
-					}
-				}
-			} else {
-				/* Must get up one event and select the first one */
-				gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
-							GTK_TREE_VIEW(event_viewer_data->tree_v)));
-				event_viewer_data->update_cursor = FALSE;
-				gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-						gtk_adjustment_get_value(event_viewer_data->vadjust_c) - 1);
-				event_viewer_data->update_cursor = TRUE;
-				if(event_viewer_data->pos->len > 0) {
-					path = gtk_tree_path_new_from_indices(
-							0, -1);
-					if(path) {
-						gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-																		 path, NULL, FALSE);
-						gtk_tree_path_free(path);
-					}
-				}
-			}
+	    event_viewer_data->pos,
+	    0);
+      }
+      if(!begin_pos || lttv_traceset_position_compare(begin_pos, 
+              event_viewer_data->currently_selected_position) == 0) 
+
+
+      {
+	/* Must get up one event and select the first one */
+	gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
+					  GTK_TREE_VIEW(event_viewer_data->tree_v)));
+	event_viewer_data->update_cursor = FALSE;
+	gtk_adjustment_set_value(event_viewer_data->vadjust_c,
+				gtk_adjustment_get_value(event_viewer_data->vadjust_c) - 1);
+	event_viewer_data->update_cursor = TRUE;
+	if(event_viewer_data->pos->len > 0) {
+	  path = gtk_tree_path_new_from_indices(
+	    0, -1);
+	  if(path) {
+	    gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
+				    path, NULL, FALSE);
+	    gtk_tree_path_free(path);
+	  }
+	}
+      }
+
     }
     break;
   case GTK_MOVEMENT_PAGES:
     if(arg2 == 1) {
       /* Move one page down */
+      LttvTracesetPosition *end_pos = 0;
       if(event_viewer_data->pos->len > 0) {
-        LttvTracesetPosition *end_pos = 
+        end_pos = 
           (LttvTracesetPosition*)g_ptr_array_index(
                                              event_viewer_data->pos,
                                              event_viewer_data->pos->len-1);
-        if(lttv_traceset_position_compare(end_pos, 
+      }
+        if(!end_pos || lttv_traceset_position_compare(end_pos, 
               event_viewer_data->currently_selected_position) == 0) {
           /* Must get down one page and select the last one */
           gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
@@ -815,32 +753,17 @@ void tree_v_move_cursor_cb (GtkWidget *widget,
 						}
 					}
 				}
-			} else {
-			/* Must get down one page and select the last one */
-				gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
-							GTK_TREE_VIEW(event_viewer_data->tree_v)));
-				event_viewer_data->update_cursor = FALSE;
-				gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-						gtk_adjustment_get_value(event_viewer_data->vadjust_c) + 2);
-				event_viewer_data->update_cursor = TRUE;
-				if(event_viewer_data->pos->len > 0) {
-					path = gtk_tree_path_new_from_indices(
-							event_viewer_data->pos->len - 1, -1);
-					if(path) {
-						gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-																		 path, NULL, FALSE);
-						gtk_tree_path_free(path);
-					}
-				}
-			}
     } else {
       /* Move one page up */
+      LttvTracesetPosition *begin_pos = 0;
+
       if(event_viewer_data->pos->len > 0) {
-        LttvTracesetPosition *begin_pos = 
+        begin_pos = 
           (LttvTracesetPosition*)g_ptr_array_index(
                                              event_viewer_data->pos,
                                              0);
-        if(lttv_traceset_position_compare(begin_pos, 
+      }
+        if(!begin_pos || lttv_traceset_position_compare(begin_pos, 
               event_viewer_data->currently_selected_position) == 0) {
           /* Must get up one page and select the first one */
           gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
@@ -859,147 +782,13 @@ void tree_v_move_cursor_cb (GtkWidget *widget,
 						}
 					}
 				}
-			}	else {
-				/* Must get up one page and select the first one */
-				gtk_tree_selection_unselect_all(gtk_tree_view_get_selection(
-							GTK_TREE_VIEW(event_viewer_data->tree_v)));
-				event_viewer_data->update_cursor = FALSE;
-				gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-						gtk_adjustment_get_value(event_viewer_data->vadjust_c) - 2);
-				event_viewer_data->update_cursor = TRUE;
-				if(event_viewer_data->pos->len > 0) {
-					path = gtk_tree_path_new_from_indices(
-							0, -1);
-					if(path) {
-						gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-																		 path, NULL, FALSE);
-						gtk_tree_path_free(path);
-					}
-				}
-			}
     }
     break;
   default:
     break;
   }
   //gtk_tree_path_free(path);
-#if 0
-  if(arg1 == GTK_MOVEMENT_DISPLAY_LINES)
-  {
-    /* Move one line */
-    if(arg2 == 1)
-    {
-      /* move one line down */
-      if(indices[0]) // Do we need an empty field here (before first)?
-      {
-        if(value + event_viewer_data->num_visible_events <= 
-            event_viewer_data->number_of_events -1)
-        {
-          event_viewer_data->currently_selected_event += 1;
-          //      gtk_adjustment_set_value(event_viewer_data->vadjust_c, value+1);
-          //gtk_tree_path_free(path);
-          //path = gtk_tree_path_new_from_indices(event_viewer_data->num_visible_events-1, -1);
-          //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-          g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-        }
-      }
-    } else {
-      /* Move one line up */
-      if(indices[0] == 0)
-      {
-        if(value - 1 >= 0 )
-        {
-          event_viewer_data->currently_selected_event -= 1;
-          //      gtk_adjustment_set_value(event_viewer_data->vadjust_c, value-1);
-          //gtk_tree_path_free(path);
-          //path = gtk_tree_path_new_from_indices(0, -1);
-          //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-          g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-        }
-      }
-    }
-  }
-  
-  if(arg1 == GTK_MOVEMENT_PAGES)
-  {
-    /* Move one page */
-    if(arg2 == 1)
-    {
-      if(event_viewer_data->num_visible_events == 1)
-        value += 1 ;
-      /* move one page down */
-      if(value + event_viewer_data->num_visible_events-1 <= 
-                      event_viewer_data->number_of_events )
-      {
-        event_viewer_data->currently_selected_event += 
-                                  event_viewer_data->num_visible_events-1;
-        //        gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-        //               value+(event_viewer_data->num_visible_events-1));
-        //gtk_tree_path_free(path);
-        //path = gtk_tree_path_new_from_indices(0, -1);
-        //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-        g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-      }
-    } else {
-      /* Move one page up */
-      if(event_viewer_data->num_visible_events == 1)
-        value -= 1 ;
 
-      if(indices[0] < event_viewer_data->num_visible_events - 2 )
-      {
-        if(value - (event_viewer_data->num_visible_events-1) >= 0)
-        {
-          event_viewer_data->currently_selected_event -=
-                          event_viewer_data->num_visible_events-1;
-      
-          //      gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-          //             value-(event_viewer_data->num_visible_events-1));
-          //gtk_tree_path_free(path);
-          //path = gtk_tree_path_new_from_indices(0, -1);
-          //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-          g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-      
-        } else {
-          /* Go to first Event */
-          event_viewer_data->currently_selected_event == 0 ;
-          //      gtk_adjustment_set_value(event_viewer_data->vadjust_c,
-          //             0);
-          //gtk_tree_path_free(path);
-          //path = gtk_tree_path_new_from_indices(0, -1);
-          //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-          g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-      
-        }
-      }
-    }
-  }
-  
-  if(arg1 == GTK_MOVEMENT_BUFFER_ENDS)
-  {
-    /* Move to the ends of the buffer */
-    if(arg2 == 1)
-    {
-      /* move end of buffer */
-      event_viewer_data->currently_selected_event =
-                            event_viewer_data->number_of_events-1 ;
-      //    gtk_adjustment_set_value(event_viewer_data->vadjust_c, 
-      //           event_viewer_data->number_of_events -
-      //           event_viewer_data->num_visible_events);
-      //gtk_tree_path_free(path);
-      //path = gtk_tree_path_new_from_indices(event_viewer_data->num_visible_events-1, -1);
-      //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-      g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-    } else {
-      /* Move beginning of buffer */
-      event_viewer_data->currently_selected_event = 0 ;
-      //    gtk_adjustment_set_value(event_viewer_data->vadjust_c, 0);
-        //gtk_tree_path_free(path);
-        //path = gtk_tree_path_new_from_indices(0, -1);
-        //gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), path, NULL, FALSE);
-      g_signal_stop_emission_by_name(G_OBJECT(widget), "move-cursor");
-    }
-  }
-#endif //0
 }
 
 static void        filter_button      (GtkToolButton *toolbutton,
@@ -1070,8 +859,9 @@ void tree_v_cursor_changed_cb (GtkWidget *widget, gpointer data)
 					gtk_tree_model_get(model, &iter, POSITION_COLUMN, &pos, -1);
 					
 					if(lttv_traceset_position_compare(pos, 
-								event_viewer_data->currently_selected_position) != 0)
+									    event_viewer_data->currently_selected_position) != 0) {
 						lttvwindow_report_current_position(tab, pos);
+					}
 				}else{
 					g_warning("Can not get iter\n");
 				}
@@ -1085,37 +875,9 @@ void tree_v_cursor_changed_cb (GtkWidget *widget, gpointer data)
 static void tree_selection_changed_cb (GtkTreeSelection *selection,
     gpointer data)
 {
-  g_debug("tree sel changed cb");
+  g_debug("tree sel changed cb - do nothing");
 
-#if 0
-    /* Set the cursor to currently selected event */
-  GtkTreeModel* model = GTK_TREE_MODEL(event_viewer_data->store_m);
-  GtkTreeIter iter;
-  LttvTracesetContextPosition *pos;
-  guint i;
-  GtkTreePath *tree_path;
 
-  for(i=0;i<event_viewer_data->num_visible_events;i++) {
-    tree_path = gtk_tree_path_new_from_indices(
-                i,
-               -1);
-    if(gtk_tree_model_get_iter(model,&iter,tree_path)){
-      gtk_tree_model_get(model, &iter, POSITION_COLUMN, &pos, -1);
-      
-      if(lttv_traceset_context_pos_pos_compare(pos, 
-            event_viewer_data->currently_selected_position) == 0) {
-        /* Match! */
-            gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v),
-                tree_path, NULL, FALSE);
-        break;
-      }
-      
-    }else{
-      g_warning("Can not get iter\n");
-    }
-   gtk_tree_path_free(tree_path);
-  }
-#endif //0
 }
 
 #if 0
@@ -1152,26 +914,10 @@ void v_scroll_cb (GtkAdjustment *adjustment, gpointer data)
 
   //gint snoop = gtk_key_snooper_install(key_snooper, NULL);
   
-  get_events(adjustment->value, event_viewer_data);
+  adjust_event_viewer(adjustment->value, event_viewer_data);
 
   //gtk_key_snooper_remove(snoop);
-#if 0 
-  LttTime time = ltt_time_sub(event_viewer_data->first_event,
-                              tsc->time_span.start_time);
-  double value = ltt_time_to_double(time);
-  gtk_adjustment_set_value(event_viewer_data->vadjust_c, value);
-  
-  if(event_viewer_data->currently_selected_event != -1) {
-      
-      tree_path = gtk_tree_path_new_from_indices(
-             event_viewer_data->currently_selected_event,
-             -1);
-      
-      //      gtk_tree_view_set_cursor(GTK_TREE_VIEW(event_viewer_data->tree_v), tree_path,
-      //             NULL, FALSE);
-      gtk_tree_path_free(tree_path);
-  }
-#endif //0
+
   g_debug("SCROLL end");
 }
 
@@ -1218,7 +964,9 @@ void tree_v_size_allocate_cb (GtkWidget *widget, GtkAllocation *alloc, gpointer 
 	   event_viewer_data->vadjust_c->value);
 
   if(event_viewer_data->num_visible_events != last_num_visible_events) {
-      get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+    //TODO ybrosseau do a proper initialisation here, so we can use the redraw
+    adjust_event_viewer(event_viewer_data->vadjust_c->value, event_viewer_data);
+    //redraw(event_viewer_data);
   }
   
 
@@ -1234,34 +982,6 @@ void tree_v_size_request_cb (GtkWidget *widget, GtkRequisition *requisition, gpo
   requisition->height = h;
   
 }
-
-#if 0
-gboolean show_event_detail(void * hook_data, void * call_data)
-{
-  EventViewerData *event_viewer_data = (EventViewerData*) hook_data;
-  LttvTracesetContext * tsc = lttvwindow_get_traceset_context(event_viewer_data->tab);
-
-  if(event_viewer_data->event_fields_queue_tmp->length == 0 &&
-     event_viewer_data->event_fields_queue->length == 0){
-    event_viewer_data->shown = FALSE;
-    return FALSE;
-  }
-
-  if(event_viewer_data->shown == FALSE){
-    event_viewer_data->shown = TRUE;
-    update_raw_data_array(event_viewer_data, 
-        event_viewer_data->event_fields_queue_tmp->length);
-
-    get_data(event_viewer_data->vadjust_c->value,
-      event_viewer_data->num_visible_events, 
-      event_viewer_data);
-
-    remove_context_hooks(event_viewer_data,tsc);
-  }
-
-  return FALSE;
-}
-#endif //0
 
 static gboolean events_check_handler(guint count, gboolean *stop_flag,
   gpointer data)
@@ -1288,14 +1008,18 @@ static gboolean events_check_handler(guint count, gboolean *stop_flag,
   } else return FALSE;
 }
 
-static void get_events(double new_value, EventViewerData *event_viewer_data)
+
+/* This function will adjust the first event position for the viewer which
+   will be used by the redraw to seek and display all the events
+ */
+static void adjust_event_viewer(double new_value, EventViewerData *event_viewer_data)
 {
 #ifdef BABEL_CLEANUP
   LttvTracesetStats *tss =
     lttvwindow_get_traceset_stats(event_viewer_data->tab);
 #endif //babel_cleanup
   LttvTraceset *ts = lttvwindow_get_traceset(event_viewer_data->tab);
-  guint i;
+
   gboolean seek_by_time;
  
   if(lttvwindow_preempt_count > 0) return;
@@ -1323,35 +1047,35 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
       else direction = SCROLL_JUMP;
     }
   } else direction = SCROLL_NONE; /* 0.0 */
-
+ 
   switch(direction) {
   case SCROLL_STEP_UP:
-    g_debug("get_events : SCROLL_STEP_UP");
+    g_debug("adjust_event_viewer : SCROLL_STEP_UP");
     relative_position = -1;
     seek_by_time = 0;
     break;
   case SCROLL_STEP_DOWN:
-    g_debug("get_events : SCROLL_STEP_DOWN");
+    g_debug("adjust_event_viewer : SCROLL_STEP_DOWN");
     relative_position = 1;
     seek_by_time = 0;
     break;
   case SCROLL_PAGE_UP:
-    g_debug("get_events : SCROLL_PAGE_UP");
+    g_debug("adjust_event_viewer : SCROLL_PAGE_UP");
     relative_position = -(event_viewer_data->num_visible_events);
     seek_by_time = 0;
     break;
   case SCROLL_PAGE_DOWN:
-    g_debug("get_events : SCROLL_PAGE_DOWN");
+    g_debug("adjust_event_viewer : SCROLL_PAGE_DOWN");
     relative_position = event_viewer_data->num_visible_events;
     seek_by_time = 0;
     break;
   case SCROLL_JUMP:
-    g_debug("get_events : SCROLL_JUMP");
+    g_debug("adjust_event_viewer : SCROLL_JUMP");
     relative_position = 0;
     seek_by_time = 1;
     break;
   case SCROLL_NONE:
-    g_debug("get_events : SCROLL_NONE");
+    g_debug("adjust_event_viewer : SCROLL_NONE");
     relative_position = 0;
     seek_by_time = 0;
     break;
@@ -1429,18 +1153,29 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
     LttTime time_val = ltt_time_sub(time,time_span.start_time);
     event_viewer_data->previous_value = ltt_time_to_double(time_val);
 
-    lttv_state_traceset_seek_position(ts, event_viewer_data->first_event);
 
   } else {
     /* Seek by time */
-    lttv_state_traceset_seek_time(ts, time);
-
     
     LttTime time_val = ltt_time_sub(time,time_span.start_time);
     event_viewer_data->previous_value = ltt_time_to_double(time_val);
     event_viewer_data->first_event = timePos;
   }
- 
+  lttvwindow_events_request_enable();
+
+  redraw(event_viewer_data);
+}
+
+static void redraw(EventViewerData *event_viewer_data) {
+  guint i;
+  LttvTraceset *ts = lttvwindow_get_traceset(event_viewer_data->tab);
+  
+  g_debug("EventViewer redraw");
+
+  //TODO ybrosseau verify its still required
+  lttvwindow_events_request_disable();
+  
+  
   /* Clear the model (don't forget to free the TCS positions!) */
   gtk_list_store_clear(event_viewer_data->store_m);
   for(i=0;i<event_viewer_data->pos->len;i++) {
@@ -1451,6 +1186,7 @@ static void get_events(double new_value, EventViewerData *event_viewer_data)
   }
   g_ptr_array_set_size(event_viewer_data->pos, 0);
   
+  lttv_state_traceset_seek_position(ts, event_viewer_data->first_event);
 
   /* Mathieu :
    * I make the choice not to use the mainwindow lttvwindow API here : the idle
@@ -1635,10 +1371,10 @@ static void event_update_selection(EventViewerData *event_viewer_data)
   gtk_widget_grab_focus(event_viewer_data->tree_v );
   
 }
-
+#ifdef BABEL_CLEANUP 
 static int current_time_get_first_event_hook(void *hook_data, void *call_data)
 {
-#ifdef BABEL_CLEANUP 
+
   EventViewerData *event_viewer_data = (EventViewerData*)hook_data;
    
   LttvTracefileContext *tfc = (LttvTracefileContext*)call_data;
@@ -1659,10 +1395,10 @@ static int current_time_get_first_event_hook(void *hook_data, void *call_data)
   lttv_traceset_context_position_save(tfc->t_context->ts_context, 
       event_viewer_data->current_time_get_first);
   return TRUE;
-#endif // BABEL_CLEANUP 
+
  
 }
-
+#endif // BABEL_CLEANUP 
 
 gboolean update_current_time(void * hook_data, void * call_data)
 {
@@ -1681,13 +1417,14 @@ gboolean update_current_time(void * hook_data, void * call_data)
      
   if(ltt_time_compare(pos_time, *current_time) != 0) {
         /*create position*/
-        LttvTracesetPosition *currentPosition = 
-                        lttv_traceset_create_time_position(ts,*current_time );
+        //LttvTracesetPosition *currentPosition = 
+        //                lttv_traceset_create_time_position(ts,*current_time );
         /*seek to current position*/
         lttv_state_traceset_seek_time(ts, *current_time);
     
-    event_viewer_data->currently_selected_position = 
-                                        lttv_traceset_create_current_position(ts);
+	event_viewer_data->currently_selected_position = 
+	  lttv_traceset_create_current_position(ts);
+	g_debug("update_current_time: %p %d", event_viewer_data->currently_selected_position,  event_viewer_data->currently_selected_position->timestamp);
   }
 
   event_viewer_data->report_position = FALSE;
@@ -1708,6 +1445,7 @@ gboolean update_current_position(void * hook_data, void * call_data)
   
   if(lttv_traceset_position_compare(
         event_viewer_data->currently_selected_position, current_pos) != 0) {
+    g_debug("Update current pos: %p, %d", current_pos, current_pos->timestamp);
                 event_viewer_data->currently_selected_position = current_pos;
       /* Simply update the current time : it is in the list */
       event_update_selection(event_viewer_data);
@@ -1731,7 +1469,7 @@ gboolean timespan_changed(void * hook_data, void * call_data)
   if(event_viewer_data->pos->len < event_viewer_data->num_visible_events ) {
 
 	  
-	  get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+    redraw(event_viewer_data);
 	  
 	  request_background_data(event_viewer_data);
   }
@@ -1764,7 +1502,7 @@ gboolean traceset_changed(void * hook_data, void * call_data)
   event_viewer_data->last_event =
                                 lttv_traceset_create_current_position(ts);
 
-  get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+  redraw(event_viewer_data);
 
 #endif //babel_cleanup
   //  event_viewer_data->vadjust_c->value = 0;
@@ -1780,7 +1518,7 @@ gboolean filter_changed(void * hook_data, void * call_data)
 
   event_viewer_data->main_win_filter = 
     (LttvFilter*)call_data;
-  get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+  redraw(event_viewer_data);
 
   return FALSE;
 }
@@ -1790,7 +1528,7 @@ gint evd_redraw_notify(void *hook_data, void *call_data)
 {
   EventViewerData *event_viewer_data = (EventViewerData*) hook_data;
 
-  get_events(event_viewer_data->vadjust_c->value, event_viewer_data);
+  redraw(event_viewer_data);
   return 0;
 }
 
