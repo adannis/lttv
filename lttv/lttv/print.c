@@ -345,11 +345,11 @@ int getCPUIdFromEvent(LttvEvent *event, GString* cpuId_str)
 	return 0;
 }
 
-int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, GString* fieldsStr)
+int getFields(struct bt_ctf_event *ctf_event, struct bt_definition const *fields, GString* fieldsStr)
 {
 	enum ctf_type_id fieldType = bt_ctf_field_type(bt_ctf_get_decl_from_def(fields));
 	int ret = 0, isSigned = -1, len = 0, i = 0;
-	const struct definition *index_def; 
+	const struct bt_definition *index_def; 
 	switch (fieldType) {
 	case CTF_TYPE_INTEGER:
 		isSigned = bt_ctf_get_int_signedness(bt_ctf_get_decl_from_def(fields));
@@ -395,11 +395,11 @@ int getFields(struct bt_ctf_event *ctf_event, struct definition const *fields, G
 
 int getFieldsFromEvent(struct bt_ctf_event *ctf_event, GString* fields, gboolean field_names)
 {
-	struct definition const * const *list = NULL;
+	struct bt_definition const * const *list = NULL;
 	unsigned int count;
 	int i = 0, ret = 0;
 	gboolean noError = TRUE;
-	const struct definition *scope;
+	const struct bt_definition *scope;
 	scope = bt_ctf_get_top_level_scope(ctf_event, BT_EVENT_FIELDS);
 
 	if (!scope) {

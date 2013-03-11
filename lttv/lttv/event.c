@@ -13,7 +13,7 @@ LttTime lttv_event_get_timestamp(LttvEvent *event)
 //TODO ybrosseau find a way to return an error code
 unsigned long lttv_event_get_long_unsigned(LttvEvent *event, const char* field)
 {
-	const struct definition *scope;
+	const struct bt_definition *scope;
 	unsigned long timestamp;
 	unsigned long data;
 	struct bt_ctf_event *ctf_event = event->bt_event;
@@ -41,7 +41,7 @@ unsigned long lttv_event_get_long_unsigned(LttvEvent *event, const char* field)
 
 char* lttv_event_get_string(LttvEvent *event, const char* field)
 {
-	const struct definition *scope;
+	const struct bt_definition *scope;
 	unsigned long timestamp;
 	char* data;
 	struct bt_ctf_event *ctf_event = event->bt_event;
@@ -78,7 +78,7 @@ char* lttv_event_get_string(LttvEvent *event, const char* field)
 }
 long lttv_event_get_long(LttvEvent *event, const char* field)
 {
-	const struct definition *scope;
+	const struct bt_definition *scope;
 	unsigned long timestamp;
 	long data;
 	struct bt_ctf_event *ctf_event = event->bt_event;
@@ -104,7 +104,7 @@ long lttv_event_get_long(LttvEvent *event, const char* field)
 /*
 unsigned int lttv_event_get_int_unsigned(LttvEvent *event, const char* field)
 {
-	struct definition *scope;
+	struct bt_definition *scope;
 	unsigned long timestamp;
 	char* data;
 	struct bt_ctf_event *ctf_event = event->bt_event;
@@ -126,7 +126,7 @@ unsigned int lttv_event_get_int_unsigned(LttvEvent *event, const char* field)
 }
 int lttv_event_get_int(LttvEvent *event, const char* field)
 {
-	struct definition *scope;
+	struct bt_definition *scope;
 	unsigned long timestamp;
 	char* data;
 	struct bt_ctf_event *ctf_event = event->bt_event;
