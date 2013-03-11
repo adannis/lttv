@@ -36,6 +36,7 @@ usage () {
 	printf "\t             (helpers: gdb, valgrind, massif, strace, callgrind)\n" >/dev/stderr
 	printf "\t-b OPTIONS   LTTV options to specify before the module list\n" >/dev/stderr
 	printf "\t-a OPTIONS   LTTV options to specify after the module list\n" >/dev/stderr
+	printf "\t-d           Activate LTTV debug level\n" >/dev/stderr
 	echo "" >/dev/stderr
 }
 
@@ -48,12 +49,13 @@ else
 	exit 1
 fi
 
-while getopts "H:m:b:a:h" options; do
+while getopts "H:m:b:a:dh" options; do
 	case $options in
 		H) HELPER=$OPTARG;;
 		m) MODE=$OPTARG;;
 		b) BOPTIONS="$BOPTIONS $OPTARG";;
 		a) AOPTIONS="$AOPTIONS $OPTARG";;
+		d) DEBUG_ARGS="--debug"; G_MESSAGES_DEBUG="all";;
 		h) usage;
 			exit 0;;
 		\?) usage;
@@ -86,17 +88,17 @@ else
 	exit 1
 fi
 
-LTTV_ARGS="$BOPTIONS $LIBS $TRACEFILES $AOPTIONS"
+LTTV_ARGS="$DEBUG_ARGS $BOPTIONS $LIBS $TRACEFILES $AOPTIONS"
 if [ "$HELPER" = "gdb" ]; then
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs gdb --args $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_MESSAGES_DEBUG=${G_MESSAGES_DEBUG} gdb --args $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "valgrind" ]; then
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind  --show-reachable=yes --leak-check=full --tool=memcheck --suppressions=debug/gtk.suppression --track-origins=yes --error-limit=no $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_MESSAGES_DEBUG=${G_MESSAGES_DEBUG} G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind  --show-reachable=yes --leak-check=full --tool=memcheck --suppressions=debug/gtk.suppression --track-origins=yes --error-limit=no $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "callgrind" ]; then
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind --tool=callgrind $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_MESSAGES_DEBUG=${G_MESSAGES_DEBUG} G_SLICE=always-malloc G_DEBUG=gc-friendly valgrind --tool=callgrind $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "massif" ]; then
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs valgrind --tool=massif $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_MESSAGES_DEBUG=${G_MESSAGES_DEBUG} valgrind --tool=massif $LTTV_EXEC $LTTV_ARGS
 elif [ "$HELPER" = "strace" ]; then
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs strace $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_MESSAGES_DEBUG=${G_MESSAGES_DEBUG} strace $LTTV_EXEC $LTTV_ARGS
 else
-	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs $LTTV_EXEC $LTTV_ARGS
+	LD_LIBRARY_PATH=${BUILDPATH}/ltt/.libs G_MESSAGES_DEBUG=${G_MESSAGES_DEBUG} $LTTV_EXEC $LTTV_ARGS
 fi
