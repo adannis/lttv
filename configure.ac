@@ -114,6 +114,11 @@ PKG_CHECK_MODULES(GOBJECT, [$pkg_modules])
 
 PKG_CHECK_MODULES(BABELTRACE, [babeltrace >= 1.0.0])
 
+AC_CHECK_LIB([babeltrace], [bt_iter_equals_pos], 
+			   [AC_DEFINE([HAVE_BT_ITER_EQUALS_POS],[],[Have equal function])], [])
+
+
+
 LIBS="$LIBS $GTK_LIBS $GOBJECT_LIBS $GMODULE_LIBS $BABELTRACE_LIBS"
 PACKAGE_CFLAGS="$GTK_CFLAGS $GOBJECT_CFLAGS $GMODULE_CFLAGS -Wall -Wformat-security"
 

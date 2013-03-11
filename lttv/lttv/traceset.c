@@ -486,7 +486,7 @@ guint lttv_traceset_get_cpuid_from_event(LttvEvent *event)
 	if (timestamp == -1ULL) {
 		return 0;
 	}
-	const struct definition *scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
+	const struct bt_definition *scope = bt_ctf_get_top_level_scope(ctf_event, BT_STREAM_PACKET_CONTEXT);
 	if (bt_ctf_field_get_error()) {
 		return 0;
 	}
@@ -698,8 +698,12 @@ int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvT
                 return -1;
 	}
 
-	int res = bt_iter_equals_pos(pos1->bt_pos, pos2->bt_pos);
-	
+	int res = -1;
+#ifdef HAVE_BT_ITER_EQUALS_POS
+	if(pos1->timestamp == G_MAXUINT64 || pos2->timestamp == G_MAXUINT64) {
+		res = bt_iter_equals_pos(pos1->bt_pos, pos2->bt_pos);
+	}
+#endif
 	if (res < 0) {
 	
 		guint64 timeStampPos1,timeStampPos2;
@@ -708,16 +712,16 @@ int lttv_traceset_position_compare(const LttvTracesetPosition *pos1, const LttvT
 		timeStampPos1 = lttv_traceset_position_get_timestamp(pos1);
 		timeStampPos2 = lttv_traceset_position_get_timestamp(pos2);
 		
+		if (timeStampPos1 == timeStampPos2) {
+
+			cpuId1 = lttv_traceset_position_get_cpuid(pos1);
+			cpuId2 = lttv_traceset_position_get_cpuid(pos2);
 		
-		cpuId1 = lttv_traceset_position_get_cpuid(pos1);
-		cpuId2 = lttv_traceset_position_get_cpuid(pos2);
-		
-		if(timeStampPos1 == timeStampPos2 && cpuId1 == cpuId2){
-			return 0;
+			if(cpuId1 == cpuId2){
+				return 0;
+			}
 		}
-		else{
-			return 1;
-		}
+		return 1;
 	} else {
 		
 		return !res;
