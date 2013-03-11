@@ -65,7 +65,11 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 	struct bt_ctf_event *bt_event;
 	
 	LttvEvent event;
-  
+	LttTime endPositionTime;
+
+	if(end_position) {
+		endPositionTime = lttv_traceset_position_get_time(end_position);
+	}
 	while(TRUE) {
 
 		if(last_ret == TRUE || ((count >= nb_events) && (nb_events != G_MAXULONG))) {
@@ -78,13 +82,17 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 			if(ltt_time_compare(end, time) <= 0) {
 				break;
 			}
-			
+			/*
 			currentPos = lttv_traceset_create_current_position(traceset);
 			if(lttv_traceset_position_compare(currentPos,end_position ) == 0){
 				lttv_traceset_destroy_position(currentPos);
 				break;
 			}
 			lttv_traceset_destroy_position(currentPos);
+			*/
+			if(end_position && (ltt_time_compare(endPositionTime, time) <= 0)) {
+				break;
+			}
 			count++;
 
 			event.bt_event = bt_event;
@@ -277,10 +285,10 @@ guint lttv_process_traceset_seek_n_backward(LttvTraceset *ts,
                 do {
                         if((ret = lttv_traceset_position_compare(currentPos,initialPos)) == 1){       
 				if(bt_iter_next(bt_ctf_get_iter(ts->iter)) == 0) {
-					if(bt_ctf_iter_read_event(ts->iter) != NULL) {
-					lttv_traceset_destroy_position(currentPos);
-					currentPos = lttv_traceset_create_current_position(ts);
-					count++;
+					if(bt_ctf_iter_read_event(ts->iter) > 0) {
+						lttv_traceset_destroy_position(currentPos);
+						currentPos = lttv_traceset_create_current_position(ts);
+						count++;
 					} else  {
 						break;
 					}
