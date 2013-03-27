@@ -1131,7 +1131,7 @@ int after_process_fork_hook(void *hook_data, void *call_data)
  */
 int after_process_exit_hook(void *hook_data, void *call_data)
 {
-#if 0
+
   LttvEvent *event;
 
   event = (LttvEvent *) call_data;
@@ -1163,19 +1163,19 @@ int after_process_exit_hook(void *hook_data, void *call_data)
   g_assert(process != NULL);
 
   guint pid = process->pid;
-  LttTime birth;
-  guint pl_height = 0;
+  //LttTime birth;
+  //guint pl_height = 0;
   HashedProcessData *hashed_process_data = NULL;
 
   ProcessList *process_list = control_flow_data->process_list;
 
-  birth = process->creation_time;
+  //birth = process->creation_time;
 
   if(likely(process_list->current_hash_data[trace_num][cpu] != NULL) ){
     hashed_process_data = process_list->current_hash_data[trace_num][cpu];
   } else {
 	  hashed_process_data = get_hashed_process_data(control_flow_data, 
-						  process, ppid, trace_num);
+						  process, pid, trace_num);
 
 
     /* Set the current process */
@@ -1208,7 +1208,7 @@ int after_process_exit_hook(void *hook_data, void *call_data)
       hashed_process_data->x.middle_marked = FALSE;
     }
   }
-#endif
+
   return FALSE;
 }
 
