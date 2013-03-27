@@ -2042,10 +2042,14 @@ int before_statedump_end(void *hook_data, void *call_data)
 #endif
 
   LttTime evtime = lttv_event_get_timestamp(event);
-#ifdef BABEL_CLEANUP
+
   ClosureData closure_data;
-  closure_data.events_request = events_request;
-  closure_data.tss = tss;
+  //TODO ybrosseau 2013-03-27: Fake and event_request.
+  //   We need to change the API of drawing_request_expose to ask
+  //   For and control flow data only. 
+  EventsRequest events_request;
+  events_request.viewer_data = control_flow_data;
+  closure_data.events_request = &events_request;
   closure_data.end_time = evtime;
 
   TimeWindow time_window = 
@@ -2073,7 +2077,7 @@ int before_statedump_end(void *hook_data, void *call_data)
   gtk_widget_queue_draw(control_flow_data->drawing->drawing_area);
 #endif //0
   /* Request expose (updates damages zone also) */
-  drawing_request_expose(events_request, tss, evtime);
-#endif
+  drawing_request_expose(&events_request, evtime);
+
   return 0;
 }
