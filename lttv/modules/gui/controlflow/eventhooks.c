@@ -800,8 +800,8 @@ int before_execmode_hook(void *hook_data, void *call_data)
   event = (LttvEvent *) call_data;
   if ((strncmp(lttv_traceset_get_name_from_event(event),"sys_", sizeof("sys_") - 1) == 0)
           ||(strcmp(lttv_traceset_get_name_from_event(event),"exit_syscall") == 0)
-          ||(strncmp(lttv_traceset_get_name_from_event(event),"irq_handler_",sizeof("irq_handler_")) == 0)
-          ||(strncmp(lttv_traceset_get_name_from_event(event),"softirq_", sizeof("softirq_")) == 0)) {
+          ||(strncmp(lttv_traceset_get_name_from_event(event),"irq_handler_",sizeof("irq_handler_") -1) == 0)
+          ||(strncmp(lttv_traceset_get_name_from_event(event),"softirq_", sizeof("softirq_") - 1) == 0)) {
           
   LttTime evtime = lttv_event_get_timestamp(event);
   ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
@@ -812,7 +812,11 @@ int before_execmode_hook(void *hook_data, void *call_data)
   ts = event->state;
   
   guint trace_number = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
-  process = lttv_state_find_process(ts ,cpu ,pid);
+
+  //TODO ybrosseau 2013-04-09 validate that using the running process is the right choice
+  //process = lttv_state_find_process(ts ,cpu ,pid);
+  process = ts->running_process[cpu];
+
   g_assert(process != NULL);
 
   guint pid = process->pid;
