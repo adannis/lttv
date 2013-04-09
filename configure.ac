@@ -35,9 +35,6 @@ AC_ARG_WITH(lttv-gui,
 	[build LTTV gui, as opposed to only build textmode LTTV [[default=yes]]]),
 	[with_lttv_gui="$withval"],
 	[with_lttv_gui="yes"])
-#TODO ybrosseau 2012-03-13: Remove this when babeltrace port is complete
-#Force GUI disabling while we port babeltrace
-#with_lttv_gui="no"
 
 AM_CONDITIONAL([BUILD_LTTV_GUI], [ test "x$with_lttv_gui" = "xyes" ])
 
@@ -117,7 +114,8 @@ PKG_CHECK_MODULES(BABELTRACE, [babeltrace >= 1.0.0])
 AC_CHECK_LIB([babeltrace], [bt_iter_equals_pos], 
 			   [AC_DEFINE([HAVE_BT_ITER_EQUALS_POS],[],[Have equal function])], [])
 
-
+AC_CHECK_LIB([babeltrace-ctf], [bt_ctf_event_name], 
+			   [], [])
 
 LIBS="$LIBS $GTK_LIBS $GOBJECT_LIBS $GMODULE_LIBS $BABELTRACE_LIBS"
 PACKAGE_CFLAGS="$GTK_CFLAGS $GOBJECT_CFLAGS $GMODULE_CFLAGS -Wall -Wformat-security"
