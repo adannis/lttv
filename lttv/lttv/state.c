@@ -2147,9 +2147,16 @@ static void pop_state(LttvEvent *event,
 
 	process->execution_stack =
 			g_array_set_size(process->execution_stack, depth - 1);
+
 	process->state = &g_array_index(process->execution_stack, LttvExecutionState,
 			depth - 2);
 	process->state->change = lttv_event_get_timestamp(event);
+
+	if((process->state->t == LTTV_STATE_MODE_UNKNOWN) && (t == LTTV_STATE_SYSCALL)) {
+		//Force state at running
+		process->state->t = LTTV_STATE_USER_MODE;
+		process->state->s = LTTV_STATE_RUN;
+	}
 }
 
 struct search_result {
@@ -4174,11 +4181,12 @@ void lttv_state_traceset_seek_time_closest(LttvTraceset *traceset, LttTime t)
 	LttvAttribute *saved_states_tree, *saved_state_tree, *closest_tree = NULL;
 	
 	LttTime closest_tree_time, restored_time;
+	guint first_restored_time = 1;
 
 	//g_tree_destroy(self->parent.pqueue);
 	//self->parent.pqueue = g_tree_new(compare_tracefile);
 
-	g_info("Entering seek_time_closest for time %lu.%lu", t.tv_sec, t.tv_nsec);
+	g_debug("Entering seek_time_closest for time %lu.%lu", t.tv_sec, t.tv_nsec);
 
 	nb_trace = lttv_traceset_number(traceset);
 	for(i = 0 ; i < nb_trace ; i++) {
@@ -4215,8 +4223,8 @@ void lttv_state_traceset_seek_time_closest(LttvTraceset *traceset, LttTime t)
 
 			/* restore the closest earlier saved state */
 			if(min_pos != -1) {
-				if(ltt_time_compare(restored_time, closest_tree_time) == 0) {
-					
+				if(first_restored_time || (ltt_time_compare(restored_time, closest_tree_time) == 0)) {
+					first_restored_time = 0;
 					lttv_state_restore(tstate, closest_tree);
 					
 					restored_time = closest_tree_time;
