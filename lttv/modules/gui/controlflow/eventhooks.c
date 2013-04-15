@@ -637,7 +637,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
 		  evtime );
 
     } else
-      g_warning("Cannot find pin_in in schedchange %u", pid_in);
+	    g_warning("Cannot find pid_in in schedchange %u at %u.%u", pid_in, evtime.tv_sec, evtime.tv_nsec);
 #ifdef BABEL_CLEANUP
   tfc->target_pid = target_pid_saved;
 #endif //babel_cleanup
