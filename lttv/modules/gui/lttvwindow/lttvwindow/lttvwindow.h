@@ -705,7 +705,9 @@ typedef struct _EventsRequest {
 } EventsRequest;
 
 /* Maximum number of events to proceed at once in a chunk */
-#define CHUNK_NUM_EVENTS 6000
+// TODO ybrosseau, temporarly disable the chunking of event request
+//     to solve a bug in the event state stability
+#define CHUNK_NUM_EVENTS G_MAXUINT
 
 
 /**
