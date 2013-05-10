@@ -21,6 +21,7 @@
 #define _DRAW_ITEM_H
 
 #include <lttv/state.h>
+#include <lttv/hook.h>
 
 typedef struct _DrawContext DrawContext;
 typedef struct _DrawInfo DrawInfo;

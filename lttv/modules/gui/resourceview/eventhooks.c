@@ -116,9 +116,9 @@ static gint background_ready(void *hook_data, void *call_data)
  */
 static void request_background_data(ControlFlowData *resourceview_data)
 {
-  LttvTracesetContext * tsc =
-        lttvwindow_get_traceset_context(resourceview_data->tab);
-  gint num_traces = lttv_traceset_number(tsc->ts);
+  LttvTraceset* ts =
+        lttvwindow_get_traceset(resourceview_data->tab);
+  gint num_traces = lttv_traceset_number(ts);
   gint i;
   LttvTrace *trace;
   LttvTraceState *tstate;
@@ -130,11 +130,10 @@ static void request_background_data(ControlFlowData *resourceview_data)
   resourceview_data->background_info_waiting = 0;
   
   for(i=0;i<num_traces;i++) {
-    trace = lttv_traceset_get(tsc->ts, i);
-    tstate = LTTV_TRACE_STATE(tsc->traces[i]);
-
+    trace = lttv_traceset_get(ts, i);
+  
     if(lttvwindowtraces_get_ready(g_quark_from_string("state"),trace)==FALSE
-        && !tstate->has_precomputed_states) {
+        && !ts->has_precomputed_states) {
 
       if(lttvwindowtraces_get_in_progress(g_quark_from_string("state"),
                                           trace) == FALSE) {
@@ -369,19 +368,17 @@ static void bdev_set_line_color(PropertiesLine *prop_line, LttvBdevState *s)
 
 int before_schedchange_hook(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
+  LttvEvent *event;
+  LttvTraceState *ts;
 
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
+  event = (LttvEvent *) call_data;
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_switch") != 0)
+    return FALSE;
 
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
+  ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
 
-  LttTime evtime = ltt_event_time(e);
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   /* we are in a schedchange, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
@@ -389,18 +386,18 @@ int before_schedchange_hook(void *hook_data, void *call_data)
    */
 
   guint pid_out;
-  pid_out = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
+  pid_out = lttv_event_get_long(event, "prev_tid");
 // TODO: can't we reenable this? pmf
 //  if(pid_in != 0 && pid_out != 0) {
 //    /* not a transition to/from idle */
 //    return 0;
 //  }
 
-  tfc->target_pid = pid_out;
 
-  guint cpu = tfs->cpu;
+  guint cpu = lttv_traceset_get_cpuid_from_event(event);
+  ts = event->state;      
 
-  guint trace_num = ts->parent.index;
+  guint trace_num = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
   /* Add process to process list (if not present) */
   HashedResourceData *hashed_process_data = NULL;
   
@@ -499,7 +496,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
         prop_line.line_width = STATE_LINE_WIDTH;
         prop_line.style = GDK_LINE_SOLID;
         prop_line.y = MIDDLE;
-        cpu_set_line_color(&prop_line, tfs->cpu_state);
+        cpu_set_line_color(&prop_line, &(ts->cpu_states[cpu]));
         draw_line((void*)&prop_line, (void*)&draw_context);
 
       }
@@ -529,23 +526,25 @@ int before_schedchange_hook(void *hook_data, void *call_data)
  */
 int after_schedchange_hook(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-  LttEvent *e;
+  LttvEvent *event;
 
-  e = ltt_tracefile_get_event(tfc->tf);
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"sched_switch") != 0)
+        return FALSE;
 
+  ControlFlowData *resourceview_data = (ControlFlowData*) hook_data;
+
+  LttvTraceState *ts = event->state;
+#ifdef BABEL_CLEANUP
   LttvFilter *filter = resourceview_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
 
-  LttTime evtime = ltt_event_time(e);
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   /* Add process to process list (if not present) */
   LttvProcessState *process_in;
@@ -556,8 +555,8 @@ int after_schedchange_hook(void *hook_data, void *call_data)
   /* Find process pid_in in the list... */
   //process_in = lttv_state_find_process(ts, ANY_CPU, pid_in);
   //process_in = tfs->process;
-  guint cpu = tfs->cpu;
-  guint trace_num = ts->parent.index;
+  guint cpu =  lttv_traceset_get_cpuid_from_event(event);
+  guint trace_num = 0; /* TODO set right trace number */
   process_in = ts->running_process[cpu];
   /* It should exist, because we are after the state update. */
 #ifdef EXTRA_CHECK
@@ -624,33 +623,39 @@ int before_execmode_hook_trap(void *hook_data, void *call_data);
 
 int before_execmode_hook(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
-  LttTime evtime = ltt_event_time(e);
+  LttvEvent *event;
+  guint cpu;
+  guint pid = 0;
+  LttvTraceState *ts;
+  LttvProcessState *process;
 
   before_execmode_hook_irq(hook_data, call_data);
   before_execmode_hook_soft_irq(hook_data, call_data);
+#ifdef TRAP_NO_EXIST
   before_execmode_hook_trap(hook_data, call_data);
-
+#endif
   /* we are in a execmode, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
    * time to do it.
    */
-  /* For the pid */
-  guint cpu = tfs->cpu;
+  event = (LttvEvent *) call_data;
+  if ((strncmp(lttv_traceset_get_name_from_event(event),"sys_", sizeof("sys_") - 1) == 0)
+          ||(strcmp(lttv_traceset_get_name_from_event(event),"exit_syscall") == 0)
+          ||(strncmp(lttv_traceset_get_name_from_event(event),"irq_handler_",sizeof("irq_handler_") -1) == 0)
+          ||(strncmp(lttv_traceset_get_name_from_event(event),"softirq_", sizeof("softirq_") - 1) == 0)) {
+          
+  LttTime evtime = lttv_event_get_timestamp(event);
+  ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
 
-  guint trace_num = ts->parent.index;
-  LttvProcessState *process = ts->running_process[cpu];
+  /* For the pid */
+  LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
+  
+  cpu = lttv_traceset_get_cpuid_from_event(event);
+  ts = event->state;
+  
+  guint trace_num = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+
+  process = ts->running_process[cpu];
   g_assert(process != NULL);
 
   /* Well, the process_out existed : we must get it in the process hash
@@ -767,7 +772,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
         prop_line.line_width = STATE_LINE_WIDTH;
         prop_line.style = GDK_LINE_SOLID;
         prop_line.y = MIDDLE;
-        cpu_set_line_color(&prop_line, tfs->cpu_state);
+        cpu_set_line_color(&prop_line, &ts->cpu_states[cpu]);
         draw_line((void*)&prop_line, (void*)&draw_context);
       }
       /* become the last x position */
@@ -779,27 +784,19 @@ int before_execmode_hook(void *hook_data, void *call_data)
       convert_pixels_to_time(width, x+1, time_window,
                              &hashed_process_data->next_good_time);
     }
+  }  
   }
-  
   return 0;
 }
 
 int before_execmode_hook_irq(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
+   LttvEvent *event;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-  struct marker_info *minfo;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
-  LttTime evtime = ltt_event_time(e);
+  event = (LttvEvent *) call_data;
+  
+  LttTime evtime = lttv_event_get_timestamp(event);
+  ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
 
   /* we are in a execmode, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
@@ -808,19 +805,17 @@ int before_execmode_hook_irq(void *hook_data, void *call_data)
   /* For the pid */
 
   guint64 irq;
-  guint cpu = tfs->cpu;
+  guint cpu = lttv_traceset_get_cpuid_from_event(event);
+  LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
+  LttvTraceState *ts = event->state;;
 
   /*
    * Check for LTT_CHANNEL_KERNEL channel name and event ID
    * corresponding to LTT_EVENT_IRQ_ENTRY or LTT_EVENT_IRQ_EXIT.
    */
-  if (tfc->tf->name != LTT_CHANNEL_KERNEL)
-    return 0;
-  minfo = marker_get_info_from_id(tfc->tf->mdata, e->event_id);
-  g_assert(minfo != NULL);
-  if (minfo->name == LTT_EVENT_IRQ_ENTRY) {
-    irq = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
-  } else if (minfo->name == LTT_EVENT_IRQ_EXIT) {
+  if (strncmp(lttv_traceset_get_name_from_event(event),"irq_handler_entry",sizeof("irq_handler_entry")) == 0) {
+    irq = lttv_event_get_long(event, "irq");
+  } else if (strncmp(lttv_traceset_get_name_from_event(event),"irq_handler_exit",sizeof("irq_handler_exit")) == 0) {
     gint len = ts->cpu_states[cpu].irq_stack->len;
     if(len) {
       irq = g_array_index(ts->cpu_states[cpu].irq_stack, gint, len-1);
@@ -831,7 +826,7 @@ int before_execmode_hook_irq(void *hook_data, void *call_data)
   } else
     return 0;
 
-  guint trace_num = ts->parent.index;
+  guint trace_num = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
 
   /* Well, the process_out existed : we must get it in the process hash
    * or add it, and draw its items.
@@ -967,20 +962,14 @@ int before_execmode_hook_irq(void *hook_data, void *call_data)
 
 int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
+   LttvEvent *event;
+  LttvTraceState *ts;
 
-  LttvTracefileState *tfs = (LttvTracefileState *)call_data;
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-  struct marker_info *minfo;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
-  LttTime evtime = ltt_event_time(e);
+  event = (LttvEvent *) call_data;
+  
+ 
+ 
 
   /* we are in a execmode, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
@@ -989,21 +978,23 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
   /* For the pid */
 
   guint64 softirq;
-  guint cpu = tfs->cpu;
+
 
   /*
    * Check for LTT_CHANNEL_KERNEL channel name and event ID
    * corresponding to LTT_EVENT_SOFT_IRQ_RAISE, LTT_EVENT_SOFT_IRQ_ENTRY
    * or LTT_EVENT_SOFT_IRQ_EXIT.
    */
-  if (tfc->tf->name != LTT_CHANNEL_KERNEL)
-    return 0;
-  minfo = marker_get_info_from_id(tfc->tf->mdata, e->event_id);
-  g_assert(minfo != NULL);
-  if (minfo->name == LTT_EVENT_SOFT_IRQ_RAISE
-      || minfo->name == LTT_EVENT_SOFT_IRQ_ENTRY) {
-    softirq = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
-  } else if (minfo->name == LTT_EVENT_SOFT_IRQ_EXIT) {
+ 
+  if (strncmp(lttv_traceset_get_name_from_event(event),"softirq_entry",sizeof("softirq_entry")) == 0
+	  || strncmp(lttv_traceset_get_name_from_event(event),"softirq_raise",sizeof("softirq_raise")) == 0) {
+    softirq =  lttv_event_get_long_unsigned(event, "vec");
+  } else if (strncmp(lttv_traceset_get_name_from_event(event),"softirq_exit",sizeof("softirq_exit")) == 0) {
+    LttTime evtime = lttv_event_get_timestamp(event);
+    ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
+    LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
+    guint cpu =  lttv_traceset_get_cpuid_from_event(event);  
+    ts = event->state;
     gint len = ts->cpu_states[cpu].softirq_stack->len;
     if(len) {
       softirq = g_array_index(ts->cpu_states[cpu].softirq_stack, gint, len-1);
@@ -1011,10 +1002,9 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
     else {
       return 0;
     }
-  } else
-    return 0;
 
-  guint trace_num = ts->parent.index;
+
+  guint trace_num = 0;//TODO change it to the right value;
 
   /* Well, the process_out existed : we must get it in the process hash
    * or add it, and draw its items.
@@ -1134,10 +1124,10 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
                              &hashed_process_data->next_good_time);
     }
   }
-  
+  }
   return 0;
 }
-
+#ifdef TRAP_NO_EXIST
 int before_execmode_hook_trap(void *hook_data, void *call_data)
 {
   LttvTraceHook *th = (LttvTraceHook*)hook_data;
@@ -1313,34 +1303,38 @@ int before_execmode_hook_trap(void *hook_data, void *call_data)
   
   return 0;
 }
-
-
+#endif
+#ifdef BABEL_CLEANUP 
+//TODO investigate the use of block dev resource
 int before_bdev_event_hook(void *hook_data, void *call_data)
 {
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
+LttvEvent *event;
+  guint cpu;
+  guint pid = 0;
+  LttvTraceState *ts;
+  LttvProcessState *process;
 
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTraceState *ts = (LttvTraceState *)tfc->t_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
-
-  LttTime evtime = ltt_event_time(e);
 
   /* we are in a execmode, before the state update. We must draw the
    * items corresponding to the state before it changes : now is the right
    * time to do it.
    */
+
+  event = (LttvEvent *) call_data;
+  if (strcmp(lttv_traceset_get_name_from_event(event),"block_rq_issue") != 0 && strcmp(lttv_traceset_get_name_from_event(event),"block_rq_complete") != 0)
+        return FALSE;
+
+
+  ControlFlowData *resourceview_data = (ControlFlowData*) hook_data;
+
+  LttvTraceState *ts = event->state;
   /* For the pid */
 
   guint8 major = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 0));
   guint8 minor = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
   gint devcode_gint = MKDEV(major,minor);
 
-  guint trace_num = ts->parent.index;
+  guint trace_num = 0; //TODO put the real trace_num;
 
   LttvBdevState *bdev = g_hash_table_lookup(ts->bdev_states, &devcode_gint); 
   /* the result of the lookup might be NULL. that's ok, the rest of the function
@@ -1482,7 +1476,7 @@ int before_bdev_event_hook(void *hook_data, void *call_data)
   
   return 0;
 }
-
+#endif
 gint update_time_window_hook(void *hook_data, void *call_data)
 {
   ControlFlowData *resourceview_data = (ControlFlowData*) hook_data;
@@ -1780,11 +1774,11 @@ gint update_current_time_hook(void *hook_data, void *call_data)
   }
   LttTime time_end = ltt_time_add(time_begin, width);
 
-  LttvTracesetContext * tsc =
-        lttvwindow_get_traceset_context(resourceview_data->tab);
-  
-  LttTime trace_start = tsc->time_span.start_time;
-  LttTime trace_end = tsc->time_span.end_time;
+  LttvTraceset * ts = lttvwindow_get_traceset(resourceview_data->tab);
+
+  TimeInterval time_span = lttv_traceset_get_time_span_real(ts);
+  LttTime trace_start = time_span.start_time;
+  LttTime trace_end = time_span.end_time;
   
   g_info("New current time HOOK : %lu, %lu", current_time.tv_sec,
               current_time.tv_nsec);
@@ -1844,7 +1838,6 @@ gint update_current_time_hook(void *hook_data, void *call_data)
 
 typedef struct _ClosureData {
   EventsRequest *events_request;
-  LttvTracesetState *tss;
   LttTime end_time;
   guint x_end;
 } ClosureData;
@@ -1859,9 +1852,7 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
     
   EventsRequest *events_request = closure_data->events_request;
   ControlFlowData *resourceview_data = events_request->viewer_data;
-
-  LttvTracesetState *tss = closure_data->tss;
-  LttvTracesetContext *tsc = (LttvTracesetContext*)tss;
+  LttvTraceset *ts = lttvwindow_get_traceset(resourceview_data->tab);
 
   LttTime evtime = closure_data->end_time;
 
@@ -1880,8 +1871,9 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
 #ifdef EXTRA_CHECK
     g_assert(lttv_traceset_number(tsc->ts) > 0);
 #endif //EXTRA_CHECK
-    LttvTraceContext *tc = tsc->traces[process_info->trace_num];
-    LttvTraceState *ts = (LttvTraceState*)tc;
+    //TODO Fdeslauriers 2012-07-17: adapt for multiple traces
+    LttvTrace *trace = lttv_traceset_get(ts,0);
+    LttvTraceState *ts = trace->state;
 
     /* Only draw for processes that are currently in the trace states */
 
@@ -2004,7 +1996,8 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
 int before_chunk(void *hook_data, void *call_data)
 {
   EventsRequest *events_request = (EventsRequest*)hook_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
+  LttvTraceset *ts = (LttvTraceset*)call_data;
+
 #if 0  
   /* Deactivate sort */
   gtk_tree_sortable_set_sort_column_id(
@@ -2012,7 +2005,7 @@ int before_chunk(void *hook_data, void *call_data)
       TRACE_COLUMN,
       GTK_SORT_ASCENDING);
 #endif //0
-  drawing_chunk_begin(events_request, tss);
+  drawing_chunk_begin(events_request, ts);
 
   return 0;
 }
@@ -2025,14 +2018,41 @@ int before_chunk(void *hook_data, void *call_data)
 int before_request(void *hook_data, void *call_data)
 {
   EventsRequest *events_request = (EventsRequest*)hook_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
  
-  drawing_data_request_begin(events_request, tss);
+  drawing_data_request_begin(events_request);
 
   return 0;
 }
 
+void draw_closing_lines(ControlFlowData *resourceview_data, 
+			EventsRequest* events_request)
+{
+ LttTime end_time = events_request->end_time;
+  ClosureData closure_data;
+  closure_data.events_request = events_request;
+  closure_data.end_time = end_time;
 
+
+  TimeWindow time_window = 
+          lttvwindow_get_time_window(resourceview_data->tab);
+  guint width = resourceview_data->drawing->width;
+  convert_time_to_pixels(
+            time_window,
+            end_time,
+            width,
+            &closure_data.x_end);
+
+  guint i;
+  /* Draw last items */
+  for(i=0; i<RV_RESOURCE_COUNT; i++) {
+    g_hash_table_foreach(resourcelist_get_resource_hash_table(resourceview_data, i), draw_closure,
+                        (void*)&closure_data);
+  }
+  
+  /* Request expose */
+  drawing_request_expose(events_request, end_time);
+
+}
 /*
  * after request is necessary in addition of after chunk in order to draw 
  * lines until the end of the screen. after chunk just draws lines until
@@ -2044,36 +2064,12 @@ int before_request(void *hook_data, void *call_data)
  */
 int after_request(void *hook_data, void *call_data)
 {
-  guint i;
+ 
   EventsRequest *events_request = (EventsRequest*)hook_data;
   ControlFlowData *resourceview_data = events_request->viewer_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
-  
-  LttTime end_time = events_request->end_time;
+ 
+  draw_closing_lines(resourceview_data, events_request);
 
-  ClosureData closure_data;
-  closure_data.events_request = (EventsRequest*)hook_data;
-  closure_data.tss = tss;
-  closure_data.end_time = end_time;
-
-  TimeWindow time_window = 
-          lttvwindow_get_time_window(resourceview_data->tab);
-  guint width = resourceview_data->drawing->width;
-  convert_time_to_pixels(
-            time_window,
-            end_time,
-            width,
-            &closure_data.x_end);
-
-
-  /* Draw last items */
-  for(i=0; i<RV_RESOURCE_COUNT; i++) {
-    g_hash_table_foreach(resourcelist_get_resource_hash_table(resourceview_data, i), draw_closure,
-                        (void*)&closure_data);
-  }
-  
-  /* Request expose */
-  drawing_request_expose(events_request, tss, end_time);
   return 0;
 }
 
@@ -2086,15 +2082,13 @@ int after_chunk(void *hook_data, void *call_data)
 {
   EventsRequest *events_request = (EventsRequest*)hook_data;
   ControlFlowData *resourceview_data = events_request->viewer_data;
-  LttvTracesetState *tss = (LttvTracesetState*)call_data;
-  LttvTracesetContext *tsc = (LttvTracesetContext*)call_data;
-  LttvTracefileContext *tfc = lttv_traceset_context_get_current_tfc(tsc);
+  LttvTraceset *ts = (LttvTraceset*)call_data;
+
   LttTime end_time;
   
   ProcessList *process_list = resourceview_data->process_list;
   guint i;
-  LttvTraceset *traceset = tsc->ts;
-  guint nb_trace = lttv_traceset_number(traceset);
+  guint nb_trace = lttv_traceset_number(ts);
 
   /* Only execute when called for the first trace's events request */
   if(!process_list->current_hash_data)
@@ -2105,44 +2099,13 @@ int after_chunk(void *hook_data, void *call_data)
   }
   g_free(process_list->current_hash_data);
   process_list->current_hash_data = NULL;
-
+#ifdef BABEL_CLEANUP
   if(tfc != NULL)
     end_time = LTT_TIME_MIN(tfc->timestamp, events_request->end_time);
   else /* end of traceset, or position now out of request : end */
     end_time = events_request->end_time;
-  
-  ClosureData closure_data;
-  closure_data.events_request = (EventsRequest*)hook_data;
-  closure_data.tss = tss;
-  closure_data.end_time = end_time;
-
-  TimeWindow time_window = 
-          lttvwindow_get_time_window(resourceview_data->tab);
-  guint width = resourceview_data->drawing->width;
-  convert_time_to_pixels(
-            time_window,
-            end_time,
-            width,
-            &closure_data.x_end);
-
-  /* Draw last items */
-  for(i=0; i<RV_RESOURCE_COUNT; i++) {
-    g_hash_table_foreach(resourcelist_get_resource_hash_table(resourceview_data, i), draw_closure,
-                        (void*)&closure_data);
-  }
-#if 0
-  /* Reactivate sort */
-  gtk_tree_sortable_set_sort_column_id(
-      GTK_TREE_SORTABLE(resourceview_data->process_list->list_store),
-      GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
-      GTK_SORT_ASCENDING);
-
-  update_index_to_pixmap(resourceview_data->process_list);
-  /* Request a full expose : drawing scrambled */
-  gtk_widget_queue_draw(resourceview_data->drawing->drawing_area);
-#endif //0
-  /* Request expose (updates damages zone also) */
-  drawing_request_expose(events_request, tss, end_time);
+#endif
+  draw_closing_lines(resourceview_data, events_request);
 
   return 0;
 }
@@ -2157,30 +2120,39 @@ int after_chunk(void *hook_data, void *call_data)
  */
 int before_statedump_end(void *hook_data, void *call_data)
 {
+  LttvEvent *event;
+
+  event = (LttvEvent *) call_data;
+		
+  if (strcmp(lttv_traceset_get_name_from_event(event),"lttng_statedump_end") != 0)
+        return FALSE;
+
+  ControlFlowData *resourceview_data = (ControlFlowData*) hook_data;
+
+
+  LttvTraceState *ts = event->state;
+
+
   gint i;
 
-  LttvTraceHook *th = (LttvTraceHook*)hook_data;
-  EventsRequest *events_request = (EventsRequest*)th->hook_data;
-  ControlFlowData *resourceview_data = events_request->viewer_data;
-
-  LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;
-
-  LttvTracesetState *tss = (LttvTracesetState*)tfc->t_context->ts_context;
-
-  LttEvent *e;
-  e = ltt_tracefile_get_event(tfc->tf);
+#ifdef BABEL_CLEANUP
 
   LttvFilter *filter = resourceview_data->filter;
   if(filter != NULL && filter->head != NULL)
     if(!lttv_filter_tree_parse(filter->head,e,tfc->tf,
           tfc->t_context->t,tfc,NULL,NULL))
       return FALSE;
+#endif
 
-  LttTime evtime = ltt_event_time(e);
+  LttTime evtime = lttv_event_get_timestamp(event);
 
   ClosureData closure_data;
-  closure_data.events_request = events_request;
-  closure_data.tss = tss;
+  //TODO ybrosseau 2013-03-27: Fake and event_request.
+  //   We need to change the API of drawing_request_expose to ask
+  //   For and control flow data only. 
+  EventsRequest events_request;
+  events_request.viewer_data = resourceview_data;
+  closure_data.events_request = &events_request;
   closure_data.end_time = evtime;
 
   TimeWindow time_window = 
@@ -2210,7 +2182,8 @@ int before_statedump_end(void *hook_data, void *call_data)
   gtk_widget_queue_draw(resourceview_data->drawing->drawing_area);
 #endif //0
   /* Request expose (updates damages zone also) */
-  drawing_request_expose(events_request, tss, evtime);
+  drawing_request_expose(&events_request, evtime);
 
   return 0;
+
 }

@@ -106,7 +106,6 @@
 #include <lttv/iattribute.h>
 #include <string.h>
 
-#include <lttv/tracecontext.h>
 #include <lttv/state.h>
 #include <lttv/lttv.h>
 

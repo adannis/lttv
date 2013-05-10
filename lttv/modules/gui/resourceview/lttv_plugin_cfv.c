@@ -34,7 +34,9 @@ static void cfv_update_filter(LttvPlugin *parent, LttvFilter *filter)
 {
   LttvPluginCFV *self = LTTV_PLUGIN_CFV(parent);
   g_message("In CFV update filter.");
+#ifdef BABEL_CLEANUP
   lttv_filter_destroy(self->cfd->filter);
+#endif //babel_cleanup
   self->cfd->filter = filter;
   redraw_notify(self->cfd, NULL);
 }

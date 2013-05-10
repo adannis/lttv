@@ -27,9 +27,6 @@
 #include <ltt/trace.h>
 
 #include <lttv/lttv.h>
-#ifdef BABEL_CLEANUP
-#include <lttv/tracecontext.h>
-#endif //babel_cleanup
 #include <lttvwindow/lttvwindow.h>
 #include <lttv/state.h>
 #include <lttv/hook.h>

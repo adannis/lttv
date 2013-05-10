@@ -130,8 +130,7 @@ static void request_background_data(ControlFlowData *control_flow_data)
   
   for(i=0;i<num_traces;i++) {
     trace = lttv_traceset_get(ts, i);
-    tstate = trace->state;
-
+  
     if(lttvwindowtraces_get_ready(g_quark_from_string("state"),trace)==FALSE
         && !ts->has_precomputed_states) {
 

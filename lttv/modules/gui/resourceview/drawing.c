@@ -27,7 +27,6 @@
 #include <ltt/trace.h>
 
 #include <lttv/lttv.h>
-#include <lttv/tracecontext.h>
 #include <lttvwindow/lttvwindow.h>
 #include <lttv/state.h>
 #include <lttv/hook.h>
@@ -151,6 +150,7 @@ void drawing_data_request(Drawing_t *drawing,
   Tab *tab = drawing->control_flow_data->tab;
   TimeWindow time_window =
               lttvwindow_get_time_window(tab);
+  LttvTraceset *traceset = lttvwindow_get_traceset(tab);
 
   ControlFlowData *control_flow_data = drawing->control_flow_data;
   //    (ControlFlowData*)g_object_get_data(
@@ -184,12 +184,16 @@ void drawing_data_request(Drawing_t *drawing,
                                        control_flow_data);
 
   {
+    LttvHooks *event_hook = lttv_hooks_new();
+        
+    lttv_hooks_add(event_hook,before_schedchange_hook , control_flow_data, LTTV_PRIO_STATE-5);	
+    lttv_hooks_add(event_hook,before_execmode_hook , control_flow_data, LTTV_PRIO_STATE-5);	
+    lttv_hooks_add(event_hook, after_schedchange_hook, control_flow_data, LTTV_PRIO_STATE+5);       
+
     /* find the tracehooks */
-    LttvTracesetContext *tsc = lttvwindow_get_traceset_context(tab);
-    LttvTraceset *traceset = tsc->ts;
+
     LttvTraceState *ts;
     GArray *hooks;
-    LttvTraceHook *th;
 
     guint i, k;
     guint first_after;
@@ -200,8 +204,7 @@ void drawing_data_request(Drawing_t *drawing,
       EventsRequest *events_request = g_new(EventsRequest, 1);
       // Create the hooks
       //LttvHooks *event = lttv_hooks_new();
-      LttvHooksByIdChannelArray *event_by_id_channel =
-        lttv_hooks_by_id_channel_new();
+      
       LttvHooks *before_chunk_traceset = lttv_hooks_new();
       LttvHooks *after_chunk_traceset = lttv_hooks_new();
       LttvHooks *before_request_hook = lttv_hooks_new();
@@ -227,7 +230,7 @@ void drawing_data_request(Drawing_t *drawing,
                      events_request,
                      LTTV_PRIO_DEFAULT);
 
-
+#ifdef BABEL_CLEANUP
       ts = (LttvTraceState *)tsc->traces[i];
 
       /* Find the eventtype id for the following events and register the
@@ -464,7 +467,7 @@ void drawing_data_request(Drawing_t *drawing,
       }
       
       events_request->hooks = hooks;
-
+#endif
       // Fill the events request
       events_request->owner = control_flow_data;
       events_request->viewer_data = control_flow_data;
@@ -479,8 +482,7 @@ void drawing_data_request(Drawing_t *drawing,
       events_request->before_chunk_traceset = before_chunk_traceset;
       events_request->before_chunk_trace = NULL;
       events_request->before_chunk_tracefile = NULL;
-      events_request->event = NULL;
-      events_request->event_by_id_channel = event_by_id_channel;
+      events_request->event = event_hook;
       events_request->after_chunk_tracefile = NULL;
       events_request->after_chunk_trace = NULL;
       events_request->after_chunk_traceset = after_chunk_traceset;
@@ -520,7 +522,7 @@ static void set_last_start(gpointer key, gpointer value, gpointer user_data)
   return;
 }
 
-void drawing_data_request_begin(EventsRequest *events_request, LttvTracesetState *tss)
+void drawing_data_request_begin(EventsRequest *events_request)
 {
   int i;
 
@@ -547,19 +549,17 @@ void drawing_data_request_begin(EventsRequest *events_request, LttvTracesetState
 
 }
 
-void drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss)
+void drawing_chunk_begin(EventsRequest *events_request, LttvTraceset *ts)
 {
   g_debug("Begin of chunk");
   ControlFlowData *cfd = events_request->viewer_data;
-  LttvTracesetContext *tsc = &tss->parent;
   guint i;
-  LttvTraceset *traceset = tsc->ts;
-  guint nb_trace = lttv_traceset_number(traceset);
+  guint nb_trace = lttv_traceset_number(ts);
   
   if(!cfd->process_list->current_hash_data) {
     cfd->process_list->current_hash_data = g_new(HashedResourceData**,nb_trace);
     for(i = 0 ; i < nb_trace ; i++) {
-      guint num_cpu = ltt_trace_get_num_cpu(tss->parent.traces[i]->t);
+      guint num_cpu = lttv_trace_get_num_cpu(lttv_traceset_get(ts, i));
       cfd->process_list->current_hash_data[i] = g_new(HashedResourceData*,num_cpu);
       memset(cfd->process_list->current_hash_data[i], 0,
              sizeof(HashedResourceData*)*num_cpu);
@@ -571,7 +571,6 @@ void drawing_chunk_begin(EventsRequest *events_request, LttvTracesetState *tss)
 
 
 void drawing_request_expose(EventsRequest *events_request,
-                            LttvTracesetState *tss,
                             LttTime end_time)
 {
   gint x, width;
