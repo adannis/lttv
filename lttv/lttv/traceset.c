@@ -33,13 +33,13 @@
 
 /* To traverse a tree recursively */
 #include <fcntl.h>
-#include <fts.h>
 /* For the use of realpath*/
 #include <limits.h>
 #include <stdlib.h>
 /* For strcpy*/
 #include <string.h>
-
+#include <errno.h>
+#include <dirent.h>
 /* A trace is a sequence of events gathered in the same tracing session. The
    events may be stored in several tracefiles in the same directory. 
    A trace set is defined when several traces are to be analyzed together,
@@ -280,79 +280,68 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t)
 
 int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 {
-	FTS *tree;
-	FTSENT *node;
-	char * const paths[2] = { trace_path, NULL };
 	int ret = -1;
-	
+	DIR *curdir  = NULL;
 	gboolean metaFileFound = FALSE;
-	
-	tree = fts_open(paths, FTS_NOCHDIR | FTS_LOGICAL, 0);
-	if (tree == NULL) {
-		g_warning("Cannot traverse \"%s\" for reading.\n",
-				trace_path);
+
+	/* Open top level directory */
+	curdir = opendir(trace_path);
+	if (curdir == NULL) {
+		g_warning("Cannot open directory %s (%s)", trace_path, strerror(errno));
 		return ret;
 	}
 
-	int dirfd, metafd;
-	while ((node = fts_read(tree))) {
-
-		if (!(node->fts_info & FTS_D))
-			continue;
-
-		dirfd = open(node->fts_accpath, 0);
-		if (dirfd < 0) {
-			g_warning("Unable to open trace "
-					"directory file descriptor : %s.", node->fts_accpath);
-			ret = dirfd;
+	// Check if a metadata file exists in the current directory
+	int metafd = openat(dirfd(curdir), "metadata", O_RDONLY);
+	if (metafd < 0) {
+		
+	} else {
+		ret = close(metafd);
+		if (ret < 0) {
+			g_warning("Unable to close metadata "
+				"file descriptor : %s.", trace_path);
 			goto error;
 		}
+		
+		ret = lttv_traceset_create_trace(ts, trace_path);
+		if (ret < 0) {
+			g_warning("Opening trace \"%s\" "
+				"for reading.", trace_path);
+			goto error;
+		}
+		metaFileFound = TRUE;
+	}
 
-		// Check if a metadata file exists in the current directory
-		metafd = openat(dirfd, "metadata", O_RDONLY);
-		if (metafd < 0) {
-			ret = close(dirfd);
-			if (ret < 0) {
-				g_warning("Unable to open metadata "
-						"file descriptor : %s.", node->fts_accpath);
-				goto error;
-			}
-		} else {
-			ret = close(metafd);
-			if (ret < 0) {
-				g_warning("Unable to close metadata "
-						"file descriptor : %s.", node->fts_accpath);
-				goto error;
-			}
-			ret = close(dirfd);
-			if (ret < 0) {
-				g_warning("Unable to close trace "
-						"directory file descriptor : %s.", node->fts_accpath);
-				goto error;
-			}
+	struct dirent curentry;
+	struct dirent *resultentry;
+	while ((ret = readdir_r(curdir, &curentry, &resultentry)) == 0) {
+		if (resultentry == NULL) {
+			/* No more entry*/
+			break;
+		}
+		if (curentry.d_name[0] != '.') {
+			if (curentry.d_type == DT_DIR) {
 
-			ret = lttv_traceset_create_trace(ts, node->fts_accpath);
-			if (ret < 0) {
-				g_warning("Opening trace \"%s\" from %s "
-						"for reading.", node->fts_accpath, trace_path);
-				goto error;
+				char curpath[PATH_MAX];
+				snprintf(curpath, PATH_MAX, "%s/%s", trace_path, curentry.d_name);
+				ret = lttv_traceset_add_path(ts, curpath);
+				if (ret >= 0) {
+					metaFileFound = TRUE;
+				}
 			}
-			metaFileFound = TRUE;
 		}
 	}
 
+	if (ret != 0) {
+		g_warning("Invalid readdir");
+	}	
+
 error:
-	ret = fts_close(tree);
-	if (ret < 0) {
-		g_warning("Unable to close tree  "
-				"file descriptor : %s.", trace_path);
-	}
 	if(metaFileFound)
 	  return ret;
 	else
 	  return -1;
 }
-
 
 unsigned lttv_traceset_number(LttvTraceset *s) 
 {
