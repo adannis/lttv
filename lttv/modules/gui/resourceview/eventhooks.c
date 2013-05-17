@@ -987,23 +987,20 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
    */
  
   if (strncmp(lttv_traceset_get_name_from_event(event),"softirq_entry",sizeof("softirq_entry")) == 0
-	  || strncmp(lttv_traceset_get_name_from_event(event),"softirq_raise",sizeof("softirq_raise")) == 0) {
+      || strncmp(lttv_traceset_get_name_from_event(event),"softirq_raise",sizeof("softirq_raise")) == 0
+      || strncmp(lttv_traceset_get_name_from_event(event),"softirq_exit",sizeof("softirq_exit")) == 0 ) {
+  
     softirq =  lttv_event_get_long_unsigned(event, "vec");
-  } else if (strncmp(lttv_traceset_get_name_from_event(event),"softirq_exit",sizeof("softirq_exit")) == 0) {
-    LttTime evtime = lttv_event_get_timestamp(event);
-    ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
-    LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
-    guint cpu =  lttv_traceset_get_cpuid_from_event(event);  
-    ts = event->state;
-    gint len = ts->cpu_states[cpu].softirq_stack->len;
-    if(len) {
-      softirq = g_array_index(ts->cpu_states[cpu].softirq_stack, gint, len-1);
-    }
-    else {
-      return 0;
-    }
+      
+  } else {
+    return 0;
+  }
 
-
+  LttTime evtime = lttv_event_get_timestamp(event);
+  ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
+  LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
+  guint cpu =  lttv_traceset_get_cpuid_from_event(event);  
+  ts = event->state;
   guint trace_num = 0;//TODO change it to the right value;
 
   /* Well, the process_out existed : we must get it in the process hash
@@ -1124,7 +1121,7 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
                              &hashed_process_data->next_good_time);
     }
   }
-  }
+
   return 0;
 }
 #ifdef TRAP_NO_EXIST
