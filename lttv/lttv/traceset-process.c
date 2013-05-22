@@ -97,7 +97,7 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 
 			event.bt_event = bt_event;
 
-			/* Retreive the associated state */
+			/* Retrieve the associated state */
 			event.state = g_ptr_array_index(traceset->state_trace_handle_index,
 							bt_ctf_event_get_handle_id(bt_event));
 			
