@@ -57,9 +57,6 @@ LttvTraceset *lttv_traceset_new(void)
 	ts->traces = g_ptr_array_new();
 	ts->context = bt_context_create();
 	ts->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
-	//TODO remove this when we have really mecanism
-	//s->tmpState = g_new(LttvTraceState *, 1);
-	//lttv_trace_state_init(s->tmpState,0);
 
 	/*Initialize iterator to the beginning of the traces*/        
 	begin_pos.type = BT_SEEK_BEGIN;
