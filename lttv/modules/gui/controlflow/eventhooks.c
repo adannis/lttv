@@ -500,7 +500,7 @@ int before_trywakeup_hook(void *hook_data, void *call_data)
      * draw items from the beginning of the read for it. If it is not
      * present, it's a new process and it was not present : it will
      * be added after the state update. TOCHECK: What does that last para mean? */
-      guint trace_num = 0; /*TODO ybrosseau 2012-08-23: use right number */
+      guint trace_num = lttv_traceset_get_trace_index_from_event(event);
       LttvProcessState *process = lttv_state_find_process(ts, woken_cpu, woken_pid);
     
     if(process != NULL) {
@@ -577,7 +577,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
   pid_out = lttv_event_get_long(event, "prev_tid");
   pid_in = lttv_event_get_long(event, "next_tid");
   state_out = lttv_event_get_long(event, "prev_state");
-  guint trace_number = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+  guint trace_number = lttv_traceset_get_trace_index_from_event(event);
 
   process = lttv_state_find_process(ts,cpu,pid_out);
   evtime = lttv_event_get_timestamp(event);
@@ -718,7 +718,7 @@ int after_schedchange_hook(void *hook_data, void *call_data)
     //process_in = lttv_state_find_process(ts, ANY_CPU, pid_in);
     //process_in = tfs->process;
     guint cpu = lttv_traceset_get_cpuid_from_event(event);
-    guint trace_num = 0; /* TODO set right trace number */
+    guint trace_num = lttv_traceset_get_trace_index_from_event(event);
     process_in = ts->running_process[cpu];
     /* It should exist, because we are after the state update. */
 #ifdef EXTRA_CHECK
@@ -810,7 +810,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
   cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;
   
-  guint trace_number = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+  guint trace_number = lttv_traceset_get_trace_index_from_event(event);
 
   //TODO ybrosseau 2013-04-09 validate that using the running process is the right choice
   //process = lttv_state_find_process(ts ,cpu ,pid);
@@ -894,7 +894,7 @@ int before_process_exit_hook(void *hook_data, void *call_data)
   /* Add process to process list (if not present) */
   //LttvProcessState *process = tfs->process;
     guint cpu = lttv_traceset_get_cpuid_from_event(event);
-    guint trace_num = 0; /* TODO set right trace number */
+    guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   LttvProcessState *process = ts->running_process[cpu];
   guint pid = process->pid;
@@ -963,7 +963,7 @@ int before_process_release_hook(void *hook_data, void *call_data)
   LttTime evtime = lttv_event_get_timestamp(event);
 
 
-    guint trace_num = 0; /* TODO set right trace number */
+    guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   guint pid;
   {
@@ -1065,7 +1065,7 @@ int after_process_fork_hook(void *hook_data, void *call_data)
   /* It should exist, because we are after the state update. */
   g_assert(process_child != NULL);
 
-  guint trace_num = 0; /* TODO put right */
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   /* Cannot use current process, because this action is done by the parent
    * on its child. */
@@ -1159,7 +1159,7 @@ int after_process_exit_hook(void *hook_data, void *call_data)
   /* Add process to process list (if not present) */
   //LttvProcessState *process = tfs->process;
   guint cpu = lttv_traceset_get_cpuid_from_event(event);
-  guint trace_num = 0; /* TODO set right trace number */
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
   LttvProcessState *process = ts->running_process[cpu];
 
   /* It should exist, because we are after the state update. */
@@ -1311,7 +1311,7 @@ int after_event_enum_process_hook(void *hook_data, void *call_data)
   HashedProcessData *hashed_process_data_in = NULL;
 
   ProcessList *process_list = control_flow_data->process_list;
-  guint trace_num = 0; /* TODO put right trace number */
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
   
   guint pid_in;
   {
@@ -1776,8 +1776,8 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
 #ifdef EXTRA_CHECK
     g_assert(lttv_traceset_number(tsc->ts) > 0);
 #endif //EXTRA_CHECK
-    //TODO Fdeslauriers 2012-07-17: adapt for multiple traces
-    LttvTrace *trace = lttv_traceset_get(ts,0);
+
+    LttvTrace *trace = lttv_traceset_get(ts, process_info->trace_num);
     LttvTraceState *trace_state = trace->state;
 
 #if 0

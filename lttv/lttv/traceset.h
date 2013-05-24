@@ -45,7 +45,10 @@ struct _LttvTraceset {
 	GPtrArray *state_trace_handle_index;
 	gboolean has_precomputed_states;
 	TimeInterval time_span;
+	char *common_path;
 };
+
+#define TRACE_NAME_SIZE 100
 
 struct _LttvTrace {
 	// Trace id for babeltrace
@@ -54,6 +57,8 @@ struct _LttvTrace {
 	LttvAttribute *a;
 	guint ref_count;
 	LttvTraceState *state;
+	char short_name[TRACE_NAME_SIZE];
+	char *full_path;
 };
 
 /* In babeltrace, the position concept is an iterator. */
@@ -110,6 +115,10 @@ unsigned lttv_traceset_number(LttvTraceset *s);
 LttvTrace *lttv_traceset_get(LttvTraceset *s, unsigned i);
 
 void lttv_traceset_remove(LttvTraceset *s, unsigned i);
+
+int lttv_traceset_get_trace_index_from_event(LttvEvent *event);
+
+int lttv_traceset_get_trace_index_from_handle_id(LttvTraceset *ts, int handle_id);
 
 /* An attributes table is attached to the set and to each trace in the set. */
 

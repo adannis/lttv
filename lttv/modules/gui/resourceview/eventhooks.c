@@ -397,7 +397,8 @@ int before_schedchange_hook(void *hook_data, void *call_data)
   guint cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;      
 
-  guint trace_num = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
+
   /* Add process to process list (if not present) */
   HashedResourceData *hashed_process_data = NULL;
   
@@ -556,7 +557,7 @@ int after_schedchange_hook(void *hook_data, void *call_data)
   //process_in = lttv_state_find_process(ts, ANY_CPU, pid_in);
   //process_in = tfs->process;
   guint cpu =  lttv_traceset_get_cpuid_from_event(event);
-  guint trace_num = 0; /* TODO set right trace number */
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
   process_in = ts->running_process[cpu];
   /* It should exist, because we are after the state update. */
 #ifdef EXTRA_CHECK
@@ -653,7 +654,7 @@ int before_execmode_hook(void *hook_data, void *call_data)
   cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;
   
-  guint trace_num = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   process = ts->running_process[cpu];
   g_assert(process != NULL);
@@ -826,7 +827,7 @@ int before_execmode_hook_irq(void *hook_data, void *call_data)
   } else
     return 0;
 
-  guint trace_num = 0;//TODO fdeslauriers 2012-07-17: // Use trace handle to know trace number
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   /* Well, the process_out existed : we must get it in the process hash
    * or add it, and draw its items.
@@ -1001,7 +1002,7 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
   LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
   guint cpu =  lttv_traceset_get_cpuid_from_event(event);  
   ts = event->state;
-  guint trace_num = 0;//TODO change it to the right value;
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   /* Well, the process_out existed : we must get it in the process hash
    * or add it, and draw its items.
@@ -1331,7 +1332,7 @@ LttvEvent *event;
   guint8 minor = ltt_event_get_long_unsigned(e, lttv_trace_get_hook_field(th, 1));
   gint devcode_gint = MKDEV(major,minor);
 
-  guint trace_num = 0; //TODO put the real trace_num;
+  guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
   LttvBdevState *bdev = g_hash_table_lookup(ts->bdev_states, &devcode_gint); 
   /* the result of the lookup might be NULL. that's ok, the rest of the function
@@ -1868,8 +1869,8 @@ void draw_closure(gpointer key, gpointer value, gpointer user_data)
 #ifdef EXTRA_CHECK
     g_assert(lttv_traceset_number(tsc->ts) > 0);
 #endif //EXTRA_CHECK
-    //TODO Fdeslauriers 2012-07-17: adapt for multiple traces
-    LttvTrace *trace = lttv_traceset_get(ts,0);
+
+    LttvTrace *trace = lttv_traceset_get(ts,process_info->trace_num);
     LttvTraceState *ts = trace->state;
 
     /* Only draw for processes that are currently in the trace states */

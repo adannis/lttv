@@ -1293,7 +1293,7 @@ int event_hook(void *hook_data, void *call_data)
   gtk_list_store_append (event_viewer_data->store_m, &iter);
 
   gtk_list_store_set (event_viewer_data->store_m, &iter,
-        TRACE_NAME_COLUMN, "TraceName",
+        TRACE_NAME_COLUMN, traceState->trace->short_name,
         CPUID_COLUMN, cpu,
         EVENT_COLUMN,name->str,
         TIME_S_COLUMN, time.tv_sec,

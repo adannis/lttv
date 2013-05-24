@@ -54,6 +54,7 @@ LttvTraceset *lttv_traceset_new(void)
 
 	ts = g_new(LttvTraceset, 1);
 	ts->filename = NULL;
+	ts->common_path = NULL;
 	ts->traces = g_ptr_array_new();
 	ts->context = bt_context_create();
 	ts->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
@@ -153,6 +154,29 @@ static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
 	g_ptr_array_set_size(ts->state_trace_handle_index,id+1);
 	g_ptr_array_index(ts->state_trace_handle_index,id) = new_trace->state;
 
+	/* Find common path */
+	if (ts->common_path == NULL) {
+		ts->common_path = strdup(path);
+	} else {
+		/* TODO ybrosseau 2013-05-24: consider put that in a function */
+		int i,j;
+		for (i = 0; 
+		     ts->common_path != '\0'; 
+		     i++) {
+			if (path[i] != ts->common_path[i]) {
+				/* The common path has changed, redo the other traces */
+				for(j = 0; j < ts->traces->len; j++) {
+					LttvTrace *t = g_ptr_array_index(ts->traces, j);
+					strncpy(t->short_name, t->full_path+i, TRACE_NAME_SIZE);
+				}
+
+				break;
+			}	
+		}
+		strncpy(new_trace->short_name, path+i, TRACE_NAME_SIZE);
+	}
+	new_trace->full_path = strdup(path);
+
 	return new_trace;
 }
 
@@ -183,6 +207,7 @@ LttvTraceset *lttv_traceset_copy(LttvTraceset *s_orig)
 
 	s = g_new(LttvTraceset, 1);
 	s->filename = NULL;
+	s->common_path = strdup(s_orig->common_path);
 	s->traces = g_ptr_array_new();
 	s->state_trace_handle_index = g_ptr_array_new();
 	for(i=0;i<s_orig->traces->len;i++)
@@ -242,6 +267,7 @@ void lttv_traceset_destroy(LttvTraceset *s)
 		if(lttv_trace_get_ref_number(trace) == 0)
 			lttv_trace_destroy(trace);
 	}
+	free(s->common_path);
 	g_ptr_array_free(s->traces, TRUE);
 	bt_context_put(s->context);
 	g_object_unref(s->a);
@@ -265,6 +291,7 @@ LttvHooks *lttv_traceset_get_hooks(LttvTraceset *s)
 
 void lttv_trace_destroy(LttvTrace *t) 
 {
+	free(t->full_path);
 	g_object_unref(t->a);
 	g_free(t);
 }
@@ -274,6 +301,31 @@ void lttv_traceset_add(LttvTraceset *s, LttvTrace *t)
 	t->ref_count++;
 	g_ptr_array_add(s->traces, t);
 }
+
+int lttv_traceset_get_trace_index_from_event(LttvEvent *event)
+{
+	LttvTraceset *ts = event->state->trace->traceset;
+
+	return lttv_traceset_get_trace_index_from_handle_id(ts, bt_ctf_event_get_handle_id(event->bt_event));
+}
+
+int lttv_traceset_get_trace_index_from_handle_id(LttvTraceset *ts, int handle_id)
+{
+	int i;
+
+	/* TODO ybrosseau 2013-05-22: use a map to speedup the lookup */
+
+	for(i = 0; i < ts->traces->len; i++) {
+		LttvTrace *t = g_ptr_array_index(ts->traces, i);
+		if (t && t->id == handle_id) {
+			return i;
+		}			
+	}
+	
+	/* Handle id not found */
+	return -1;
+	
+} 
 
 int lttv_traceset_add_path(LttvTraceset *ts, char *trace_path)
 {

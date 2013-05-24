@@ -1680,6 +1680,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
     ptab = (LttvPluginTab *)g_object_get_data(G_OBJECT(page), "Tab_Plugin");
     tab = ptab->tab;
   }
+#if 0
 //TODO fdeslauriers 2012-07-06: Remove this popup when we support multiple traces
   traceset = lttvwindow_get_traceset(tab);
   if(traceset != NULL && lttv_traceset_number(traceset) > 0){
@@ -1694,9 +1695,12 @@ void add_trace(GtkWidget * widget, gpointer user_data)
 	  gtk_widget_destroy(dialogue);
 	  return;
 	}
-  
+#endif  
   /* Create a new traceset*/
-  traceset = lttv_traceset_new();
+  traceset = tab->traceset_info->traceset;
+  if(traceset == NULL) {
+    traceset = lttv_traceset_new();
+  }
   /* File open dialog management */
 #ifdef BABEL_CLEANUP
   GtkWidget *extra_live_button;
