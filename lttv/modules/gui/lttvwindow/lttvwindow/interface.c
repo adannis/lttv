@@ -182,15 +182,17 @@ create_MWindow (void)
   //  gtk_container_add (GTK_CONTAINER (FileMenuNewTitle_menu), EmptyTraceset);
 
   //  CloneTraceset = gtk_menu_item_new_with_mnemonic ("Clone trace set");
+#ifdef BABEL_CLEANUP
   CloneTraceset = gtk_menu_item_new_with_mnemonic ("New window");
   gtk_widget_show (CloneTraceset);
   gtk_container_add (GTK_CONTAINER (FileMenuNewTitle_menu), CloneTraceset);
+
 
   FileMenuNewSep = gtk_menu_item_new ();
   gtk_widget_show (FileMenuNewSep);
   gtk_container_add (GTK_CONTAINER (FileMenuNewTitle_menu), FileMenuNewSep);
   gtk_widget_set_sensitive (FileMenuNewSep, FALSE);
-
+#endif
   Tab = gtk_menu_item_new_with_mnemonic ("Tab");
   gtk_widget_show (Tab);
   gtk_container_add (GTK_CONTAINER (FileMenuNewTitle_menu), Tab);
@@ -410,6 +412,7 @@ create_MWindow (void)
   gtk_box_pack_start (GTK_BOX (MVbox), MToolbar1, FALSE, FALSE, 0);
   gtk_toolbar_set_style (GTK_TOOLBAR (MToolbar1), GTK_TOOLBAR_ICONS);
 
+#ifdef BABEL_CLEANUP
   tmp_toolbar_icon = create_pixmap (MWindow, "filenew.png");
   tlbEmptyTraceset = gtk_toolbar_append_element (GTK_TOOLBAR (MToolbar1),
                                 GTK_TOOLBAR_CHILD_BUTTON,
@@ -421,7 +424,7 @@ create_MWindow (void)
   gtk_label_set_use_underline (GTK_LABEL (((GtkToolbarChild*) (g_list_last (GTK_TOOLBAR (MToolbar1)->children)->data))->label), TRUE);
   gtk_widget_show (tlbEmptyTraceset);
   gtk_container_set_border_width (GTK_CONTAINER (tlbEmptyTraceset), 1);
-
+#endif
   tmp_toolbar_icon = create_pixmap (MWindow, "filenew.png");
   tlbTab = gtk_toolbar_append_element (GTK_TOOLBAR (MToolbar1),
                                 GTK_TOOLBAR_CHILD_BUTTON,
@@ -657,9 +660,11 @@ create_MWindow (void)
   //  g_signal_connect ((gpointer) EmptyTraceset, "activate",
   //                    G_CALLBACK (on_empty_traceset_activate),
   //                    NULL);
+#ifdef BABEL_CLEANUP
   g_signal_connect ((gpointer) CloneTraceset, "activate",
                     G_CALLBACK (on_clone_traceset_activate),
                     NULL);
+#endif
   g_signal_connect ((gpointer) Tab, "activate",
                     G_CALLBACK (on_tab_activate),
                     NULL);
@@ -775,9 +780,11 @@ create_MWindow (void)
   g_signal_connect ((gpointer) About, "activate",
                     G_CALLBACK (on_about_activate),
                     NULL);
+#ifdef BABEL_CLEANUP
   g_signal_connect ((gpointer) tlbEmptyTraceset, "clicked",
                     G_CALLBACK (on_button_new_clicked),
                     NULL);
+#endif
   g_signal_connect ((gpointer) tlbTab, "clicked",
                     G_CALLBACK (on_button_new_tab_clicked),
                     NULL);
@@ -849,8 +856,10 @@ create_MWindow (void)
   GLADE_HOOKUP_OBJECT (MWindow, FileMenuNewTitle, "FileMenuNewTitle");
   GLADE_HOOKUP_OBJECT (MWindow, FileMenuNewTitle_menu, "FileMenuNewTitle_menu");
   //  GLADE_HOOKUP_OBJECT (MWindow, EmptyTraceset, "EmptyTraceset");
+#ifdef BABEL_CLEANUP
   GLADE_HOOKUP_OBJECT (MWindow, CloneTraceset, "CloneTraceset");
   GLADE_HOOKUP_OBJECT (MWindow, FileMenuNewSep, "FileMenuNewSep");
+#endif
   GLADE_HOOKUP_OBJECT (MWindow, Tab, "Tab");
   //  GLADE_HOOKUP_OBJECT (MWindow, OpenTraceset, "OpenTraceset");
   GLADE_HOOKUP_OBJECT (MWindow, Close, "Close");
@@ -905,7 +914,9 @@ create_MWindow (void)
   GLADE_HOOKUP_OBJECT (MWindow, HelpmenuSeparator, "HelpmenuSeparator");
   GLADE_HOOKUP_OBJECT (MWindow, About, "About");
   GLADE_HOOKUP_OBJECT (MWindow, MToolbar1, "MToolbar1");
+#ifdef BABEL_CLEANUP
   GLADE_HOOKUP_OBJECT (MWindow, tlbEmptyTraceset, "tlbEmptyTraceset");
+#endif BABEL_CLEANUP
   GLADE_HOOKUP_OBJECT (MWindow, tlbTab, "tlbTab");
   //  GLADE_HOOKUP_OBJECT (MWindow, tlbOpenTraceset, "tlbOpenTraceset");
   GLADE_HOOKUP_OBJECT (MWindow, tlbAddTrace, "tlbAddTrace");

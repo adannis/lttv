@@ -1680,22 +1680,7 @@ void add_trace(GtkWidget * widget, gpointer user_data)
     ptab = (LttvPluginTab *)g_object_get_data(G_OBJECT(page), "Tab_Plugin");
     tab = ptab->tab;
   }
-#if 0
-//TODO fdeslauriers 2012-07-06: Remove this popup when we support multiple traces
-  traceset = lttvwindow_get_traceset(tab);
-  if(traceset != NULL && lttv_traceset_number(traceset) > 0){
-	  GtkWidget *dialogue = 
-	    gtk_message_dialog_new(
-	      GTK_WINDOW(gtk_widget_get_toplevel(widget)),
-	      GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
-	      GTK_MESSAGE_ERROR,
-	      GTK_BUTTONS_OK,
-	      "Loading multiple traces is not supported at the moment.");
-	  gtk_dialog_run(GTK_DIALOG(dialogue));
-	  gtk_widget_destroy(dialogue);
-	  return;
-	}
-#endif  
+
   /* Create a new traceset*/
   traceset = tab->traceset_info->traceset;
   if(traceset == NULL) {
@@ -2283,7 +2268,7 @@ LttvPluginTab *create_new_tab(GtkWidget* widget, gpointer user_data)
                       gtk_notebook_get_current_page(GTK_NOTEBOOK(notebook)));
   Tab *copy_tab;
 
-  if(!page) {
+  if(!page || TRUE ) {
     copy_tab = NULL;
   } else {
     LttvPluginTab *ptab;
@@ -3105,7 +3090,19 @@ void
 on_button_new_clicked                  (GtkButton       *button,
                                         gpointer         user_data)
 {
+#ifdef BABEL_CLEANUP
   create_new_window((GtkWidget*)button, user_data, TRUE);
+#else
+  GtkWidget *dialogue = 
+    gtk_message_dialog_new(
+      GTK_WINDOW(gtk_widget_get_toplevel(button)),
+      GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
+      GTK_MESSAGE_ERROR,
+      GTK_BUTTONS_OK,
+      "Opening multiple windows is disabled.");
+  gtk_dialog_run(GTK_DIALOG(dialogue));
+  gtk_widget_destroy(dialogue);
+#endif
 }
 
 void
