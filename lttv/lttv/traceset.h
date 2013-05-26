@@ -22,9 +22,9 @@
 #include <lttv/attribute.h>
 #include <lttv/hook.h>
 #include <lttv/event.h>
-#include <ltt/ltt.h>
-#include <ltt/time.h>
+#include <lttv/time.h>
 #include <lttv/trace.h>
+
 /* A traceset is a set of traces to be analyzed together. */
 
 typedef struct _LttvTraceset LttvTraceset;

@@ -22,7 +22,7 @@
 #include <gtk/gtkhbox.h>
 #include <gtk/gtktooltips.h>
 #include <gtk/gtkwidget.h>
-#include <ltt/time.h>
+#include <lttv/time.h>
 
 G_BEGIN_DECLS
 

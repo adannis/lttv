@@ -37,9 +37,6 @@
 #endif
 // #include <lttv/traceset.h>
 #include <lttv/print.h>
-#include <ltt/ltt.h>
-#include <ltt/event.h>
-#include <ltt/trace.h>
 #include <stdio.h>
 #include <inttypes.h>
 

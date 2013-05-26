@@ -68,7 +68,7 @@
 #ifndef LTTVWINDOWTRACES_H
 #define LTTVWINDOWTRACES_H
 
-#include <ltt/time.h>
+#include <lttv/time.h>
 #include <glib.h>
 #include <gtk/gtk.h>
 

@@ -21,7 +21,7 @@
 
 #include <gtk/gtkeventbox.h>
 #include <gtk/gtkvseparator.h>
-#include <ltt/time.h>
+#include <lttv/time.h>
 
 enum {
 	SIGNAL_START_TIME_CHANGED,

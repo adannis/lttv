@@ -23,7 +23,6 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
-#include <ltt/ltt.h>
 //#include <lttv/tracecontext.h>
 #include <lttv/traceset.h>
 #include <lttvwindow/lttvwindow.h>

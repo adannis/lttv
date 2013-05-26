@@ -23,7 +23,6 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
-#include <ltt/ltt.h>
 #ifdef BABEL_CLEANUP
 #include <lttv/tracecontext.h>
 #endif //babel_cleanup

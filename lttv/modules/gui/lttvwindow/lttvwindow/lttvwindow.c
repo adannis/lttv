@@ -32,7 +32,6 @@
 #include <config.h>
 #endif
 
-#include <ltt/ltt.h>
 #include <lttv/lttv.h>
 #include <lttv/state.h>
 #include <lttv/traceset.h>

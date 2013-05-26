@@ -28,7 +28,6 @@
 
 #include <gtk/gtk.h>
 #include <lttvwindow/mainwindow.h>
-#include <ltt/time.h>
 
 #include "histobuttonwidget.h"
 #include "histodrawing.h"

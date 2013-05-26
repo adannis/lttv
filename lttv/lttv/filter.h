@@ -50,9 +50,6 @@
 #include <lttv/traceset-process.h>
 #include <lttv/state.h>
 #include <lttv/module.h>
-#include <ltt/ltt.h>
-#include <ltt/time.h>
-#include <ltt/event.h>
 
 /* structures prototypes */
 typedef enum _LttvStructType LttvStructType; 
@@ -344,7 +341,7 @@ void lttv_filter_clear_expression(LttvFilter* filter);
 LttvFilterTree* lttv_filter_tree_new();
 
 void lttv_filter_tree_destroy(LttvFilterTree* tree);
-
+#ifdef BABEL_CLEANUP
 gboolean lttv_filter_tree_parse(
 		const LttvFilterTree* t,
 		const LttEvent* event,
@@ -359,7 +356,7 @@ gboolean lttv_filter_tree_parse_branch(
 		const LttTracefile* tracefile,
 		const LttTrace* trace,
 		const LttvProcessState* state);
-
+#endif
 /*
  *  Debug functions
  */

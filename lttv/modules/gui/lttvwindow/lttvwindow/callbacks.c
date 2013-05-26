@@ -31,9 +31,7 @@
 #include "callbacks.h"
 #include "interface.h"
 #include "support.h"
-#include <ltt/trace.h>
-#include <ltt/time.h>
-#include <ltt/event.h>
+#include <lttv/time.h>
 #include <lttv/lttv.h>
 #include <lttv/module.h>
 #include <lttv/iattribute.h>

@@ -21,7 +21,6 @@
 
 #include <gtk/gtk.h>
 #include <lttv/state.h>
-#include <ltt/ltt.h>
 #include "histocfv.h"
 #include "histodrawitem.h"
 

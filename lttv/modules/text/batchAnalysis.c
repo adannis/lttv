@@ -36,7 +36,6 @@
 #include <lttv/stats.h>
 #include <lttv/filter.h>
 #endif
-#include <ltt/trace.h>
 #ifdef BABEL_CLEANUP_SYNC
 #include <lttv/sync/sync_chain_lttv.h>
 #endif

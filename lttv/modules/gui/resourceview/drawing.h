@@ -23,7 +23,6 @@
 #include <glib.h>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
-#include <ltt/ltt.h>
 #include <lttv/state.h>
 #include <lttvwindow/lttvwindow.h>
 #include "cfv.h"

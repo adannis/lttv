@@ -21,7 +21,6 @@
 
 #include <gtk/gtk.h>
 
-#include <ltt/ltt.h>
 #include <lttv/attribute.h>
 #include <lttv/traceset.h>
 

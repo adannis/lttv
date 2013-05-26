@@ -30,8 +30,6 @@
 #include <string.h>
 #include <inttypes.h>
 
-#include <ltt/time.h>
-#include <ltt/trace.h>
 #include <glib.h>
 #include <lttv/lttv.h>
 #include <lttv/traceset.h>

@@ -59,10 +59,6 @@
 
 //#include <pango/pango.h>
 
-#include <ltt/event.h>
-#include <ltt/time.h>
-#include <ltt/trace.h>
-
 #include <lttv/lttv.h>
 #include <lttv/hook.h>
 #include <lttv/state.h>

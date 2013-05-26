@@ -106,7 +106,8 @@ lttvinclude_HEADERS = \
 	traceset.h\
 	filter.h\
 	print.h\
-	event.h
+	event.h\
+	trace.h
 
 #man_MANS = lttv.1
 #EXTRA_DIST = lttv.1

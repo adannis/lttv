@@ -48,7 +48,6 @@
 #include <lttvwindow/mainwindow.h>
 #include <lttvwindow/mainwindow-private.h>
 #include "callbacks.h"
-#include <ltt/trace.h>
 
 
 __EXPORT LttvTraceInfo

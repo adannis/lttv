@@ -22,8 +22,7 @@
 
 #include <string.h>
 #include <lttv/attribute.h>
-#include <ltt/ltt.h>
-#include <ltt/compiler.h>
+#include <lttv/compiler.h>
 
 typedef union _AttributeValue {
 	int dv_int;

@@ -252,8 +252,6 @@ FIXME : explain other important events
  */
 
 #include <gtk/gtk.h>
-#include <ltt/ltt.h>
-#include <ltt/time.h>
 #include <lttv/traceset.h>
 #include <lttv/hook.h>
 #ifdef BABEL_CLEANUP

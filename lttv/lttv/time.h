@@ -29,6 +29,10 @@ typedef struct _LttTime {
   unsigned long tv_nsec;
 } LttTime;
 
+typedef struct _TimeInterval {
+  LttTime start_time;
+  LttTime end_time;  
+} TimeInterval;
 
 #define NANOSECONDS_PER_SECOND 1000000000
 

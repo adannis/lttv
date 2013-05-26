@@ -24,8 +24,6 @@
 #include <gdk/gdk.h>
 #include <string.h>
 
-#include <ltt/trace.h>
-
 #include <lttv/lttv.h>
 #include <lttvwindow/lttvwindow.h>
 #include <lttv/state.h>

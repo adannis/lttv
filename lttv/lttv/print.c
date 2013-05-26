@@ -37,12 +37,8 @@
 #include <lttv/filter.h>
 #endif
 #include <lttv/print.h>
-#include <ltt/ltt.h>
-#include <ltt/event.h>
-#include <ltt/trace.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <ltt/ltt-private.h>
 #include <babeltrace/ctf/events.h>
 #include <string.h>
 #include <inttypes.h>

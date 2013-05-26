@@ -20,7 +20,7 @@
 #define _MAIN_WINDOW_
 
 #include <glib.h>
-#include <ltt/time.h>
+#include <lttv/time.h>
 
 typedef struct _MainWindow MainWindow;
 typedef struct _TimeWindow TimeWindow;

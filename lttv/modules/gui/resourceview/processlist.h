@@ -22,7 +22,6 @@
 #include <gtk/gtk.h>
 #include <gdk/gdk.h>
 #include <lttv/state.h>
-#include <ltt/ltt.h>
 
 #include "drawitem.h"
 #include "cfv.h"

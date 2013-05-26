@@ -21,8 +21,6 @@
 #endif
 
 #include <lttv/hook.h>
-#include <ltt/compiler.h>
-#include <ltt/ltt.h>
 
 typedef struct _LttvHookClosure {
 	LttvHook      hook;

@@ -53,9 +53,6 @@
 #include <gdk/gdkx.h>
 #include <string.h>
 
-#include <ltt/ltt.h>
-#include <ltt/event.h>
-#include <ltt/trace.h>
 #include <lttv/lttv.h>
 #include <lttv/module.h>
 #include <lttv/hook.h>

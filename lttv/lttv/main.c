@@ -27,7 +27,7 @@
 #include <lttv/attribute.h>
 #include <lttv/option.h>
 #include <lttv/traceset.h>
-#include <ltt/trace.h>
+#include <lttv/trace.h>
 #include <stdio.h>
 #include <string.h>
 
