@@ -21,7 +21,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.57)
-AC_INIT([lttv], [0.12.38-21032011], [yannick.brosseau@gmail.com])
+AC_INIT([lttv], [1.5-beta1], [yannick.brosseau@gmail.com])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
@@ -181,15 +181,11 @@ AC_CONFIG_FILES([Makefile
 	lttv/modules/text/Makefile
 	lttv/modules/gui/Makefile
 	lttv/modules/gui/lttvwindow/Makefile
-	lttv/modules/gui/interrupts/Makefile
 	lttv/modules/gui/lttvwindow/lttvwindow/Makefile
 	lttv/modules/gui/lttvwindow/pixmaps/Makefile
 	lttv/modules/gui/controlflow/Makefile
 	lttv/modules/gui/detailedevents/Makefile
-	lttv/modules/gui/statistics/Makefile
 	lttv/modules/gui/histogram/Makefile
-	lttv/modules/gui/filter/Makefile
-	lttv/modules/gui/tracecontrol/Makefile
 	lttv/modules/gui/resourceview/Makefile
 	doc/Makefile
 	doc/developer/Makefile
@@ -200,6 +196,11 @@ AC_CONFIG_FILES([Makefile
 	doc/user/user_guide/Makefile
 	doc/user/user_guide/docbook/Makefile
 	doc/user/user_guide/html/Makefile])
+#	lttv/modules/gui/interrupts/Makefile
+#	lttv/modules/gui/statistics/Makefile
+#	lttv/modules/gui/filter/Makefile
+#	lttv/modules/gui/tracecontrol/Makefile
+
 
 AC_OUTPUT
 
