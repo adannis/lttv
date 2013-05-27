@@ -33,4 +33,5 @@ dist_pixmaps_DATA =  \
 	controlflow-legend.png\
 	guifilter22x22.png\
 	guifilter16x16.png\
-	qmark.png
+	qmark.png\
+	lttng_logo.svg
