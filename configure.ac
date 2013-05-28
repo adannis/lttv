@@ -109,7 +109,7 @@ PKG_CHECK_MODULES(GMODULE, [$pkg_modules])
 pkg_modules="gobject-2.0 >= 2.0.0"
 PKG_CHECK_MODULES(GOBJECT, [$pkg_modules])
 
-PKG_CHECK_MODULES(BABELTRACE, [babeltrace >= 1.0.0])
+PKG_CHECK_MODULES(BABELTRACE, [babeltrace >= 1.1.0])
 
 AC_CHECK_LIB([babeltrace], [bt_iter_equals_pos], 
 			   [AC_DEFINE([HAVE_BT_ITER_EQUALS_POS],[],[Have equal function])], [])
