@@ -56,9 +56,7 @@ lttv_real_SOURCES = \
 	traceset.c\
 	traceset-process.c\
 	print.c\
-	compiler.h\
-	event.c\
-	time.h
+	event.c
 #	sync/sync_chain.c\
 	sync/sync_chain.h\
 	sync/sync_chain_lttv.c\
@@ -106,6 +104,8 @@ lttvinclude_HEADERS = \
 	traceset.h\
 	filter.h\
 	print.h\
+	compiler.h\
+	time.h\
 	event.h\
 	trace.h
 
