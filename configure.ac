@@ -185,7 +185,6 @@ AC_SUBST(lttctlincludedir)
 AC_CONFIG_FILES([Makefile
 	lttv/Makefile
 	lttv/lttv/Makefile
-	lttv/lttv/sync/Makefile
 	lttv/modules/Makefile
 	lttv/modules/text/Makefile
 	lttv/modules/gui/Makefile
@@ -205,6 +204,7 @@ AC_CONFIG_FILES([Makefile
 	doc/user/user_guide/Makefile
 	doc/user/user_guide/docbook/Makefile
 	doc/user/user_guide/html/Makefile])
+#	lttv/lttv/sync/Makefile
 #	lttv/modules/gui/interrupts/Makefile
 #	lttv/modules/gui/statistics/Makefile
 #	lttv/modules/gui/filter/Makefile
