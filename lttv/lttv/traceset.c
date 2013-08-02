@@ -146,6 +146,7 @@ static LttvTrace *lttv_trace_create(LttvTraceset *ts, const char *path)
 	new_trace->a = g_object_new(LTTV_ATTRIBUTE_TYPE, NULL);
 	new_trace->id = id;
 	new_trace->ref_count = 0;
+	new_trace->short_name[0] = '\0';
 	new_trace->traceset = ts;
 	new_trace->state = g_new(LttvTraceState,1);
 	lttv_trace_state_init(new_trace->state,new_trace);
