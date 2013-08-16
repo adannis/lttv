@@ -427,14 +427,6 @@ void drawing_data_request(Drawing_t *drawing,
 //          &hooks);
 //
 //      lttv_trace_find_hook(ts->parent.t,
-//          LTT_FACILITY_USER_GENERIC,
-//          LTT_EVENT_THREAD_BRAND,
-//          FIELD_ARRAY(LTT_FIELD_NAME),
-//          after_user_generic_thread_brand_hook,
-//          events_request,
-//          &hooks);
-//
-//      lttv_trace_find_hook(ts->parent.t,
 //          LTT_FACILITY_LIST,
 //          LTT_EVENT_PROCESS_STATE,
 //          FIELD_ARRAY(LTT_FIELD_PID, LTT_FIELD_PARENT_PID, LTT_FIELD_NAME),

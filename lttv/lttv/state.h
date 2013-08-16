@@ -119,7 +119,6 @@ extern GQuark
 	LTT_EVENT_STATEDUMP_END,
 	//LTT_EVENT_FUNCTION_ENTRY,
 	//LTT_EVENT_FUNCTION_EXIT,
-	LTT_EVENT_THREAD_BRAND,
 	LTT_EVENT_REQUEST_ISSUE,
 	LTT_EVENT_REQUEST_COMPLETE,
 	LTT_EVENT_LIST_INTERRUPT,
@@ -247,9 +246,6 @@ extern LttvProcessStatus
 	LTTV_STATE_RUN,
 	LTTV_STATE_DEAD;
 
-extern GQuark
-	LTTV_STATE_UNBRANDED;
-
 typedef GQuark LttvProcessType;
 
 extern LttvProcessType
@@ -294,7 +290,6 @@ typedef struct _LttvProcessState {
 	LttTime creation_time;
 	LttTime insertion_time;
 	GQuark name;
-	GQuark brand;
 	GQuark pid_time;
 	GArray *execution_stack;         /* Array of LttvExecutionState */
 	LttvExecutionState *state;       /* Top of interrupt stack */

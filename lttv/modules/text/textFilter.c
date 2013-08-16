@@ -144,7 +144,6 @@ void filter_list_commands(void *hook_data) {
   g_print("state.creation_time (double)\n");
   g_print("state.insertion_time (double)\n");
   g_print("state.process_name (string)\n");
-  g_print("state.thread_brand (string)\n");
   g_print("state.execution_mode (string)\n");
   g_print("state.execution_submode (string)\n");
   g_print("state.process_status (string)\n");

@@ -47,13 +47,11 @@ gint process_sort_func  ( GtkTreeModel *model,
         gpointer user_data)
 {
   gchar *a_name;
-  gchar *a_brand;
   guint a_pid, a_tgid, a_ppid, a_cpu;
   gulong a_birth_s, a_birth_ns;
   guint a_trace;
 
   gchar *b_name;
-  gchar *b_brand;
   guint b_pid, b_tgid, b_ppid, b_cpu;
   gulong b_birth_s, b_birth_ns;
   guint b_trace;
@@ -61,7 +59,6 @@ gint process_sort_func  ( GtkTreeModel *model,
   gtk_tree_model_get(model,
            it_a,
            PROCESS_COLUMN, &a_name,
-           BRAND_COLUMN, &a_brand,
            PID_COLUMN, &a_pid,
            TGID_COLUMN, &a_tgid,
            PPID_COLUMN, &a_ppid,
@@ -74,7 +71,6 @@ gint process_sort_func  ( GtkTreeModel *model,
   gtk_tree_model_get(model,
            it_b,
            PROCESS_COLUMN, &b_name,
-           BRAND_COLUMN, &b_brand,
            PID_COLUMN, &b_pid,
            TGID_COLUMN, &b_tgid,
            PPID_COLUMN, &b_ppid,
@@ -357,7 +353,6 @@ ProcessList *processlist_construct(void)
   /* Create the Process list */
   process_list->list_store = gtk_list_store_new (  N_COLUMNS,
               G_TYPE_STRING,
-              G_TYPE_STRING,
               G_TYPE_UINT,
               G_TYPE_UINT,
               G_TYPE_UINT,
@@ -425,17 +420,6 @@ ProcessList *processlist_construct(void)
   
   process_list->button = column->button;
  
-  column = gtk_tree_view_column_new_with_attributes ( "Brand",
-                renderer,
-                "text",
-                BRAND_COLUMN,
-                NULL);
-  gtk_tree_view_column_set_alignment (column, 0.0);
-  gtk_tree_view_column_set_sizing(column, GTK_TREE_VIEW_COLUMN_GROW_ONLY);
-  gtk_tree_view_column_set_resizable(column, TRUE);
-  gtk_tree_view_append_column (
-    GTK_TREE_VIEW (process_list->process_list_widget), column);
-
   column = gtk_tree_view_column_new_with_attributes ( "PID",
                 renderer,
                 "text",
@@ -590,15 +574,6 @@ void processlist_set_name(ProcessList *process_list,
         -1);
 }
 
-void processlist_set_brand(ProcessList *process_list,
-    GQuark brand,
-    HashedProcessData *hashed_process_data)
-{
-  gtk_list_store_set (  process_list->list_store, &hashed_process_data->y_iter,
-        BRAND_COLUMN, g_quark_to_string(brand),
-        -1);
-}
-
 void processlist_set_tgid(ProcessList *process_list,
     guint tgid,
     HashedProcessData *hashed_process_data)
@@ -627,7 +602,6 @@ int processlist_add(  ProcessList *process_list,
       LttTime *birth,
       guint trace_num,
       GQuark name,
-      GQuark brand,
       guint *height,
       ProcessInfo **pm_process_info,
       HashedProcessData **pm_hashed_process_data)
@@ -685,7 +659,6 @@ int processlist_add(  ProcessList *process_list,
 
   gtk_list_store_set (  process_list->list_store, &hashed_process_data->y_iter,
         PROCESS_COLUMN, g_quark_to_string(name),
-        BRAND_COLUMN, g_quark_to_string(brand),
         PID_COLUMN, pid,
         TGID_COLUMN, tgid,
         PPID_COLUMN, ppid,

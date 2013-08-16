@@ -53,7 +53,6 @@
  *    |->creation_time (LttTime)
  *    |->insertion_time (LttTime)
  *    |->process_name (String, converted to GQuark)
- *    |->thread_brand (String, converted to GQuark)
  *    |->execution_mode (LttvExecutionMode)
  *    |->execution_submode (LttvExecutionSubmode)
  *    |->process_status (LttvProcessStatus)
@@ -190,7 +189,6 @@ gboolean lttv_simple_expression_assign_field(GPtrArray* fp,
 		 *	state.creation_time
 		 *	state.insertion_time
 		 *	state.process_name
-		 *	state.thread_brand
 		 *	state.execution_mode
 		 *	state.execution_submode
 		 *	state.process_status
@@ -212,9 +210,6 @@ gboolean lttv_simple_expression_assign_field(GPtrArray* fp,
 		}
 		else if(!g_ascii_strcasecmp(f->str,"process_name") ) {
 			se->field = LTTV_FILTER_STATE_P_NAME;
-		}
-		else if(!g_ascii_strcasecmp(f->str,"thread_brand") ) {
-			se->field = LTTV_FILTER_STATE_T_BRAND;
 		}
 		else if(!g_ascii_strcasecmp(f->str,"execution_mode") ) {
 			se->field = LTTV_FILTER_STATE_EX_MODE;
@@ -313,7 +308,6 @@ gboolean lttv_simple_expression_assign_operator(LttvSimpleExpression* se,
 	case LTTV_FILTER_TRACE_NAME:
 	case LTTV_FILTER_TRACEFILE_NAME:
 	case LTTV_FILTER_STATE_P_NAME:
-	case LTTV_FILTER_STATE_T_BRAND:
 	case LTTV_FILTER_EVENT_SUBNAME:
 	case LTTV_FILTER_STATE_EX_MODE:
 	case LTTV_FILTER_STATE_EX_SUBMODE:
@@ -492,7 +486,6 @@ gboolean lttv_simple_expression_assign_value(LttvSimpleExpression* se,
 		case LTTV_FILTER_TRACE_NAME:
 		case LTTV_FILTER_TRACEFILE_NAME:
 		case LTTV_FILTER_STATE_P_NAME:
-		case LTTV_FILTER_STATE_T_BRAND:
 		case LTTV_FILTER_EVENT_SUBNAME:
 		case LTTV_FILTER_STATE_EX_MODE:
 		case LTTV_FILTER_STATE_EX_SUBMODE:
@@ -628,7 +621,6 @@ gint lttv_struct_type(gint ft)
 		case LTTV_FILTER_STATE_CT:
 		case LTTV_FILTER_STATE_IT:
 		case LTTV_FILTER_STATE_P_NAME:
-		case LTTV_FILTER_STATE_T_BRAND:
 		case LTTV_FILTER_STATE_EX_MODE:
 		case LTTV_FILTER_STATE_EX_SUBMODE:
 		case LTTV_FILTER_STATE_P_STATUS:
@@ -2141,13 +2133,6 @@ gboolean lttv_filter_tree_parse_branch(
 		if(state == NULL) return TRUE;
 		else {
 			GQuark quark = state->name;
-			return se->op((gpointer)&quark,v);
-		}
-		break;
-	case LTTV_FILTER_STATE_T_BRAND:
-		if(state == NULL) return TRUE;
-		else {
-			GQuark quark = state->brand;
 			return se->op((gpointer)&quark,v);
 		}
 		break;

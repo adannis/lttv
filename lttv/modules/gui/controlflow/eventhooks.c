@@ -306,7 +306,6 @@ HashedProcessData *get_hashed_process_data(ControlFlowData *control_flow_data,
 				&birth,
 				trace_num,
 				process->name,
-				process->brand,
 				&pl_height,
 				&process_info,
 				&hashed_process_data);

@@ -82,7 +82,6 @@ GQuark
 	LTT_EVENT_STATEDUMP_END,
 	LTT_EVENT_FUNCTION_ENTRY,
 	LTT_EVENT_FUNCTION_EXIT,
-	LTT_EVENT_THREAD_BRAND,
 	LTT_EVENT_REQUEST_ISSUE,
 	LTT_EVENT_REQUEST_COMPLETE,
 	LTT_EVENT_LIST_INTERRUPT,
@@ -153,9 +152,6 @@ LttvProcessStatus
 	LTTV_STATE_WAIT,
 	LTTV_STATE_RUN,
 	LTTV_STATE_DEAD;
-
-GQuark
-	LTTV_STATE_UNBRANDED;
 
 LttvProcessType
 	LTTV_STATE_USER_THREAD,
@@ -675,7 +671,7 @@ static void write_process_state(gpointer key, gpointer value,
 	guint64 address;
 
 	process = (LttvProcessState *)value;
-	fprintf(fp,"  <PROCESS CORE=%p PID=%u TGID=%u PPID=%u TYPE=\"%s\" CTIME_S=%lu CTIME_NS=%lu ITIME_S=%lu ITIME_NS=%lu NAME=\"%s\" BRAND=\"%s\" CPU=\"%u\" FREE_EVENTS=\"%u\">\n",
+	fprintf(fp,"  <PROCESS CORE=%p PID=%u TGID=%u PPID=%u TYPE=\"%s\" CTIME_S=%lu CTIME_NS=%lu ITIME_S=%lu ITIME_NS=%lu NAME=\"%s\" CPU=\"%u\" FREE_EVENTS=\"%u\">\n",
 			process, process->pid, process->tgid, process->ppid,
 			g_quark_to_string(process->type),
 			process->creation_time.tv_sec,
@@ -683,7 +679,6 @@ static void write_process_state(gpointer key, gpointer value,
 			process->insertion_time.tv_sec,
 			process->insertion_time.tv_nsec,
 			g_quark_to_string(process->name),
-			g_quark_to_string(process->brand),
 			process->cpu, process->free_events);
 
 	for(i = 0 ; i < process->execution_stack->len; i++) {
@@ -773,9 +768,7 @@ static void write_process_state_raw(gpointer key, gpointer value,
 	//fprintf(fp, "%s", g_quark_to_string(process->name));
 	//fputc('\0', fp);
 	fwrite(&process->name, sizeof(process->name), 1, fp);
-	//fprintf(fp, "%s", g_quark_to_string(process->brand));
 	//fputc('\0', fp);
-	fwrite(&process->brand, sizeof(process->brand), 1, fp);
 	fwrite(&process->pid, sizeof(process->pid), 1, fp);
 	fwrite(&process->free_events, sizeof(process->free_events), 1, fp);
 	fwrite(&process->tgid, sizeof(process->tgid), 1, fp);
@@ -785,7 +778,7 @@ static void write_process_state_raw(gpointer key, gpointer value,
 	fwrite(&process->insertion_time, sizeof(process->insertion_time), 1, fp);
 
 #if 0
-	fprintf(fp,"  <PROCESS CORE=%p PID=%u TGID=%u PPID=%u TYPE=\"%s\" CTIME_S=%lu CTIME_NS=%lu ITIME_S=%lu ITIME_NS=%lu NAME=\"%s\" BRAND=\"%s\" CPU=\"%u\" PROCESS_TYPE=%u>\n",
+	fprintf(fp,"  <PROCESS CORE=%p PID=%u TGID=%u PPID=%u TYPE=\"%s\" CTIME_S=%lu CTIME_NS=%lu ITIME_S=%lu ITIME_NS=%lu NAME=\"%s\" CPU=\"%u\" PROCESS_TYPE=%u>\n",
 			process, process->pid, process->tgid, process->ppid,
 			g_quark_to_string(process->type),
 			process->creation_time.tv_sec,
@@ -793,7 +786,6 @@ static void write_process_state_raw(gpointer key, gpointer value,
 			process->insertion_time.tv_sec,
 			process->insertion_time.tv_nsec,
 			g_quark_to_string(process->name),
-			g_quark_to_string(process->brand),
 			process->cpu);
 #endif //0
 
@@ -908,7 +900,6 @@ static void read_process_state_raw(LttvTraceState *self, FILE *fp,
 
 	res = fread(&tmp.type, sizeof(tmp.type), 1, fp);
 	res += fread(&tmp.name, sizeof(tmp.name), 1, fp);
-	res += fread(&tmp.brand, sizeof(tmp.brand), 1, fp);
 	res += fread(&tmp.pid, sizeof(tmp.pid), 1, fp);
 	res += fread(&tmp.free_events, sizeof(tmp.free_events), 1, fp);
 	res += fread(&tmp.tgid, sizeof(tmp.tgid), 1, fp);
@@ -938,8 +929,6 @@ static void read_process_state_raw(LttvTraceState *self, FILE *fp,
 			(gchar*)g_ptr_array_index(quarktable, tmp.type));
 	process->tgid = tmp.tgid;
 	process->ppid = tmp.ppid;
-	process->brand = g_quark_from_string(
-			(gchar*)g_ptr_array_index(quarktable, tmp.brand));
 	process->name =
 			g_quark_from_string((gchar*)g_ptr_array_index(quarktable, tmp.name));
 	process->free_events = tmp.free_events;
@@ -2128,11 +2117,10 @@ static void pop_state(LttvEvent *event,
 		g_info("process state has %s when pop_int is %s\n",
 				g_quark_to_string(process->state->t),
 				g_quark_to_string(t));
-		g_info("{ %u, %u, %s, %s, %s }\n",
+		g_info("{ %u, %u, %s, %s }\n",
 				process->pid,
 				process->ppid,
 				g_quark_to_string(process->name),
-				g_quark_to_string(process->brand),
 				g_quark_to_string(process->state->s));
 		return;
 	}
@@ -2180,7 +2168,6 @@ LttvProcessState *lttv_state_create_process(LttvTraceState *tcs,
 	process->tgid = tgid;
 	process->cpu = cpu;
 	process->name = name;
-	process->brand = LTTV_STATE_UNBRANDED;
 	//process->last_cpu = tfs->cpu_name;
 	//process->last_cpu_index = ltt_tracefile_num(((LttvTracefileContext*)tfs)->tf);
 	process->type = LTTV_STATE_USER_THREAD;
@@ -2970,7 +2957,6 @@ static gboolean process_fork(void *hook_data, void *call_data)
 	}
 	g_assert(child_process->name == LTTV_STATE_UNNAMED);
 	child_process->name = process->name;
-	child_process->brand = process->brand;
 
 	return FALSE;
 }
@@ -3128,27 +3114,9 @@ static gboolean process_exec(void *hook_data, void *call_data)
 
 	process->name = g_quark_from_string(lttv_event_get_string(event,
 								  "filename"));
-	process->brand = LTTV_STATE_UNBRANDED;
 	//g_free(null_term_name);
 	return FALSE;
 }
-#ifdef BABEL_CLEANUP
-static gboolean thread_brand(void *hook_data, void *call_data)
-{
-	LttvTracefileState *s = (LttvTracefileState *)call_data;
-	LttvTraceState *ts = (LttvTraceState*)s->parent.t_context;
-	LttEvent *e = ltt_tracefile_get_event(s->parent.tf);
-	LttvTraceHook *th = (LttvTraceHook *)hook_data;
-	gchar *name;
-	guint cpu = s->cpu;
-	LttvProcessState *process = ts->running_process[cpu];
-
-	name = ltt_event_get_string(e, lttv_trace_get_hook_field(th, 0));
-	process->brand = g_quark_from_string(name);
-
-	return FALSE;
-}
-#endif
 #if 0
 	// TODO We only have sys_open, without the FD
 	// manage to do somehting better
@@ -3620,12 +3588,6 @@ void lttv_state_add_event_hooks(LttvTraceset *traceset)
 				LTT_EVENT_EXEC,
 				FIELD_ARRAY(LTT_FIELD_FILENAME),
 				process_exec, NULL, &hooks);
-
-		lttv_trace_find_hook(ts->parent.t,
-				LTT_CHANNEL_USERSPACE,
-				LTT_EVENT_THREAD_BRAND,
-				FIELD_ARRAY(LTT_FIELD_NAME),
-				thread_brand, NULL, &hooks);
 
 		 /* statedump-related hooks */
 		lttv_trace_find_hook(ts->parent.t,
@@ -4427,7 +4389,6 @@ GType lttv_tracefile_state_get_type(void)
 static void module_init(void)
 {
 	LTTV_STATE_UNNAMED = g_quark_from_string("");
-	LTTV_STATE_UNBRANDED = g_quark_from_string("");
 	LTTV_STATE_MODE_UNKNOWN = g_quark_from_string("MODE_UNKNOWN");
 	LTTV_STATE_USER_MODE = g_quark_from_string("USER_MODE");
 	LTTV_STATE_MAYBE_USER_MODE = g_quark_from_string("MAYBE_USER_MODE");
@@ -4508,7 +4469,6 @@ static void module_init(void)
 	LTT_EVENT_STATEDUMP_END  = g_quark_from_string("statedump_end");
 	LTT_EVENT_FUNCTION_ENTRY  = g_quark_from_string("function_entry");
 	LTT_EVENT_FUNCTION_EXIT  = g_quark_from_string("function_exit");
-	LTT_EVENT_THREAD_BRAND  = g_quark_from_string("thread_brand");
 	LTT_EVENT_REQUEST_ISSUE = g_quark_from_string("_blk_request_issue");
 	LTT_EVENT_REQUEST_COMPLETE = g_quark_from_string("_blk_request_complete");
 	LTT_EVENT_LIST_INTERRUPT = g_quark_from_string("interrupt");

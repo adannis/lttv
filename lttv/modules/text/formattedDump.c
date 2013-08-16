@@ -60,9 +60,9 @@ static LttvHooks *event_hook;
 
 static const char default_format[] =
 		"channel:%c event:%e timestamp:%t elapsed:%l cpu:%u pid:%d "
-		"ppid:%i tgpid:%g process:%p brand:%b state:%a payload:{ %m }";
+		"ppid:%i tgpid:%g process:%p state:%a payload:{ %m }";
 static const char textDump_format[] =
-		"%c.%e: %s.%n (%r/%c_%u), %d, %g, %p, %b, %i, %y, %a { %m }";
+		"%c.%e: %s.%n (%r/%c_%u), %d, %g, %p, %i, %y, %a { %m }";
 static const char strace_format[] = "%e(%m) %s.%n";
 static const char *fmt;
 
@@ -254,10 +254,6 @@ void lttv_event_to_string(LttEvent *e, GString *string_buffer, gboolean mandator
 				g_string_append(string_buffer,
 						g_quark_to_string(process->name));
 				break;
-			case 'b':
-				g_string_append(string_buffer,
-						g_quark_to_string(process->brand));
-				break;
 			case 'u':
 				g_string_append_printf(string_buffer, "%u", cpu);
 				break;
@@ -363,7 +359,6 @@ static void init()
 			"		%i   ppid\n"
 			"		%g   tgid\n"
 			"		%u   cpu\n"
-			"		%b   brand\n"
 			"		%a   state\n"
 			"		%y   memory address\n"
 			"		%m   markers and tracepoints fields\n",

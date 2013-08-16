@@ -168,10 +168,6 @@ void processlist_set_name(ProcessList *process_list,
     GQuark name,
     HashedResourceData *hashed_process_data);
 
-void processlist_set_brand(ProcessList *process_list,
-    GQuark brand,
-    HashedResourceData *hashed_process_data);
-
 /* Set the ppid of a process */
 void processlist_set_tgid(ProcessList *process_list,
     guint tgid,

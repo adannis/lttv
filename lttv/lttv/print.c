@@ -489,11 +489,10 @@ void lttv_event_to_string(LttEvent *e, GString *s, gboolean mandatory_fields,
 					ltt_trace_name(ltt_tracefile_get_trace(tfs->parent.tf))),
 			g_quark_to_string(ltt_tracefile_name(tfs->parent.tf)), cpu);
 		/* Print the process id and the state/interrupt type of the process */
-		g_string_append_printf(s,", %u, %u, %s, %s, %u, 0x%" PRIx64", %s",
+		g_string_append_printf(s,", %u, %u, %s, %u, 0x%" PRIx64", %s",
 			process->pid,
 			process->tgid,
 			g_quark_to_string(process->name),
-			g_quark_to_string(process->brand),
 			process->ppid,
 			process->current_function,
 			g_quark_to_string(process->state->t));
