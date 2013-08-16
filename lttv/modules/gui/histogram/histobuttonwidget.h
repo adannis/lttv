@@ -48,6 +48,7 @@ struct _ButtonWidget {
   GtkWidget *buttonM;
   GtkWidget *buttonFit;
 
+
   GtkWidget *vbox1;//buttons are placed on this vbox 
 
   GtkWidget *hbox;//Parent Widget containing buttons and drawing area. 

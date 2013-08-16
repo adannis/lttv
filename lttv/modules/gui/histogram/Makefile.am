@@ -33,5 +33,4 @@ noinst_HEADERS = histoeventhooks.h histocfv.h \
 		histobuttonwidget.h histodrawing.h histodrawitem.h
 
 EXTRA_DIST = \
-		hHistogramInsert.xpm stock_zoom_in_24.xpm stock_zoom_out_24.xpm \
-		stock_zoom_fit_24.xpm
+		hHistogramInsert.xpm

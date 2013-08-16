@@ -46,8 +46,6 @@ extern void histogram_show(HistoControlFlowData *histocontrol_flow_data,
 /*****************************************************************************
  *                                       *
  *****************************************************************************/
-static GtkWidget *xpm_label_box( gchar     *xpm_filename,
-                                 gchar     *label_text );
 static gboolean gplus( GtkWidget *widget,gpointer user_data)
 {
   HistoControlFlowData *histo_cfd =  (HistoControlFlowData *)user_data;
@@ -99,71 +97,29 @@ static gboolean gFit( GtkWidget *widget,
   
   return 0;
 }
-/* Create a new hbox with an image and a label packed into it
- * and return the box. */
 
-static GtkWidget *xpm_label_box( gchar* xpm_filename,
-                                 gchar     *label_text )
-{
-    GtkWidget *box;
-    GtkWidget *label;
-    GtkWidget *image;
+static GtkWidget* new_button_with_icon(const gchar *icon_name) {
 
-    GdkPixbuf *pixbufP;
-    //GError **error;
-    /* Create box for image and label */
-    box = gtk_hbox_new (FALSE, 0);
-    gtk_container_set_border_width (GTK_CONTAINER (box), 1);
+  GtkWidget *button = gtk_button_new();
 
-    /* Now on to the image stuff */
-        
-    pixbufP = gdk_pixbuf_new_from_xpm_data((const char **)&xpm_filename);
-    image =  gtk_image_new_from_pixbuf(pixbufP);
-
-    /* Create a label for the button */
-    label = gtk_label_new (label_text);
-
-    /* Pack the image and label into the box */
-    gtk_box_pack_start (GTK_BOX (box), image, FALSE, FALSE, 1);
-    gtk_box_pack_start (GTK_BOX (box), label, FALSE, FALSE, 1);
-
-    gtk_widget_show (image);
-    gtk_widget_show (label);
-
-    return box;
+  gtk_button_set_image((GtkButton *)button,
+                      gtk_image_new_from_icon_name(icon_name, 
+                                                  GTK_ICON_SIZE_BUTTON));
+  return button;
 }
 
 ButtonWidget *histo_buttonwidget_construct(HistoControlFlowData *histocontrol_flow_data)
 {
-  GtkWidget *boxPlus, *boxMinus , *boxfit;//containing text and image for each button.
-
   ButtonWidget *buttonwidget = g_new(ButtonWidget,1);
   buttonwidget->histo_control_flow_data = histocontrol_flow_data;
   /* Put + and - on the vbox and assign related functions to each button */
   buttonwidget-> vbox1 = gtk_vbox_new (FALSE, 0);
   
-// Add 2 buttons on the vbox 
-//  buttonwidget ->buttonP = gtk_button_new_with_mnemonic ("+");
-//  buttonwidget->buttonM = gtk_button_new_with_mnemonic ("-");
-// Instead, add 2 button with image and text:
-
-  buttonwidget ->buttonP =gtk_button_new ();
-  buttonwidget ->buttonM =gtk_button_new ();
-  buttonwidget ->buttonFit =gtk_button_new ();
-
-/* This calls our box creating function */
-  boxPlus = xpm_label_box ("stock_zoom_in_24.xpm", "vertical");
-  boxMinus = xpm_label_box ("stock_zoom_out_24.xpm", "vertical");
-  boxfit = xpm_label_box ("stock_zoom_fit_24.xpm", "vertical");
+  buttonwidget->buttonP = new_button_with_icon (GTK_STOCK_ZOOM_IN);
+  buttonwidget->buttonM = new_button_with_icon (GTK_STOCK_ZOOM_OUT);
+  buttonwidget->buttonFit = new_button_with_icon (GTK_STOCK_ZOOM_FIT);
 
 /* Pack and show all widgets */
-  gtk_widget_show (boxPlus);
-  gtk_widget_show (boxMinus);
-  gtk_widget_show (boxfit);
-
-  gtk_container_add (GTK_CONTAINER (buttonwidget -> buttonP), boxPlus);
-  gtk_container_add (GTK_CONTAINER (buttonwidget -> buttonM), boxMinus);
-  gtk_container_add (GTK_CONTAINER (buttonwidget -> buttonFit), boxfit);
 
   gtk_box_pack_start (GTK_BOX (buttonwidget->vbox1),buttonwidget->buttonP, TRUE, FALSE, 0);
   gtk_box_pack_start (GTK_BOX (buttonwidget->vbox1),buttonwidget->buttonM, TRUE, FALSE, 0);
