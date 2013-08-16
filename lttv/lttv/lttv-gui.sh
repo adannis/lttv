@@ -5,6 +5,6 @@
 
 LTTV_CMD=`echo $0 | sed 's/-gui$//'`
 
-$LTTV_CMD.real -m lttvwindow -m guievents -m guicontrolflow  \
+$LTTV_CMD.real -m lttvwindow -m guievents -m guicontrolflow -m resourceview -m guihistogram \
      $*
-#-m guifilter -m guistatistics -m guitracecontrol -m resourceview
+#-m guifilter -m guistatistics -m guitracecontrol
