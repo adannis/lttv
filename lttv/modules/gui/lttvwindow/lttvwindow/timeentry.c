@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <gtk/gtksignal.h>
+#include <gtk/gtk.h>
 
 enum {
 	SIGNAL_TIME_CHANGED,
