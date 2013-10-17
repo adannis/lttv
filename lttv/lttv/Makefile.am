@@ -33,7 +33,7 @@ lttv-gui: lttv-gui.sh
 	chmod ugo+x lttv-gui
 
 
-INCLUDES = \
+AM_CPPFLAGS = \
 	-DPACKAGE_PLUGIN_DIR=\""$(lttvplugindir)"\" \
 	$(DEFAULT_INCLUDES)
 
