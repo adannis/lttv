@@ -55,7 +55,6 @@ struct _MainWindow{
   //gotoEventWindow*     GotoEventWindow; /*search for event description*/
   //openFilterWindow*    OpenFilterWindow; /* Open a filter selection window */
   GtkWidget*           help_contents;/* Window to display help contents */
-  GtkWidget*           about_box;    /* Window  about information */
  
   //  lttv_trace_filter * filter; /* trace filter associated with the window */
 

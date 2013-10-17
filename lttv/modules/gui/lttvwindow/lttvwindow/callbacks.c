@@ -2997,90 +2997,36 @@ on_content_activate                    (GtkMenuItem     *menuitem,
 }
 
 
-static void 
-on_about_close_activate                (GtkButton       *button,
-                                        gpointer         user_data)
-{
-  GtkWidget *about_widget = GTK_WIDGET(user_data);
-
-  gtk_widget_destroy(about_widget);
-}
-
 void
 on_about_activate                      (GtkMenuItem     *menuitem,
                                         gpointer         user_data)
 {
   MainWindow *main_window = get_window_data_struct(GTK_WIDGET(menuitem));
-  GtkWidget *window_widget = main_window->mwindow;
-  GtkWidget *about_widget = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-  GtkWindow *about_window = GTK_WINDOW(about_widget);
+
+  gchar * authors[] = { "Yannick Brosseau",
+			"Francis Deslauriers", 
+			"Mathieu Desnoyer",
+			"Michel Dagenais", 
+			"Benoit Des Ligneris",
+			"Eric Clement",
+			"Xang-Xiu Yang",
+			"Tom Zanussi",
+			NULL };
+
+  static const gchar *comments =  "Trace visualiser for LTTng 2.x data\
+\nInspired from the original Linux Trace Toolkit Visualizer made by Karim Yaghmour";
   
-  gtk_window_set_title(about_window, "About Linux Trace Toolkit");
+  static const gchar *copyright = "Copyright \xc2\xa9 2004-2013";
 
-  gtk_window_set_resizable(about_window, FALSE);
-  gtk_window_set_transient_for(about_window, GTK_WINDOW(window_widget));
-  gtk_window_set_destroy_with_parent(about_window, TRUE);
-  gtk_window_set_modal(about_window, FALSE);
-
-  /* Put the about window at the center of the screen */
-  gtk_window_set_position(about_window, GTK_WIN_POS_CENTER_ALWAYS);
-
-  GtkWidget *vbox = gtk_vbox_new(FALSE, 1);
-
-  gtk_container_add(GTK_CONTAINER(about_widget), vbox);
-
-  /* Text to show */
-  GtkWidget *label1 = gtk_label_new("");
-  gtk_misc_set_padding(GTK_MISC(label1), 10, 20);
-  gtk_label_set_markup(GTK_LABEL(label1), "\
-<big>Linux Trace Toolkit " VERSION "</big>");
-  gtk_label_set_justify(GTK_LABEL(label1), GTK_JUSTIFY_CENTER);
-  
-  GtkWidget *label2 = gtk_label_new("");
-  gtk_misc_set_padding(GTK_MISC(label2), 10, 20);
-  gtk_label_set_markup(GTK_LABEL(label2), "\
-Contributors :\n\
-\n\
-Michel Dagenais (New trace format, lttv main)\n\
-Mathieu Desnoyers (Kernel Tracer, Directory structure, build with automake/conf,\n\
-                   lttv gui, control flow view, gui cooperative trace reading\n\
-                   scheduler with interruptible foreground and background\n\
-                   computation, detailed event list (rewrite), trace reading\n\
-                   library (rewrite))\n\
-Benoit Des Ligneris, Eric Clement (Cluster adaptation, work in progress)\n\
-Xang-Xiu Yang (new trace reading library and converter, lttv gui, \n\
-               detailed event list and statistics view)\n\
-Tom Zanussi (RelayFS)\n\
-\n\
-Inspired from the original Linux Trace Toolkit Visualizer made by\n\
-Karim Yaghmour");
-
-  GtkWidget *label3 = gtk_label_new("");
-  gtk_label_set_markup(GTK_LABEL(label3), "\
-Linux Trace Toolkit Viewer, Copyright (C) 2004, 2005, 2006\n\
-                                                Michel Dagenais\n\
-                                                Mathieu Desnoyers\n\
-                                                Xang-Xiu Yang\n\
-Linux Trace Toolkit comes with ABSOLUTELY NO WARRANTY.\n\
-This is free software, and you are welcome to redistribute it\n\
-under certain conditions. See COPYING for details.");
-  gtk_misc_set_padding(GTK_MISC(label3), 10, 20);
-
-  gtk_box_pack_start_defaults(GTK_BOX(vbox), label1);
-  gtk_box_pack_start_defaults(GTK_BOX(vbox), label2);
-  gtk_box_pack_start_defaults(GTK_BOX(vbox), label3);
-
-  GtkWidget *hbox = gtk_hbox_new(TRUE, 0);
-  gtk_box_pack_end(GTK_BOX(vbox), hbox, FALSE, FALSE, 0);
-  GtkWidget *close_button = gtk_button_new_with_mnemonic("_Close");
-  gtk_box_pack_end(GTK_BOX(hbox), close_button, FALSE, FALSE, 0);
-  gtk_container_set_border_width(GTK_CONTAINER(close_button), 20);
-
-  g_signal_connect(G_OBJECT(close_button), "clicked",
-      G_CALLBACK(on_about_close_activate),
-      (gpointer)about_widget);
-  
-  gtk_widget_show_all(about_widget);
+  gtk_show_about_dialog(main_window->mwindow,
+		  "authors", authors,
+		  "comments", comments,
+		  "version", VERSION,
+		  "program-name", "LTTV",
+		  "license", "GPLv2, see COPYING file for details",
+		  "website", "http://lttng.org/lttv/",
+		  "copyright", copyright,
+		  NULL);
 }
 
 
