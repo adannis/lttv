@@ -82,20 +82,6 @@ AS_IF([test "x$with_trace_sync" = "xyes"],[
 AC_HEADER_STDC
 AC_CHECK_HEADERS([fcntl.h stdlib.h string.h sys/time.h unistd.h pthread.h])
 
-# Check for JNI header files if requested
-AC_ARG_WITH(jni-interface,
-	AS_HELP_STRING([--with-jni-interface],
-	[build JNI interface between C and Java. Needs JNI header file. [[default=no]]]),
-	[with_jni_interface="$withval"],
-	[with_jni_interface="no"])
-
-AS_IF([test "x$with_jni_interface" = "xyes"],[
-        AC_CHECK_HEADERS([jni.h], [], AC_MSG_ERROR([missing jni.h
-Make sure Sun Java or OpenJDK or GCJ is installed and that this header file exists in the system path.
-Use CFLAGS=-I/path/ to specify a non-standard path or disable the JNI interface.]))
-])
-AM_CONDITIONAL([BUILD_JNI_INTERFACE], [ test "$with_jni_interface" = "yes" ] )
-
 
 # If we want the gui, we need additionnal flags for GTK
 AS_IF([test "x$with_lttv_gui" = "xyes"],[
@@ -158,24 +144,20 @@ AM_CONDITIONAL([LTTVSTATIC], [ test "x$lttvstatic" = "xyes" ] )
 
 lttvlibdir="${libdir}/lttv"
 lttvplugindir="${lttvlibdir}/plugins"
-#lttlibdir="${libdir}/ltt"
 top_lttvdir="\$(top_srcdir)/lttv"
 top_lttvwindowdir="\$(top_srcdir)/lttv/modules/gui/lttvwindow"
 
 DEFAULT_INCLUDES="-I\$(top_srcdir) -I\$(top_builddir) -I\$(top_lttvdir) -I\$(top_lttvwindowdir)"
 
-lttincludedir="${includedir}/ltt"
 lttvincludedir="${includedir}/lttv"
 lttvwindowincludedir="${includedir}/lttvwindow"
 lttctlincludedir="${includedir}/liblttctl"
 
 AC_SUBST(lttvlibdir)
 AC_SUBST(lttvplugindir)
-#AC_SUBST(lttlibdir)
 AC_SUBST(top_lttvdir)
 AC_SUBST(top_lttvwindowdir)
 AC_SUBST(DEFAULT_INCLUDES)
-AC_SUBST(lttincludedir)
 AC_SUBST(lttvincludedir)
 AC_SUBST(lttvwindowincludedir)
 AC_SUBST(lttctlincludedir)
@@ -216,7 +198,6 @@ AC_OUTPUT
 # Report on what will be built
 AS_ECHO()
 AS_ECHO("The following components will be built:")
-AS_ECHO("LTT trace reading library: Enabled") # It's always enabled!
 
 AS_ECHO_N("LTTV command line tool:    ")
 AS_IF([test "x$with_lttv" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
@@ -226,9 +207,6 @@ AS_IF([test "x$with_lttv_gui" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled"
 
 AS_ECHO_N("Trace synchronization:     ")
 AS_IF([test "x$with_trace_sync" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
-
-AS_ECHO_N("Java (JNI) interface:      ")
-AS_IF([test "x$with_jni_interface" = "xyes"],[AS_ECHO("Enabled")],[AS_ECHO("Disabled")])
 
 AS_ECHO()
 AS_ECHO_N("Statically linked executable: ")
