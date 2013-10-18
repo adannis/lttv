@@ -84,19 +84,21 @@ void lttv_trace_option(void *hook_data)
 
 static gboolean process_traceset(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   LttvAttributeValue value_expression, value_filter;
 
   LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
 
-#ifdef BABEL_CLEANUP
   LttvTracesetStats *tscs = NULL;
 
   LttvTracesetState *tss;
 
   LttvTracesetContext *tc;
+
+  gboolean retval;
 #endif
   LttTime start, end;
-  gboolean retval;
+
 
   g_info("BatchAnalysis begin process traceset");
 #ifdef BABEL_CLEANUP
@@ -159,7 +161,9 @@ static gboolean process_traceset(void *hook_data, void *call_data)
   lttv_process_traceset_seek_time(traceset, start);
   /* Read as long a we do not reach the end (0) */
   unsigned int count;
+#ifdef BABEL_CLEANUP
   unsigned int updated_count;
+#endif
   do {
 	  count = lttv_process_traceset_middle(traceset,
 							  end,

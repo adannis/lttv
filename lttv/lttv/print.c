@@ -353,7 +353,7 @@ int getFields(struct bt_ctf_event *ctf_event, struct bt_definition const *fields
 			g_string_append_printf(fieldsStr, "%lu", bt_ctf_get_int64(fields));
 		}
 		else if (isSigned == 0) {
-			g_string_append_printf(fieldsStr, "%llu", bt_ctf_get_uint64(fields));
+			g_string_append_printf(fieldsStr, "%" PRIu64 , bt_ctf_get_uint64(fields));
 		}
 		break;
 	case CTF_TYPE_STRING:
@@ -441,7 +441,7 @@ void lttv_event_to_string(LttvEvent *event, GString *a_string,
 
 	g_string_set_size(a_string,0);
 	if(long_version){
-		g_string_append_printf(a_string, "%llu %s: ", 
+		g_string_append_printf(a_string,"%" PRIu64 " %s: ", 
 				       bt_ctf_get_timestamp(event->bt_event), 
 				       bt_ctf_event_name(event->bt_event));
 	}

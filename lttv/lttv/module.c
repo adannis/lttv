@@ -601,7 +601,7 @@ static void destroy()
 
 	initialized = FALSE;
 
-	exit(0);
+	//exit(0);
 }
 
 LTTV_MODULE("module", "Modules in libraries",				\

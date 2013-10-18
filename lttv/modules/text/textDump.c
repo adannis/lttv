@@ -35,7 +35,7 @@
 #include <lttv/stats.h>
 #include <lttv/filter.h>
 #endif
-// #include <lttv/traceset.h>
+#include <lttv/traceset.h>
 #include <lttv/print.h>
 #include <stdio.h>
 #include <inttypes.h>
@@ -59,7 +59,7 @@ static LttvHooks
   *before_trace,
   *event_hook;
 
-
+#ifdef BABEL_CLEANUP
 static void 
 print_path_tree(FILE *fp, GString *indent, LttvAttribute *tree)
 {
@@ -197,6 +197,7 @@ print_tree(FILE *fp, GString *indent, LttvAttribute *tree)
     }
   }
 }
+#endif
 #ifdef BABEL_CLEANUP
 static void
 print_stats(FILE *fp, LttvTracesetStats *tscs)
@@ -273,8 +274,9 @@ static gboolean write_traceset_header(void *hook_data, void *call_data)
 
 static gboolean write_traceset_footer(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEAUP
   LttvTraceset *traceset = (LttvTraceset *)call_data;
-
+#endif
   g_info("TextDump traceset footer");
 
   fprintf(a_file,"End trace set\n\n");
@@ -306,10 +308,11 @@ static gboolean write_trace_header(void *hook_data, void *call_data)
 
 static int write_event_content(void *hook_data, void *call_data)
 {
+#ifdef BABEL_CLEANUP
   gboolean result;
 
   LttvIAttribute *attributes = LTTV_IATTRIBUTE(lttv_global_attributes());
-  
+#endif   
   LttvEvent *event = (LttvEvent *)call_data;
 #ifdef BABEL_CLEANUP  
   LttvTracefileContext *tfc = (LttvTracefileContext *)call_data;

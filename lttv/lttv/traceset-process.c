@@ -60,13 +60,13 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 {
 	unsigned count = 0;
 	gint last_ret = 0;
-	LttvTracesetPosition *currentPos;
         
 	struct bt_ctf_event *bt_event;
 	
 	LttvEvent event;
 	LttTime endPositionTime;
 
+	//TODO ybrosseau 2013-10-17: Compare with end_position directly when its possible
 	if(end_position) {
 		endPositionTime = lttv_traceset_position_get_time(end_position);
 	}
@@ -82,14 +82,7 @@ guint lttv_process_traceset_middle(LttvTraceset *traceset,
 			if(ltt_time_compare(end, time) <= 0) {
 				break;
 			}
-			/*
-			currentPos = lttv_traceset_create_current_position(traceset);
-			if(lttv_traceset_position_compare(currentPos,end_position ) == 0){
-				lttv_traceset_destroy_position(currentPos);
-				break;
-			}
-			lttv_traceset_destroy_position(currentPos);
-			*/
+			//TODO ybrosseau 2013-10-17: Compare with end_position directly when its possible
 			if(end_position && (ltt_time_compare(endPositionTime, time) <= 0)) {
 				break;
 			}

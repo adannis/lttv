@@ -21,6 +21,7 @@
 #endif
 
 #include <lttv/hook.h>
+#include <stdio.h>
 
 typedef struct _LttvHookClosure {
 	LttvHook      hook;
@@ -400,8 +401,6 @@ gboolean lttv_hooks_call_check_merge(LttvHooks *h1, void *call_data1,
 
 void lttv_hooks_print(const LttvHooks *h)
 {
-	gboolean ret, sum_ret = FALSE;
-
 	LttvHookClosure *c;
 
 	guint i;
