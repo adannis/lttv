@@ -29,6 +29,9 @@ AM_SILENT_RULES([yes])
 AC_CONFIG_HEADERS([config.h])
 LT_INIT
 
+#Always build basic command line modules
+with_lttv="yes"
+
 # If requested, avoid building LTTV part
 AC_ARG_WITH(lttv-gui,
 	AS_HELP_STRING([--with-lttv-gui],
