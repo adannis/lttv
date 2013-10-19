@@ -56,8 +56,10 @@ create_MWindow (void)
   GtkWidget *FileMenuNewTitle;
   GtkWidget *FileMenuNewTitle_menu;
   //  GtkWidget *EmptyTraceset;
+#ifdef BABEL_CLEANUP
   GtkWidget *CloneTraceset;
   GtkWidget *FileMenuNewSep;
+#endif
   GtkWidget *Tab;
   //  GtkWidget *OpenTraceset;
   GtkWidget *Close;
@@ -113,7 +115,9 @@ create_MWindow (void)
   GtkWidget *About;
   GtkWidget *MToolbar1;
   GtkWidget *tmp_toolbar_icon;
+#ifdef BABEL_CLEANUP
   GtkWidget *tlbEmptyTraceset;
+#endif
   GtkWidget *tlbTab;
   //  GtkWidget *tlbOpenTraceset;
   GtkWidget *tlbAddTrace;
@@ -916,7 +920,7 @@ create_MWindow (void)
   GLADE_HOOKUP_OBJECT (MWindow, MToolbar1, "MToolbar1");
 #ifdef BABEL_CLEANUP
   GLADE_HOOKUP_OBJECT (MWindow, tlbEmptyTraceset, "tlbEmptyTraceset");
-#endif BABEL_CLEANUP
+#endif /* BABEL_CLEANUP */
   GLADE_HOOKUP_OBJECT (MWindow, tlbTab, "tlbTab");
   //  GLADE_HOOKUP_OBJECT (MWindow, tlbOpenTraceset, "tlbOpenTraceset");
   GLADE_HOOKUP_OBJECT (MWindow, tlbAddTrace, "tlbAddTrace");

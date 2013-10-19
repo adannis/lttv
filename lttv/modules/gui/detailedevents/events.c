@@ -527,7 +527,6 @@ static void request_background_data(EventViewerData *event_viewer_data)
   gint num_traces = ts->traces->len;
   gint i;
   LttvTrace *trace;
-  LttvTraceState *tstate;
 
   LttvHooks *background_ready_hook = 
     lttv_hooks_new();
@@ -1421,7 +1420,7 @@ gboolean update_current_time(void * hook_data, void * call_data)
     
 	event_viewer_data->currently_selected_position = 
 	  lttv_traceset_create_current_position(ts);
-	g_debug("update_current_time: %p %d", event_viewer_data->currently_selected_position,  event_viewer_data->currently_selected_position->timestamp);
+	g_debug("update_current_time: %p %lu", event_viewer_data->currently_selected_position,  event_viewer_data->currently_selected_position->timestamp);
   }
 
   event_viewer_data->report_position = FALSE;
@@ -1442,7 +1441,7 @@ gboolean update_current_position(void * hook_data, void * call_data)
   
   if(lttv_traceset_position_compare(
         event_viewer_data->currently_selected_position, current_pos) != 0) {
-    g_debug("Update current pos: %p, %d", current_pos, current_pos->timestamp);
+    g_debug("Update current pos: %p, %lu", current_pos, current_pos->timestamp);
                 event_viewer_data->currently_selected_position = current_pos;
       /* Simply update the current time : it is in the list */
       event_update_selection(event_viewer_data);

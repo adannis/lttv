@@ -140,14 +140,14 @@ __EXPORT guint lttvwindowtraces_get_number()
 void lttvwindowtraces_add_trace(LttvTrace *trace)
 {
 
-  LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *attribute;
-  LttvAttributeValue value;
+#ifdef BABEL_CLEANUP
+
+  LttvAttribute *g_attribute = lttv_global_attributes();
   struct stat buf;
   gchar attribute_path[PATH_MAX];
   int result;
   gboolean result_b;
-  #ifdef BABEL_CLEANUP
   if(stat(g_quark_to_string(ltt_trace_name(lttv_trace(trace))), &buf)) {
     g_warning("lttvwindowtraces_add_trace: Trace %s not found",
         g_quark_to_string(ltt_trace_name(lttv_trace(trace))));
@@ -206,19 +206,19 @@ void lttvwindowtraces_add_trace(LttvTrace *trace)
   sync_position = lttv_traceset_context_position_new();
   *(value.v_pointer) = sync_position;
 #endif //0
-  value = lttv_attribute_add(attribute,
+  lttv_attribute_add(attribute,
                      LTTV_REQUESTS_QUEUE,
                      LTTV_POINTER);
 
-  value = lttv_attribute_add(attribute,
+  lttv_attribute_add(attribute,
                      LTTV_REQUESTS_CURRENT,
                      LTTV_POINTER);
  
-  value = lttv_attribute_add(attribute,
+  lttv_attribute_add(attribute,
                      LTTV_NOTIFY_QUEUE,
                      LTTV_POINTER);
   
-  value = lttv_attribute_add(attribute,
+  lttv_attribute_add(attribute,
                      LTTV_NOTIFY_CURRENT,
                      LTTV_POINTER);
 }
@@ -886,7 +886,7 @@ void lttvwindowtraces_call_after_chunk(LttvAttributeName module_name,
   type = lttv_iattribute_get_by_name(LTTV_IATTRIBUTE(module_attribute),
                                      LTTV_EVENT_HOOK_BY_ID_CHANNEL,
                                      &value);
-  #ifdef BABEL_CLEANUP
+#ifdef BABEL_CLEANUP
   lttv_process_traceset_end(tsc,
                             after_chunk_traceset,
                             after_chunk_trace,
@@ -1002,13 +1002,13 @@ __EXPORT gboolean lttvwindowtraces_get_ready(LttvAttributeName module_name,
   else
     return TRUE;
 }
-
+#ifdef BABEL_CLEANUP
 static gint find_window_widget(MainWindow *a, GtkWidget *b)
 {
   if(a->mwindow == b) return 0;
   else return -1;
 }
-
+#endif
 
 /* lttvwindowtraces_process_pending_requests
  *
@@ -1022,8 +1022,6 @@ static gint find_window_widget(MainWindow *a, GtkWidget *b)
 
 gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
 {
-  LttvTraceset *tsc;
-  LttvTraceset *ts;
   LttvAttribute *attribute;
   LttvAttribute *g_attribute = lttv_global_attributes();
   GSList **list_out, **list_in, **notify_in, **notify_out;
@@ -1066,8 +1064,9 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
                                      LTTV_COMPUTATION_TRACESET,
                                      &value);
   g_assert(type == LTTV_POINTER);
+#ifdef BABEL_CLEANUP
   ts = (LttvTraceset*)*(value.v_pointer);
- 
+#endif
 #if 0
   type = lttv_iattribute_get_by_name(LTTV_IATTRIBUTE(attribute),
                                      LTTV_COMPUTATION_SYNC_POSITION,

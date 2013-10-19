@@ -1300,7 +1300,6 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
     {
       /* 5. After process traceset middle */
 
-      LttTime curTime = lttv_traceset_get_current_time(ts);
       /* - if the iterator is not valid anymore (got to the end) */
       if(bt_ctf_iter_read_event(ts->iter) == NULL) {
         /* - For each req in list_in */
@@ -1540,13 +1539,14 @@ gboolean lttvwindow_process_pending_requests(Tab *tab)
 }
 
 #undef list_out
+#ifdef BABEL_CLEANUP
 /** 
     Manage the periodic update of a live trace
 */
 static gboolean
 live_trace_update_handler(Tab *tab)
 {  
-#ifdef BABEL_CLEANUP
+
 	unsigned int updated_count;
 	LttvTracesetContext *tsc = LTTV_TRACESET_CONTEXT(tab->traceset_info->traceset_context);
 	TimeInterval initial_time_span = tsc->time_span;
@@ -1582,12 +1582,12 @@ live_trace_update_handler(Tab *tab)
 
 	/* Timer will be recalled as long as there is files to update */
 	return (updated_count > 0);
-#endif /* BABEL_CLEANUP */
 }
-
+#endif /* BABEL_CLEANUP */
+#ifdef BABEL_CLEANUP
 static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 {
-#ifdef BABEL_CLEANUP
+
   LttvTraceset *traceset = tab->traceset_info->traceset;
   guint i;
   guint num_traces = lttv_traceset_number(traceset);
@@ -1648,9 +1648,9 @@ static void lttvwindow_add_trace(Tab *tab, LttvTrace *trace_v)
 				 (GSourceFunc) live_trace_update_handler,
 				 tab);
   }
-#endif /* BABEL_CLEANUP */
-}
 
+}
+#endif /* BABEL_CLEANUP */
 /* add_trace adds a trace into the current traceset. It first displays a 
  * directory selection dialogue to let user choose a trace, then recreates
  * tracset_context, and redraws all the viewer of the current tab 
@@ -3018,7 +3018,7 @@ on_about_activate                      (GtkMenuItem     *menuitem,
   
   static const gchar *copyright = "Copyright \xc2\xa9 2004-2013";
 
-  gtk_show_about_dialog(main_window->mwindow,
+  gtk_show_about_dialog((GtkWindow *)main_window->mwindow,
 		  "authors", authors,
 		  "comments", comments,
 		  "version", VERSION,
@@ -3039,7 +3039,7 @@ on_button_new_clicked                  (GtkButton       *button,
 #else
   GtkWidget *dialogue = 
     gtk_message_dialog_new(
-      GTK_WINDOW(gtk_widget_get_toplevel(button)),
+	    GTK_WINDOW(gtk_widget_get_toplevel((GtkWidget *)button)),
       GTK_DIALOG_MODAL|GTK_DIALOG_DESTROY_WITH_PARENT,
       GTK_MESSAGE_ERROR,
       GTK_BUTTONS_OK,

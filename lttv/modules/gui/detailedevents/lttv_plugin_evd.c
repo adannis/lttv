@@ -42,9 +42,10 @@ static void evd_update_filter(LttvPlugin *parent, LttvFilter *filter)
 static void
 lttv_plugin_evd_class_init (LttvPluginEVDClass *klass)
 {
+  #ifdef BABEL_CLEANUP
   LttvPluginClass *parent_klass;
   parent_klass = &klass->parent;
-  #ifdef BABEL_CLEANUP
+
   parent_klass->update_filter = evd_update_filter;
 #endif //babel cleanup
   g_type_class_add_private (klass, sizeof (EventViewerData));

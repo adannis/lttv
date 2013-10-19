@@ -117,7 +117,6 @@ static void request_background_data(ControlFlowData *control_flow_data)
   gint num_traces = lttv_traceset_number(ts);
   gint i;
   LttvTrace *trace;
-  LttvTraceState *tstate;
 
   LttvHooks *background_ready_hook = lttv_hooks_new();
   lttv_hooks_add(background_ready_hook, background_ready, control_flow_data,
@@ -553,7 +552,6 @@ int before_schedchange_hook(void *hook_data, void *call_data)
   //LttvProcessState *old_process = ts->running_process[cpu];
 
   guint pid_in, pid_out;
-  gint64 state_out;
   LttTime evtime;
   event = (LttvEvent *) call_data;
   if (strcmp(lttv_traceset_get_name_from_event(event),"sched_switch") != 0)
@@ -571,7 +569,6 @@ int before_schedchange_hook(void *hook_data, void *call_data)
   
   pid_out = lttv_event_get_long(event, "prev_tid");
   pid_in = lttv_event_get_long(event, "next_tid");
-  state_out = lttv_event_get_long(event, "prev_state");
   guint trace_number = lttv_traceset_get_trace_index_from_event(event);
 
   process = lttv_state_find_process(ts,cpu,pid_out);
@@ -631,7 +628,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
 		  evtime );
 
     } else
-	    g_warning("Cannot find pid_in in schedchange %u at %u.%u", pid_in, evtime.tv_sec, evtime.tv_nsec);
+	    g_warning("Cannot find pid_in in schedchange %u at %lu.%lu", pid_in, evtime.tv_sec, evtime.tv_nsec);
 #ifdef BABEL_CLEANUP
   tfc->target_pid = target_pid_saved;
 #endif //babel_cleanup
@@ -782,7 +779,6 @@ int before_execmode_hook(void *hook_data, void *call_data)
 {
   LttvEvent *event;
   guint cpu;
-  guint pid = 0;
   LttvTraceState *ts;
   LttvProcessState *process;
   
@@ -800,7 +796,6 @@ int before_execmode_hook(void *hook_data, void *call_data)
   LttTime evtime = lttv_event_get_timestamp(event);
   ControlFlowData *control_flow_data = (ControlFlowData*)hook_data;
   /* For the pid */
-  LttvTraceset *traceSet = lttvwindow_get_traceset(control_flow_data->tab);
   
   cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;
@@ -2024,10 +2019,6 @@ int before_statedump_end(void *hook_data, void *call_data)
         return FALSE;
 
   ControlFlowData *control_flow_data = (ControlFlowData*) hook_data;
-
-
-  LttvTraceState *ts = event->state;
-
 
   ProcessList *process_list = control_flow_data->process_list;
 

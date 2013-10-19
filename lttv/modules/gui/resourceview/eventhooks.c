@@ -117,7 +117,6 @@ static void request_background_data(ControlFlowData *resourceview_data)
   gint num_traces = lttv_traceset_number(ts);
   gint i;
   LttvTrace *trace;
-  LttvTraceState *tstate;
 
   LttvHooks *background_ready_hook = 
     lttv_hooks_new();
@@ -381,6 +380,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
    * time to do it.
    */
 
+#ifdef BABEL_CLEANUP
   guint pid_out;
   pid_out = lttv_event_get_long(event, "prev_tid");
 // TODO: can't we reenable this? pmf
@@ -388,7 +388,7 @@ int before_schedchange_hook(void *hook_data, void *call_data)
 //    /* not a transition to/from idle */
 //    return 0;
 //  }
-
+#endif
 
   guint cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;      
@@ -622,7 +622,6 @@ int before_execmode_hook(void *hook_data, void *call_data)
 {
   LttvEvent *event;
   guint cpu;
-  guint pid = 0;
   LttvTraceState *ts;
   LttvProcessState *process;
 
@@ -644,9 +643,6 @@ int before_execmode_hook(void *hook_data, void *call_data)
   LttTime evtime = lttv_event_get_timestamp(event);
   ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
 
-  /* For the pid */
-  LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
-  
   cpu = lttv_traceset_get_cpuid_from_event(event);
   ts = event->state;
   
@@ -803,7 +799,6 @@ int before_execmode_hook_irq(void *hook_data, void *call_data)
 
   guint64 irq;
   guint cpu = lttv_traceset_get_cpuid_from_event(event);
-  LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
   LttvTraceState *ts = event->state;;
 
   /*
@@ -995,8 +990,6 @@ int before_execmode_hook_soft_irq(void *hook_data, void *call_data)
 
   LttTime evtime = lttv_event_get_timestamp(event);
   ControlFlowData *resourceview_data = (ControlFlowData*)hook_data;
-  LttvTraceset *traceSet = lttvwindow_get_traceset(resourceview_data->tab);
-  guint cpu =  lttv_traceset_get_cpuid_from_event(event);  
   ts = event->state;
   guint trace_num = lttv_traceset_get_trace_index_from_event(event);
 
@@ -1304,7 +1297,6 @@ int before_bdev_event_hook(void *hook_data, void *call_data)
 {
 LttvEvent *event;
   guint cpu;
-  guint pid = 0;
   LttvTraceState *ts;
   LttvProcessState *process;
 
@@ -2078,8 +2070,6 @@ int after_chunk(void *hook_data, void *call_data)
   ControlFlowData *resourceview_data = events_request->viewer_data;
   LttvTraceset *ts = (LttvTraceset*)call_data;
 
-  LttTime end_time;
-  
   ProcessList *process_list = resourceview_data->process_list;
   guint i;
   guint nb_trace = lttv_traceset_number(ts);
@@ -2093,12 +2083,7 @@ int after_chunk(void *hook_data, void *call_data)
   }
   g_free(process_list->current_hash_data);
   process_list->current_hash_data = NULL;
-#ifdef BABEL_CLEANUP
-  if(tfc != NULL)
-    end_time = LTT_TIME_MIN(tfc->timestamp, events_request->end_time);
-  else /* end of traceset, or position now out of request : end */
-    end_time = events_request->end_time;
-#endif
+
   draw_closing_lines(resourceview_data, events_request);
 
   return 0;
@@ -2122,10 +2107,6 @@ int before_statedump_end(void *hook_data, void *call_data)
         return FALSE;
 
   ControlFlowData *resourceview_data = (ControlFlowData*) hook_data;
-
-
-  LttvTraceState *ts = event->state;
-
 
   gint i;
 

@@ -783,8 +783,6 @@ int histo_after_chunk(void *hook_data, void *call_data)
 {
   EventsRequest *events_request = (EventsRequest*)hook_data;
   HistoControlFlowData *histocontrol_flow_data = events_request->viewer_data;
-  LttvTraceset *traceset = (LttvTraceset*)call_data;
-
   LttTime end_time;
 
   histoDrawing_t *drawing = histocontrol_flow_data->drawing;
