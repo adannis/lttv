@@ -1,11 +1,8 @@
-LTT Viewing Tools package README
+LTTV README
 --------------------------------
-Mathieu Desnoyers 
-Last update: 2007/05/14
-
 
 This package contains the trace reading library and trace viewing tools for
-the new Linux Trace Toolkit trace format.
+the LTTng 2.x trace format (Common Trace Format).
 
 * Compiling
 
@@ -48,9 +45,7 @@ See QUICKSTART.
 
 Here is the tree structure of the Linux Trace Toolkit Viewer package.
 
-ltt/		New trace format reading library.
 README		This file.
-debian/		Debian config files (currently empty).
 doc/		Documentation.
 doc/user/	User related documentation.
 doc/developer/	Developer related documentation.
