@@ -139,9 +139,9 @@ __EXPORT guint lttvwindowtraces_get_number()
 
 void lttvwindowtraces_add_trace(LttvTrace *trace)
 {
-
-  LttvAttribute *attribute;
 #ifdef BABEL_CLEANUP
+  LttvAttribute *attribute;
+
 
   LttvAttribute *g_attribute = lttv_global_attributes();
   struct stat buf;
@@ -195,7 +195,7 @@ void lttvwindowtraces_add_trace(LttvTrace *trace)
   *(value.v_pointer) = tss;
   
   lttv_context_init(LTTV_TRACESET_CONTEXT(tss), ts);
-#endif
+
 #if 0
   result_b = lttv_iattribute_find(LTTV_IATTRIBUTE(attribute),
                                 LTTV_COMPUTATION_SYNC_POSITION,
@@ -221,6 +221,7 @@ void lttvwindowtraces_add_trace(LttvTrace *trace)
   lttv_attribute_add(attribute,
                      LTTV_NOTIFY_CURRENT,
                      LTTV_POINTER);
+#endif
 }
 
 /* Remove a trace from the global attributes */
@@ -835,6 +836,8 @@ void lttvwindowtraces_call_before_chunk(LttvAttributeName module_name,
 void lttvwindowtraces_call_after_chunk(LttvAttributeName module_name,
                                        LttvTraceset *ts)
 {
+#warning "lttvwindowtraces_call_after_chunk does nothing"
+#ifdef BABEL_CLEANUP
   LttvAttribute *g_attribute = lttv_global_attributes();
   LttvAttribute *module_attribute;
   LttvAttributeType type;
@@ -886,7 +889,6 @@ void lttvwindowtraces_call_after_chunk(LttvAttributeName module_name,
   type = lttv_iattribute_get_by_name(LTTV_IATTRIBUTE(module_attribute),
                                      LTTV_EVENT_HOOK_BY_ID_CHANNEL,
                                      &value);
-#ifdef BABEL_CLEANUP
   lttv_process_traceset_end(tsc,
                             after_chunk_traceset,
                             after_chunk_trace,
@@ -1022,12 +1024,14 @@ static gint find_window_widget(MainWindow *a, GtkWidget *b)
 
 gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
 {
+  gboolean ret_val = FALSE;
+#ifdef BABEL_CLEANUP
   LttvAttribute *attribute;
   LttvAttribute *g_attribute = lttv_global_attributes();
   GSList **list_out, **list_in, **notify_in, **notify_out;
   LttvAttributeValue value;
   LttvAttributeType type;
-  gboolean ret_val;
+
 
   if(trace == NULL)
     return FALSE;
@@ -1074,7 +1078,7 @@ gboolean lttvwindowtraces_process_pending_requests(LttvTrace *trace)
   g_assert(type == LTTV_POINTER);
   sync_position = (LttvTracesetContextPosition*)*(value.v_pointer);
 #endif //0
-#ifdef BABEL_CLEANUP
+//#ifdef BABEL_CLEANUP moved at the beginning of the function
   /* There is no events requests pending : we should never have been called! */
   g_assert(g_slist_length(*list_out) != 0 || g_slist_length(*list_in) != 0);
   /* 0.1 Lock traces */
