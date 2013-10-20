@@ -21,7 +21,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.57)
-AC_INIT([lttv], [1.5-beta1], [yannick.brosseau@gmail.com])
+AC_INIT([lttv], [1.5], [yannick.brosseau@gmail.com])
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_MACRO_DIR([config])
 AM_INIT_AUTOMAKE([dist-bzip2 no-dist-gzip])
